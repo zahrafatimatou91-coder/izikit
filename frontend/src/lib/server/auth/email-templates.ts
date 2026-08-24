@@ -1,5 +1,8 @@
 // Source: RESEARCH.md Pattern 19 — D-15/D-16 email template factories.
-// English by default (per D-15) — fork-edit to localize.
+// Localized to French for this fork (Chaque Franc) — the starter ships
+// English by default (per D-15) with a "fork-edit to localize" note; the
+// rest of the app (UI copy, error messages) is entirely French, so an
+// English verification email would be the one jarring exception.
 // Plain HTML (per D-16) — no MJML / React Email; per-project may swap.
 //
 // Phase 5's email-queue cron consumes outbox `email.*` events and calls these
@@ -67,25 +70,25 @@ function htmlEscape(s: string): string {
  * be earlier than promised, never later.
  */
 function ttlWording(expiresAtIso: string | undefined): string {
-  if (!expiresAtIso) return 'soon';
+  if (!expiresAtIso) return 'bientôt';
   const expiresMs = Date.parse(expiresAtIso);
-  if (Number.isNaN(expiresMs)) return 'soon';
+  if (Number.isNaN(expiresMs)) return 'bientôt';
   const remainingMs = expiresMs - Date.now();
-  if (remainingMs <= 0) return 'soon'; // expired by the time we render; pre-cron drift
+  if (remainingMs <= 0) return 'bientôt'; // expired by the time we render; pre-cron drift
   const minutes = Math.floor(remainingMs / 60_000);
-  if (minutes < 1) return 'in less than a minute';
-  if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? '' : 's'}`;
+  if (minutes < 1) return "dans moins d'une minute";
+  if (minutes < 60) return `dans ${minutes} minute${minutes === 1 ? '' : 's'}`;
   const hours = Math.floor(minutes / 60);
-  return `in ${hours} hour${hours === 1 ? '' : 's'}`;
+  return `dans ${hours} heure${hours === 1 ? '' : 's'}`;
 }
 
 export function verificationEmail(args: VerificationEmailArgs): EmailTemplate {
   const code = htmlEscape(args.code);
   const ttl = ttlWording(args.expiresAt);
   return {
-    subject: 'Verify your email',
-    html: `<p>Hi,</p><p>Your verification code is <strong>${code}</strong>.</p><p>It expires ${ttl}. If you did not request this, ignore this email.</p>`,
-    text: `Your verification code is ${args.code}. It expires ${ttl}. If you did not request this, ignore this email.`,
+    subject: 'Vérifie ton adresse email',
+    html: `<p>Bonjour,</p><p>Ton code de vérification est <strong>${code}</strong>.</p><p>Il expire ${ttl}. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>`,
+    text: `Ton code de vérification est ${args.code}. Il expire ${ttl}. Si tu n'es pas à l'origine de cette demande, ignore cet email.`,
   };
 }
 
@@ -93,8 +96,8 @@ export function resetPasswordEmail(args: ResetPasswordEmailArgs): EmailTemplate 
   const code = htmlEscape(args.code);
   const ttl = ttlWording(args.expiresAt);
   return {
-    subject: 'Reset your password',
-    html: `<p>Hi,</p><p>Your password reset code is <strong>${code}</strong>.</p><p>It expires ${ttl}. If you did not request this, ignore this email.</p>`,
-    text: `Your password reset code is ${args.code}. It expires ${ttl}. If you did not request this, ignore this email.`,
+    subject: 'Réinitialise ton mot de passe',
+    html: `<p>Bonjour,</p><p>Ton code de réinitialisation est <strong>${code}</strong>.</p><p>Il expire ${ttl}. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>`,
+    text: `Ton code de réinitialisation est ${args.code}. Il expire ${ttl}. Si tu n'es pas à l'origine de cette demande, ignore cet email.`,
   };
 }
