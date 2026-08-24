@@ -17,7 +17,7 @@ import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
-import { Icon } from '@/components/ui/Icon';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { TipCard } from '@/components/tips/TipCard';
@@ -59,13 +59,7 @@ export default function TipsPage() {
       <div className="flex flex-1 flex-col pb-24 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
           <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">Conseils</h2>
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-border"
-          >
-            <Icon i="bell" size={20} />
-          </button>
+          <NotificationBell />
         </div>
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">

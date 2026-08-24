@@ -1,6 +1,6 @@
 # Banani implementation status — Chaque Franc
 
-Last updated: 2026-08-24
+Last updated: 2026-08-24 (Phase 5)
 
 Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetched: 18 screens + 4 shared components)
 
@@ -148,14 +148,90 @@ Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetche
     Prisma Client from before the schema migration (same class of issue as the earlier stale-Turbopack-CSS-cache bug) —
     fixed by killing the server, clearing `.next`, and restarting; re-verified clean afterward.
 
+- [x] **Phase 5 — Notifications + Settings** (2026-08-24):
+  - `NotificationsDesktop.jsx` → `/notifications` — real filter pills (new
+    `?type=` param on `GET /api/notifications`, server-side so pagination
+    doesn't dry up client-filtering one page), unread dot + tap-to-mark-read
+    added (Banani's static mock renders every card identically regardless
+    of `readAt`, which would make "Marquer tout comme lu" invisible).
+    Top-bar `x` navigates to `/dashboard` (fixed target, not
+    `router.back()`).
+  - **Root problem found before writing any UI**: only `WELCOME` was ever
+    fired (Google OAuth signup only) — email/password signups, the
+    majority path, got zero notifications ever. Shipping the list/read UI
+    alone would leave `/notifications` permanently empty for most users —
+    decorative, not "genuinely connected to its backend". Added 3 real
+    triggers, one per Banani filter pill so none is dead: `ENVELOPE_THRESHOLD`
+    (from `POST /api/transactions`, fires once per 80%/100% threshold per
+    budget period, gated by a real Settings toggle), `TIP_APPLIED` (from
+    `POST /api/tips/[id]/apply`, real-creation branch only), `GOAL_MILESTONE`
+    (from `POST /api/savings-goals/[id]/entries`, fires once when a goal
+    crosses 100%). All 3 follow the exact post-commit-createNotification
+    pattern already established in `api/withdrawals/route.ts` (protected,
+    read-only reference). **Not built** (flagged, not silently dropped):
+    Banani's mock also shows budget-set / identity-verification / weekly-streak
+    cards — no filter pill, no real feature (KYC inert per locked decisions),
+    or no state to back them without fabricating stats (same anti-pattern
+    already avoided in Phase 3/4).
+  - `SettingsDesktop.jsx` → `/settings` rebuilt inside the standard
+    `DesktopSidebarNav`+`BottomNav` shell (previously a standalone card with
+    no shell at all — a real inconsistency with every other authenticated
+    page). Per-section real-vs-fake audit (see plan file's table): kept
+    Nom complet (new `PATCH /api/auth/me`), Email (read-only — no
+    re-verification flow exists), Devise/Langue (plain info rows, no fake
+    dropdown), Notifications toggle (wired to real `NotificationPreferences`
+    via existing `/api/notifications/prefs` + `isChannelEnabled`), Budget
+    (links to `/onboarding`, now pre-filled from the user's existing values
+    — small fix in `onboarding/page.tsx` so "Modifier" doesn't silently
+    reset the wizard to defaults), password + Google-link sections (existing,
+    restyled). Dropped: Téléphone (no `phone` field anywhere in the schema),
+    Répartition automatique + Sessions actives (no backend feature).
+  - **Zone dangereuse — real account deletion, not a dead button**: new
+    `DELETE /api/account`, password-reconfirmation gated (bcrypt, same
+    pattern as `change-password`) for password accounts, typed-email
+    confirmation for OAuth-only accounts. `prisma.user.delete()` — schema
+    already cascades every owned model, no orphan cleanup needed. Built
+    real (rather than omitted or faked) because a non-functional delete
+    button would repeat the exact broken-affordance mistake already
+    flagged and avoided in Phase 4's checkboxes — flagged to the user as a
+    scope decision, reversible.
+  - New `NotificationBell` component (`src/components/notifications/`) —
+    fixes a real bug found during the Step-0 system read: the bell icon in
+    5 page headers (dashboard/envelopes/history/progress/tips) was a dead
+    decorative button, byte-identical across all 5, never wired to
+    anything. Now fetches the real unread count and links to
+    `/notifications`.
+  - Nav: Notifications intentionally NOT added to `DesktopSidebarNav` or
+    `BottomNav` (already 7 items, flagged as crowded in Phase 4) — reachable
+    via the bell icon everywhere instead, matching Banani's own
+    `NotificationsDesktop.jsx` source, which doesn't highlight any sidebar
+    item either.
+  - No schema changes this phase — `Notification`/`NotificationPreferences`
+    already existed from the starter. No migration needed.
+  - Verified: `pnpm typecheck` / `pnpm lint` / `pnpm test` green (582/582).
+    Real end-to-end run against the dev server with 2 disposable test
+    users: `PATCH /api/auth/me` updates name; envelope-threshold fires
+    distinctly at 80% and 100% (not duplicated on a 3rd over-limit
+    transaction — dedup confirmed), and does NOT fire at all once the
+    Settings toggle disables it (confirmed via direct pref PATCH); tip-apply
+    notification fires once on creation, not on the idempotent replay;
+    goal-milestone fires once on completion, not on a subsequent entry past
+    target; `?type=` filter returns the right subset; mark-all-read zeroes
+    the count; `DELETE /api/account` refuses a wrong password (400), 
+    succeeds with the correct one (200) and truly invalidates the session
+    (subsequent `/api/auth/me` → 401); the OAuth-only path (passwordHash
+    nulled to simulate it) refuses a mismatched confirmation email and
+    succeeds with the correct one; cascade delete confirmed clean via
+    direct DB query (0 rows across envelopes/transactions/goals/notifications
+    post-delete). `/notifications` and `/settings` both return 200 with no
+    error/hydration markers. Both test users deleted via the real
+    `DELETE /api/account` endpoint (not a manual DB cleanup — the endpoint
+    under test doubled as its own teardown).
+
 ## In progress
-_(none — ready to start Phase 5)_
+_(none — ready to start Phase 6)_
 
 ## Pending — grouped by phase (see roadmap for rationale/order)
-
-### Phase 5 — Notifications + Settings
-- [ ] `NotificationsDesktop.jsx` → `/notifications` — plan: `notifications.md` (reuses existing `Notification` model/routes)
-- [ ] `SettingsDesktop.jsx` → merge into existing `frontend/src/app/settings/page.tsx`
 
 ### Phase 6 — Subscription / monetization
 - [ ] `new_screen1` "Abonnement Desktop" → `/subscription` — plan: `subscription.md` (reuses `Order` + Bictorys `PaymentProvider`)

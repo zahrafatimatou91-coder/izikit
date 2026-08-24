@@ -6,7 +6,7 @@
 // tracker rather than faking screens that don't exist yet.
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
@@ -38,6 +38,21 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [prefilledFromUser, setPrefilledFromUser] = useState(false);
+
+  // Settings → "Modifier" links here to change an already-set budget.
+  // `user` is null on the first render (AuthContext still loading), so a
+  // useState lazy initializer would miss it — sync once via effect instead,
+  // guarded so it never clobbers an in-progress edit on a later user refetch.
+  useEffect(() => {
+    if (user && !prefilledFromUser && user.totalBudget != null) {
+      setAmount(user.totalBudget);
+      if (user.budgetFrequency) {
+        setFrequency(user.budgetFrequency as (typeof FREQUENCIES)[number]['id']);
+      }
+      setPrefilledFromUser(true);
+    }
+  }, [user, prefilledFromUser]);
 
   if (!user) return null; // useUser() redirects to /login
 

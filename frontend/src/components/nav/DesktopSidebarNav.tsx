@@ -2,7 +2,19 @@ import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
-type NavId = 'dashboard' | 'envelopes' | 'progress' | 'tips' | 'history' | 'settings';
+// 'notifications' has no entry in ITEMS below (not a primary nav
+// destination — reachable via the bell icon on every page instead, same
+// as Banani's own NotificationsDesktop.jsx source, which doesn't
+// highlight any sidebar item either). Included in the union purely so
+// pages can pass it and get the (correct) "nothing highlighted" result.
+type NavId =
+  | 'dashboard'
+  | 'envelopes'
+  | 'progress'
+  | 'tips'
+  | 'history'
+  | 'settings'
+  | 'notifications';
 
 const ITEMS: { id: NavId; href: string; icon: Parameters<typeof Icon>[0]['i']; label: string }[] = [
   { id: 'dashboard', href: '/dashboard', icon: 'layout-dashboard', label: 'Tableau' },

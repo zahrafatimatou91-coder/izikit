@@ -10,6 +10,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
+import { createNotification } from '@/lib/server/notifications';
+import { tipAppliedNotification } from '@/lib/server/notifications/templates';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
 const DEFAULT_TARGET_FCFA = 2000;
@@ -52,6 +54,15 @@ export async function POST(
           tipId: tip.id,
         },
       }));
+
+    if (existing === null) {
+      try {
+        await createNotification(prisma, tipAppliedNotification(auth.user.sub, goal));
+      } catch {
+        // Swallow — the goal is already committed; a notification hiccup
+        // must not poison the response (same posture as withdrawals/route.ts).
+      }
+    }
 
     return NextResponse.json(
       {

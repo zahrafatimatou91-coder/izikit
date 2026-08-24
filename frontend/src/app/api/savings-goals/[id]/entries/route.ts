@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
+import { createNotification } from '@/lib/server/notifications';
+import { goalMilestoneNotification } from '@/lib/server/notifications/templates';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
 const CreateBody = z.object({
@@ -41,7 +43,7 @@ export async function POST(
 
     const owns = await prisma.savingsGoal.findFirst({
       where: { id, userId: auth.user.sub },
-      select: { id: true },
+      select: { id: true, name: true, currentAmount: true, targetAmount: true },
     });
     if (!owns) {
       return NextResponse.json(
@@ -63,6 +65,24 @@ export async function POST(
         data: { currentAmount: { increment: parsed.data.amount } },
       }),
     ]);
+
+    const justCompleted =
+      owns.currentAmount < owns.targetAmount && goal.currentAmount >= goal.targetAmount;
+    if (justCompleted) {
+      try {
+        await createNotification(
+          prisma,
+          goalMilestoneNotification(auth.user.sub, {
+            id: goal.id,
+            name: goal.name,
+            targetAmount: goal.targetAmount,
+          }),
+        );
+      } catch {
+        // Swallow — the entry is already committed; a notification hiccup
+        // must not poison the response (same posture as withdrawals/route.ts).
+      }
+    }
 
     return NextResponse.json(
       {

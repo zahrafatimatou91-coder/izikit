@@ -178,3 +178,55 @@ test réels).
   en Phase theming) — corrigé en tuant le process, vidant `.next`, et
   relançant ; re-vérifié propre ensuite. Utilisateur de test supprimé après
   vérification (cascade a emporté l'objectif).
+
+### 2026-08-24 — Phase 5 (Notifications + Paramètres)
+- **Règle 1 (Banani)** : fetch explicite par `screenIds` des 2 écrans
+  (`NotificationsDesktop`, `SettingsDesktop`). Plan écrit dans
+  `.planning/banani/notifications-settings.md` avant tout code, avec un
+  tableau explicite section-par-section (réel vs abandonné) pour
+  `SettingsDesktop` — Banani en propose 5, seules ~7 des ~11 lignes sont
+  réellement branchables (téléphone, sessions actives, répartition
+  automatique n'existent nulle part dans le schéma). Problème trouvé à
+  l'étape 0 (lecture du système avant tout code) : une seule notification
+  était jamais déclenchée dans toute l'app (`WELCOME`, uniquement à
+  l'inscription Google) — la majorité des utilisateurs (email/mot de passe)
+  n'en recevait jamais aucune. Construire l'UI de liste seule aurait laissé
+  `/notifications` vide en permanence pour la plupart des comptes —
+  décoratif, pas "connecté à sa vraie API" au sens de la Règle 1. 3
+  déclencheurs réels ajoutés en conséquence (alerte enveloppe, conseil
+  appliqué, objectif atteint), chacun mappé sur un filtre réel de Banani
+  pour qu'aucun onglet ne reste mort — décision de périmètre non demandée
+  explicitement, signalée à l'utilisateur pour veto possible.
+- **Règle 1' (scalabilité + rôle)** : le déclencheur `ENVELOPE_THRESHOLD`
+  réutilise `currentBudgetPeriod` (déjà utilisé par `/api/dashboard`,
+  aucune nouvelle logique de période) et un seul `aggregate` Prisma
+  supplémentaire par transaction-dépense-avec-enveloppe (pas de requête en
+  boucle). Aucun changement au rôle admin.
+- **Règle 2 (commit + migration)** : **aucun changement de schéma ce
+  lot** — `Notification`/`NotificationPreferences` existaient déjà depuis
+  le starter ; donc aucune migration nécessaire (règle respectée
+  trivialement, mentionné explicitement plutôt que silencieusement omis).
+  Commit à suivre juste après cette entrée.
+- **Règle 3 (tests)** : `pnpm test` → 582/582.
+- **Règle 4 (vérification fin de lot)** : `pnpm typecheck` / `pnpm lint`
+  verts. Test bout-en-bout réel contre le serveur de dev avec 2
+  utilisateurs de test jetables : `PATCH /api/auth/me` met à jour le nom ;
+  l'alerte enveloppe se déclenche distinctement à 80% puis à 100% (pas de
+  triplon sur une 3e transaction au-delà de la limite — dédoublonnage
+  confirmé) et ne se déclenche PAS du tout quand le nouveau toggle de
+  Paramètres la désactive (testé via PATCH direct des préférences) ;
+  la notification « conseil appliqué » se déclenche une fois à la création,
+  jamais sur le rejeu idempotent ; « objectif atteint » se déclenche une fois
+  à la complétion, jamais sur une entrée suivante qui dépasse encore la
+  cible ; le filtre `?type=` renvoie le bon sous-ensemble ; « tout marquer
+  comme lu » remet le compteur à 0 ; `DELETE /api/account` refuse un mauvais
+  mot de passe (400), réussit avec le bon (200) et invalide vraiment la
+  session (`/api/auth/me` → 401 ensuite) ; le chemin compte-OAuth-seul
+  (passwordHash mis à null pour simuler) refuse une confirmation email
+  erronée et réussit avec la bonne ; suppression en cascade confirmée
+  propre par requête DB directe (0 lignes sur enveloppes/transactions/
+  objectifs/notifications après coup). `/notifications` et `/settings`
+  renvoient 200 sans marqueur d'erreur/hydratation. Les 2 utilisateurs de
+  test ont été supprimés via le vrai endpoint `DELETE /api/account` (pas
+  un nettoyage DB manuel — l'endpoint testé a servi de sa propre
+  décommission).

@@ -6,6 +6,7 @@ import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { EnvelopeCard } from '@/components/envelopes/EnvelopeCard';
 import { TransactionRow } from '@/components/transactions/TransactionRow';
@@ -124,13 +125,7 @@ export default function DashboardPage() {
         {/* Desktop top bar */}
         <div className="hidden items-center justify-between border-b border-border bg-card px-8 py-6 lg:flex">
           <h2 className="font-headings text-xl font-bold text-foreground">Tableau de bord</h2>
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-border"
-          >
-            <Icon i="bell" size={20} />
-          </button>
+          <NotificationBell />
         </div>
 
         <div className="flex-1 px-4 pb-24 pt-6 lg:overflow-y-auto lg:px-8 lg:py-8 lg:pb-8">
