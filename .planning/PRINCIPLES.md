@@ -129,3 +129,52 @@ test réels).
   un ID d'objectif inexistant (garde cross-tenant), les 3 nouvelles pages
   renvoient 200 sans marqueur d'erreur. Utilisateur de test supprimé
   (cascade a emporté l'objectif + les entrées).
+
+### 2026-08-24 — Phase 4 (Conseils/Tips)
+- **Règle 1 (Banani)** : fetch explicite par `screenIds` des 3 écrans cités
+  dans `00-roadmap.md` (`AllTipsDesktop`, `TipDetailDesktop`, `ApplyTipDesktop`
+  — pas encore sélectionnés dans l'éditeur). Plan écrit dans
+  `.planning/banani/tips.md` avant tout code, incluant le décalage de copy
+  déjà signalé dans le roadmap ("Conseils personnalisés" implique une
+  personnalisation/IA que la décision verrouillée du 2026-08-23 exclut) —
+  copy adoucie, seul mécanisme de tri réel conservé (correspondance de
+  catégorie par nom d'enveloppe, côté serveur, pas d'IA). Case à cocher
+  inerte du design source (`ApplyTipDesktop`, sans `onChange`) non reproduite
+  — un design qui ne câble pas sa propre interaction n'est pas fidèle à
+  copier tel quel.
+- **Règle 1' (scalabilité + rôle)** : `Tip.title` rendu `@unique` (clé
+  d'upsert du seed, idempotent) — pas de nouvel index spéculatif au-delà de
+  celui déjà généré par la contrainte unique. `SavingsGoal.tipId` est une
+  FK optionnelle `onDelete: SetNull` (ne bloque jamais la suppression d'un
+  Tip). Aucun changement au rôle admin (déjà en place).
+- **Règle 2 (commit + migration)** : 2 migrations générées et appliquées à
+  Neon avant le code consommateur — `20260824135158_tips_and_goal_link`
+  (`Tip.estimatedSavingsFcfa`, `SavingsGoal.tipId` + relation) et
+  `20260824145656_tip_title_unique` (contrainte unique, écrite à la main via
+  `prisma migrate diff --script` + `migrate deploy` — `migrate dev` refuse
+  l'interactif pour les contraintes destructives dans cet environnement
+  non-TTY). Commit à suivre juste après cette entrée.
+- **Règle 3 (tests)** : `pnpm test` → 581/581. Bug d'environnement trouvé et
+  corrigé en cours de route (sans lien direct avec Tips mais bloquant le
+  seed) : le garde-fou CLI `import.meta.url === file://${process.argv[1]}`
+  échoue silencieusement dès que le chemin du projet contient un espace
+  ("chaque franc") — corrigé avec `pathToFileURL()` dans `seed-tips.ts` et,
+  par cohérence, dans les 3 scripts frères qui avaient le même bug
+  (`seed-dev.ts`, `make-superadmin.ts`, `smoke-auth.ts`) — `scripts/seed-dev.test.ts`
+  + `scripts/make-superadmin.test.ts` (9 tests) re-passés verts après coup.
+- **Règle 4 (vérification fin de lot)** : `pnpm typecheck` / `pnpm lint` /
+  `pnpm format` verts. Test bout-en-bout réel contre le serveur de dev :
+  utilisateur de test créé, code de vérification récupéré en DB, `GET
+  /api/tips` renvoie les 9 conseils seedés, `GET /api/tips/[id]` renvoie le
+  bon découpage en 4 étapes pour "Transport malin", `POST
+  /api/tips/[id]/apply` → 201 (création d'un `SavingsGoal` avec
+  `targetAmount: 2400`, `period: monthly`, `icon: bike`, `tipId` renseigné)
+  puis 200 au rejeu (même id d'objectif, pas de doublon — idempotence
+  confirmée par requête DB directe), objectif bien visible dans `GET
+  /api/savings-goals`, les 3 nouvelles pages renvoient 200 sans marqueur
+  d'erreur/hydratation. Incident intermédiaire : le serveur de dev restait
+  actif depuis avant la migration et servait un Prisma Client obsolète en
+  cache mémoire (même classe de bug que le cache CSS Turbopack déjà rencontré
+  en Phase theming) — corrigé en tuant le process, vidant `.next`, et
+  relançant ; re-vérifié propre ensuite. Utilisateur de test supprimé après
+  vérification (cascade a emporté l'objectif).

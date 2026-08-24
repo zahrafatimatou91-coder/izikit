@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
-type NavId = 'dashboard' | 'envelopes' | 'progress' | 'history' | 'settings';
+type NavId = 'dashboard' | 'envelopes' | 'progress' | 'tips' | 'history' | 'settings';
 
 const ITEMS: { id: NavId; href: string; icon: Parameters<typeof Icon>[0]['i']; label: string }[] = [
   { id: 'dashboard', href: '/dashboard', icon: 'layout-dashboard', label: 'Tableau' },
   { id: 'envelopes', href: '/envelopes', icon: 'package', label: 'Enveloppes' },
   { id: 'progress', href: '/progress', icon: 'target', label: 'Objectifs' },
+  { id: 'tips', href: '/tips', icon: 'lightbulb', label: 'Conseils' },
   { id: 'history', href: '/history', icon: 'clock', label: 'Historique' },
   { id: 'settings', href: '/settings', icon: 'settings', label: 'Paramètres' },
 ];

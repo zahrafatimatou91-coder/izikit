@@ -392,7 +392,14 @@ model SavingsGoal {
 
   entries SavingsEntry[]
 
+  // Set when this goal was created via "Appliquer ce conseil" (Tip apply
+  // flow). SetNull (not Cascade) — deleting a Tip later shouldn't delete
+  // goals users already created from it.
+  tipId String?
+  tip   Tip?    @relation(fields: [tipId], references: [id], onDelete: SetNull)
+
   @@index([userId])
+  @@index([tipId])
 }
 
 model SavingsEntry {
@@ -408,11 +415,14 @@ model SavingsEntry {
 
 // Static curated content (decision: not AI-generated — see roadmap).
 model Tip {
-  id       String @id @default(cuid())
-  title    String
-  body     String
-  icon     String
-  category String // free-form, matched against envelope names for targeting
+  id                   String @id @default(cuid())
+  title                String @unique // seed script upserts on this
+  body                 String
+  icon                 String
+  category             String // free-form, matched against envelope names for targeting
+  estimatedSavingsFcfa Int? // editorial "économies possibles" figure; not every tip has one
+
+  savingsGoals SavingsGoal[]
 }
 
 model Subscription {

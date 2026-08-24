@@ -18,6 +18,7 @@ const ITEMS: NavItem[] = [
   { id: 'envelopes', href: '/envelopes', icon: 'package', label: 'Enveloppes' },
   { id: 'add', href: '/transactions/new', icon: 'plus', label: null, cta: true },
   { id: 'progress', href: '/progress', icon: 'target', label: 'Objectifs' },
+  { id: 'tips', href: '/tips', icon: 'lightbulb', label: 'Conseils' },
   { id: 'history', href: '/history', icon: 'clock', label: 'Historique' },
   { id: 'profile', href: '/settings', icon: 'user', label: 'Profil' },
 ];
