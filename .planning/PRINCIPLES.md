@@ -100,3 +100,32 @@ test réels).
   post-hydratation côté client via `useUser()`, invisible au SSR) — vérifié
   par lecture de code + absence d'erreur serveur/build à la place. Utilisateur
   de test supprimé après vérification.
+
+### 2026-08-24 — Phase 3 (Épargne/Objectifs)
+- **Règle 1 (Banani)** : les écrans sélectionnés dans Banani au moment du fetch
+  étaient encore ceux de la landing page (session précédente) — fetch explicite
+  par `screenIds` sur les 5 noms de fichiers cités dans `00-roadmap.md`. Les 2
+  questions ouvertes du roadmap (écran `CancelAddEconomy` = bug de nommage ?
+  quel écran de confirmation choisir ?) ont été tranchées en diffant les
+  sources byte-à-byte via script (pas en devinant) — `CancelAddEconomy` est
+  bien un artefact (source identique à `MyProgress`), les 2 écrans de
+  confirmation sont réels et différents. Plan écrit dans
+  `.planning/banani/savings-goals.md` avant tout code.
+- **Règle 1' (scalabilité + rôle)** : aucun changement nécessaire — index déjà
+  en place, `role` déjà présent. `SavingsGoal.currentAmount` reste dénormalisé
+  (pas de `SUM()` à chaque lecture) et n'est incrémenté que dans une seule
+  transaction Prisma avec l'insertion de l'entrée — pas de dépendance externe.
+- **Règle 2 (commit + migration)** : migration `20260824132056_savings_entry_note`
+  générée et appliquée à Neon avant tout code consommant le champ. Commit à
+  suivre juste après cette entrée.
+- **Règle 3 (tests)** : `pnpm test` → 578/578 (3 nouveaux tests, probablement
+  l'inventaire de routes qui détecte les nouvelles routes automatiquement).
+- **Règle 4 (vérification fin de lot)** : `pnpm typecheck` / `pnpm lint` /
+  `pnpm build` verts, toutes les nouvelles routes dans le manifeste. Test
+  bout-en-bout réel contre le serveur de dev (pas juste des routes isolées) :
+  utilisateur de test créé, code de vérification récupéré en DB, objectif
+  créé, 2 économies ajoutées via curl — incrément atomique vérifié
+  (500 → 800, correspond exactement à la somme des entrées), 404 confirmé sur
+  un ID d'objectif inexistant (garde cross-tenant), les 3 nouvelles pages
+  renvoient 200 sans marqueur d'erreur. Utilisateur de test supprimé
+  (cascade a emporté l'objectif + les entrées).

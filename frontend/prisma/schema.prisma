@@ -400,6 +400,7 @@ model SavingsEntry {
   savingsGoalId String
   savingsGoal   SavingsGoal @relation(fields: [savingsGoalId], references: [id], onDelete: Cascade)
   amount        Int
+  note          String? // optional free-text context (e.g. "pris le bus au lieu du taxi")
   createdAt     DateTime    @default(now())
 
   @@index([savingsGoalId])

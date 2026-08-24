@@ -53,16 +53,49 @@ Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetche
     `/login`, `/dashboard`, no error/hydration markers, both `lg:hidden` and `hidden lg:flex`
     blocks present in the SSR output with the mockup content in each.
 
+- [x] **Phase 3 — Savings goals (Économies)** (2026-08-24):
+  - `AddEconomyDesktop.jsx` → `/savings/[goalId]/add` — quick-amount buttons + custom amount kept;
+    "Jour de l'économie" day-picker and "Type d'action" radio group replaced with a single optional
+    Note field (`SavingsEntry.note`, new migration `20260824132056_savings_entry_note`) — nothing
+    else in the app backdates entries and no reporting consumed a controlled action vocabulary.
+  - `EconomyConfirmedDesktop.jsx` → `/savings/[goalId]/confirmed` — **chosen over
+    `EconomySavedDesktop.jsx`** after diffing both real, distinct sources (confirmed via a script,
+    not eyeballed): `EconomyConfirmed`'s day-by-day breakdown maps onto real `SavingsEntry` rows;
+    `EconomySaved`'s "Comment continuer ?" is 3 generic hardcoded tips with no data behind them.
+    Reversible judgment call — flagged to the user, not yet vetoed.
+  - `CancelAddEconomyDesktop.jsx` — **confirmed Banani generation artifact, not a screen.** Byte-diffed
+    against `MyProgressDesktop.jsx` (script, not assumption): identical `source` and `displayName`.
+    Nothing built for it.
+  - `MyProgressDesktop.jsx` → `/progress` — the single hardcoded "Active objective" card generalized
+    into a real `SavingsGoal[]` list (`SavingsGoalCard`); the per-goal Mon–Sun breakdown generalized
+    into a global 7-day strip (sum across all goals — doesn't generalize per-goal without becoming
+    unwieldy, and backs the "Jours actifs" stat directly).
+  - Dropped copy referencing unbuilt features: "débloque un nouveau conseil" (Tips/Phase 4 isn't
+    built — same anti-pattern as the dashboard's dropped "Conseil du jour") and "ton objectif se
+    réinitialise chaque mois" (no monthly-reset cron exists — would be the same over-promising-copy
+    issue already flagged for the AI-tips mismatch in the roadmap).
+  - **NEW, no Banani source** — `/savings/new` (goal creation; `AddEconomy` assumes one already
+    exists) — same posture as Phase 2's `/transactions/new`.
+  - New API routes: `GET/POST /api/savings-goals` (list + weekly aggregate / create),
+    `GET /api/savings-goals/[id]` (detail + 5 recent entries), `POST /api/savings-goals/[id]/entries`
+    (atomic `$transaction` — entry insert + `currentAmount` increment, ownership-checked, 404 on
+    cross-tenant).
+  - Nav: added "Objectifs" (`target` icon) to `DesktopSidebarNav` and `BottomNav` — Banani's own 3
+    fetched screens kept the sidebar at 4 items and just left "Tableau" highlighted (never designed
+    a nav entry for this section), which would have left `/progress` completely unreachable from
+    anywhere in the app.
+  - Verified: `pnpm typecheck` / `pnpm lint` / `pnpm build` green (all new routes in the manifest),
+    `pnpm test` 578/578 green. Real end-to-end run against the dev server: signed up a test user,
+    pulled the verification code straight from `VerificationCode` (Resend still unconfigured),
+    created a goal, posted 2 entries via curl — confirmed the atomic increment (500 → 800, matches
+    entry sum exactly), confirmed cross-tenant 404 on a bogus goal id, confirmed all 3 new pages
+    return 200 with no error/hydration markers. Testing user deleted after verification (cascade
+    took the goal + entries with it).
+
 ## In progress
-_(none — ready to start Phase 3)_
+_(none — ready to start Phase 4)_
 
 ## Pending — grouped by phase (see roadmap for rationale/order)
-
-### Phase 3 — Savings goals (Économies)
-- [ ] `AddEconomyDesktop.jsx` → `/savings/[goalId]/add` — plan: `savings-add.md`
-- [ ] `EconomyConfirmedDesktop.jsx` **or** `EconomySavedDesktop.jsx` (near-duplicate — see open questions) → `/savings/[goalId]/confirmed`
-- [ ] `MyProgressDesktop.jsx` → `/progress` — plan: `progress.md`
-- [ ] `CancelAddEconomyDesktop.jsx` — ⚠️ Banani naming bug: internal `displayName` is "Ma Progression Desktop", byte-identical source to `MyProgressDesktop.jsx`. Not a real distinct screen until confirmed otherwise.
 
 ### Phase 4 — Tips (contenu statique curaté, pas d'IA — voir décisions dans 00-roadmap.md)
 - [ ] `AllTipsDesktop.jsx` → `/tips` — plan: `tips.md`
@@ -79,8 +112,10 @@ _(none — ready to start Phase 3)_
 ## Open design questions
 - 4 architectural decisions locked 2026-08-23 (transactions=manual entry, envelopes=customizable,
   tips=static content, Withdrawal/Organization=inert) — see `00-roadmap.md` §Decisions locked.
-- Remaining lower-priority items (recurring billing, budget model shape, achievements data model,
-  the 2 near-duplicate savings-confirmation screens) — see `00-roadmap.md` §Still open.
+- The 2 near-duplicate savings-confirmation screens: **resolved** 2026-08-24, `EconomyConfirmedDesktop`
+  chosen — see `savings-goals.md` §Resolved. Reversible if you'd rather have `EconomySavedDesktop`.
+- Remaining lower-priority items (recurring billing, budget model shape, "Ma Progression"
+  achievements/streaks beyond the stats already shipped) — see `00-roadmap.md` §Still open.
 
 ## Notes
 - Every screen above is Desktop-only in Banani except `Dashboard.jsx` (mobile) and the 4 shared components. Per skill mandate, mobile-first is still required for ALL of them — mobile layout will be designed by us, not copied from Banani.

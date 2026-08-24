@@ -17,6 +17,7 @@ const ITEMS: NavItem[] = [
   { id: 'dashboard', href: '/dashboard', icon: 'layout-dashboard', label: 'Tableau' },
   { id: 'envelopes', href: '/envelopes', icon: 'package', label: 'Enveloppes' },
   { id: 'add', href: '/transactions/new', icon: 'plus', label: null, cta: true },
+  { id: 'progress', href: '/progress', icon: 'target', label: 'Objectifs' },
   { id: 'history', href: '/history', icon: 'clock', label: 'Historique' },
   { id: 'profile', href: '/settings', icon: 'user', label: 'Profil' },
 ];
