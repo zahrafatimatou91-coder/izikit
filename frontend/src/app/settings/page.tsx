@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth, useUser } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export default function SettingsPage() {
   const user = useUser();
@@ -103,6 +104,15 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold">Paramètres</h1>
         <p className="text-sm text-gray-600">Connecté en tant que {user.email}</p>
       </header>
+
+      {/* ── Appearance section ───────────────────────────────────────── */}
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-5">
+        <h2 className="font-headings text-lg font-semibold text-foreground">Apparence</h2>
+        <p className="font-body text-sm text-muted-foreground">
+          « Système » suit le réglage clair/sombre de ton appareil.
+        </p>
+        <ThemeToggle />
+      </section>
 
       {/* ── Password section ─────────────────────────────────────────── */}
       <section className="flex flex-col gap-3 rounded-lg border border-gray-200 p-5">

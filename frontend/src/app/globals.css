@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Lets `dark:` utilities respond to an explicit override, on top of the
+ * prefers-color-scheme fallback handled separately below for 'system'. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 /*
  * Design tokens ported from the Banani flow "Chaque Franc"
  * (https://app.banani.co/flow/JvzUHP0KGNdG). Tailwind v4 generates utility
@@ -56,4 +60,51 @@
   --text-2xl: 28px;
   --text-3xl: 36px;
   --text-4xl: 48px;
+}
+
+/*
+ * Dark palette — two triggers, same values:
+ *  1. `@media (prefers-color-scheme: dark)` — theme = 'system' (no
+ *     data-theme attribute) and the OS/browser prefers dark.
+ *  2. `:root[data-theme='dark']` — explicit user override via the
+ *     ThemeToggle, regardless of OS preference.
+ * `:not([data-theme='light'])` on the media-query rule stops an explicit
+ * light override from being clobbered back to dark by prefers-color-scheme.
+ * Envelope swatches and radii/fonts are theme-agnostic and stay as declared
+ * in @theme above.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-background: #16130d;
+    --color-foreground: #f3eee3;
+    --color-border: #322c20;
+    --color-input: #241f16;
+    --color-primary: #34a374;
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #f5c842;
+    --color-secondary-foreground: #1a1208;
+    --color-muted: #221d14;
+    --color-muted-foreground: #a89a82;
+    --color-accent: #e8612a;
+    --color-accent-foreground: #ffffff;
+    --color-card: #1e1911;
+    --color-card-foreground: #f3eee3;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-background: #16130d;
+  --color-foreground: #f3eee3;
+  --color-border: #322c20;
+  --color-input: #241f16;
+  --color-primary: #34a374;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5c842;
+  --color-secondary-foreground: #1a1208;
+  --color-muted: #221d14;
+  --color-muted-foreground: #a89a82;
+  --color-accent: #e8612a;
+  --color-accent-foreground: #ffffff;
+  --color-card: #1e1911;
+  --color-card-foreground: #f3eee3;
 }
