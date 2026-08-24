@@ -45,6 +45,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         createdAt: true,
         updatedAt: true,
         passwordHash: true,
+        name: true,
+        avatarUrl: true,
+        totalBudget: true,
+        budgetFrequency: true,
         oauthAccounts: { select: { provider: true } },
       },
     });
@@ -72,6 +76,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         : null,
       hasPassword: !!dbUser?.passwordHash,
       linkedProviders: (dbUser?.oauthAccounts ?? []).map((a) => a.provider),
+      name: dbUser?.name ?? null,
+      avatarUrl: dbUser?.avatarUrl ?? null,
+      totalBudget: dbUser?.totalBudget ?? null,
+      budgetFrequency: dbUser?.budgetFrequency ?? null,
     };
 
     return NextResponse.json({ user }, { status: 200, headers: { 'x-request-id': ctx.requestId } });

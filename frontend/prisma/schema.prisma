@@ -34,6 +34,11 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  // Chaque Franc — budget config set during onboarding. Nullable: unset
+  // until the user completes the "Ton budget" onboarding step.
+  totalBudget     Int?
+  budgetFrequency String? // "monthly" | "weekly" | "daily"
+
   verificationCodes VerificationCode[]
   uploads           FileUpload[]
   notifications     Notification[]
@@ -42,6 +47,10 @@ model User {
   withdrawals       Withdrawal[]
   oauthAccounts     OAuthAccount[]
   adminActions      AdminAction[]
+  envelopes         Envelope[]
+  transactions      Transaction[]
+  savingsGoals      SavingsGoal[]
+  subscription      Subscription?
 
   // Multi-tenancy is opt-in per project: by default no resource is org-scoped.
   // Apps that need it (marketplace, B2B SaaS, classifieds) wire owner relations
@@ -331,4 +340,88 @@ model Withdrawal {
   @@index([userId, requestedAt])
   @@index([status, requestedAt])
   @@index([provider, providerPayoutId])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Chaque Franc domain models — see .planning/banani/00-roadmap.md for the
+// product context and decisions (envelopes are user-customizable, not a
+// fixed set; transactions are manually entered; tips are static content).
+// ───────────────────────────────────────────────────────────────────────
+
+model Envelope {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  icon         String // lucide icon name, user-picked
+  color        String // swatch key from src/lib/envelope-colors.ts, e.g. "envelope-1"
+  monthlyLimit Int // smallest unit (FCFA has no decimals)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  envelopeId String? // null = income / uncategorized
+  envelope   Envelope? @relation(fields: [envelopeId], references: [id], onDelete: SetNull)
+  amount     Int // signed, smallest unit — negative = expense, positive = income
+  label      String
+  occurredAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([envelopeId])
+}
+
+model SavingsGoal {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String // e.g. "Transport malin"
+  icon          String
+  targetAmount  Int
+  currentAmount Int      @default(0)
+  period        String // "weekly" | "monthly"
+  createdAt     DateTime @default(now())
+
+  entries SavingsEntry[]
+
+  @@index([userId])
+}
+
+model SavingsEntry {
+  id            String      @id @default(cuid())
+  savingsGoalId String
+  savingsGoal   SavingsGoal @relation(fields: [savingsGoalId], references: [id], onDelete: Cascade)
+  amount        Int
+  createdAt     DateTime    @default(now())
+
+  @@index([savingsGoalId])
+}
+
+// Static curated content (decision: not AI-generated — see roadmap).
+model Tip {
+  id       String @id @default(cuid())
+  title    String
+  body     String
+  icon     String
+  category String // free-form, matched against envelope names for targeting
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan             String    @default("FREE") // FREE | PLUS | PRO
+  status           String    @default("ACTIVE") // ACTIVE | PAST_DUE | CANCELED
+  currentPeriodEnd DateTime?
+  lastOrderId      String? // pointer to the Order that paid for the current period
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

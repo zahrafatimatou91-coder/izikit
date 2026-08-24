@@ -1,1 +1,59 @@
 @import 'tailwindcss';
+
+/*
+ * Design tokens ported from the Banani flow "Chaque Franc"
+ * (https://app.banani.co/flow/JvzUHP0KGNdG). Tailwind v4 generates utility
+ * classes directly from these custom properties (bg-primary, text-envelope-food,
+ * rounded-lg, font-body, text-sm, ...) — no tailwind.config needed.
+ *
+ * --font-body / --font-headings resolve to the next/font/google CSS variables
+ * set on <html> in layout.tsx.
+ */
+@theme {
+  --color-background: #faf7f2;
+  --color-foreground: #1a1208;
+  --color-border: #e4ddd0;
+  --color-input: #f0ebe2;
+  --color-primary: #1e6b45;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5c842;
+  --color-secondary-foreground: #1a1208;
+  --color-muted: #eae4d8;
+  --color-muted-foreground: #7a7060;
+  --color-accent: #e8612a;
+  --color-accent-foreground: #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #1a1208;
+
+  /* Envelope swatch palette — envelopes are user-customizable (see
+   * .planning/banani/00-roadmap.md), so this is an open set of pickable
+   * colors rather than 5 fixed category slots. The first 5 match the
+   * original Banani categories (food/transport/loisirs/loyer/sante) and
+   * are offered as onboarding defaults; N6-N8 extend the palette. */
+  --color-envelope-1: #f5c842;
+  --color-envelope-2: #5da0d0;
+  --color-envelope-3: #e8612a;
+  --color-envelope-4: #1e6b45;
+  --color-envelope-5: #a855a0;
+  --color-envelope-6: #6b7fd7;
+  --color-envelope-7: #d75a8a;
+  --color-envelope-8: #4a9b7f;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius: var(--radius-sm);
+
+  --font-body: var(--font-dm-sans);
+  --font-headings: var(--font-space-grotesk);
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+}
