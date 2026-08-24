@@ -78,5 +78,25 @@ test réels).
   pour le mode "système", et par `[data-theme="dark"]` pour le choix explicite).
   `ThemeContext` + script anti-flash inline dans `layout.tsx` (évite le flash
   du mauvais thème avant hydratation). Toggle 3 positions dans `/settings`.
-  *(Détails de vérification complétés dans le message de session — voir aussi
-  le commit qui suit celui de la landing page.)*
+- **Bug trouvé et corrigé pendant la vérification** : une constante importée
+  depuis un module `'use client'` s'évaluait à `undefined` côté serveur
+  (`layout.tsx` interpolait `localStorage.getItem(undefined)` dans le script
+  anti-flash). Détecté en inspectant le HTML SSR réel via curl, pas en le
+  supposant correct. Corrigé en déplaçant la constante dans un module neutre
+  (`lib/theme-storage-key.ts`) importable des deux côtés.
+- **Règle 2 (commit)** : commit `6cd6b13` — "theming: light/system/dark mode +
+  working-principles ledger".
+- **Règle 3 (tests)** : `pnpm test` → 575/575. `pnpm build` (build de
+  production complet) vert, toutes les routes listées dans le manifeste.
+- **Règle 4 (vérification)** : après un rebuild propre (`.next` supprimé —
+  Turbopack servait un chunk CSS caché qui masquait le premier essai), le CSS
+  compilé contient bien `prefers-color-scheme` et `--color-primary: #34a374`
+  (vert dark) aux deux endroits attendus (media query + override explicite).
+  Test bout-en-bout réel : inscription d'un utilisateur de test via
+  `/api/auth/signup`, code de vérification récupéré directement dans
+  `VerificationCode` (contournement du mail non configuré — voir réponse sur
+  Resend), `/api/auth/verify-email` → session posée, cookies valides. Le
+  rendu du toggle dans `/settings` n'a pas pu être vérifié par curl (contenu
+  post-hydratation côté client via `useUser()`, invisible au SSR) — vérifié
+  par lecture de code + absence d'erreur serveur/build à la place. Utilisateur
+  de test supprimé après vérification.
