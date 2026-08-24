@@ -230,3 +230,20 @@ test réels).
   test ont été supprimés via le vrai endpoint `DELETE /api/account` (pas
   un nettoyage DB manuel — l'endpoint testé a servi de sa propre
   décommission).
+
+### 2026-08-24 — Vérification finale (Règle 4, demande explicite)
+- **Règle 4 (vérification de fin de lot, sur l'ensemble des 20 pages)** :
+  rapport complet dans `.planning/banani/VERIFICATION.md` — méthodologie,
+  tableau page par page (responsive / API réelle / états gérés), et un vrai
+  bug trouvé et corrigé pendant l'audit (`/auth/error` utilisait encore des
+  classes Tailwind brutes non-thémées depuis la Phase 1, ignorant le mode
+  sombre — corrigé). 20/20 pages retournent 200 sans marqueur d'erreur,
+  testées avec une session authentifiée réelle et des données réelles
+  (budget, enveloppe, objectif, conseil) pour que les routes paramétrées ne
+  masquent pas un 404 silencieux. Tentative d'installer Playwright pour une
+  vérification visuelle réelle (captures d'écran) — échoue dans cet
+  environnement (`ERROR: Playwright does not support chromium on mac13`),
+  documenté honnêtement dans le rapport plutôt que contourné ou passé sous
+  silence.
+- **Règle 3 (tests)** : `pnpm typecheck` / `pnpm lint` re-vérifiés verts
+  après le correctif `/auth/error`.
