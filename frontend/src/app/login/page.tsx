@@ -1,19 +1,30 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { Suspense, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { Icon } from '@/components/ui/Icon';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 
 // Same-origin Next.js API route — top-level navigation, not a fetch.
 const googleSignInHref = '/api/auth/oauth/google/start?next=/dashboard';
 
-export default function LoginPage() {
+// Guards against an open-redirect: only a same-origin relative path (not
+// starting with `//`, which the browser treats as protocol-relative) is
+// honored. Anything else falls back to the default post-login destination.
+function safeNext(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+  return raw;
+}
+
+function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
   const { refresh } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,7 +42,7 @@ export default function LoginPage() {
       });
       if (res.csrfToken) storeCsrfToken(res.csrfToken);
       await refresh();
-      router.push('/dashboard');
+      router.push(safeNext(params.get('next')) ?? '/dashboard');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
     } finally {
@@ -41,6 +52,14 @@ export default function LoginPage() {
 
   return (
     <AuthShell activeTab="login">
+      {params.get('reset') === 'ok' && (
+        <p
+          role="status"
+          className="mb-4 rounded-lg bg-primary/10 px-3 py-2.5 font-body text-sm text-primary"
+        >
+          Mot de passe réinitialisé. Connecte-toi avec ton nouveau mot de passe.
+        </p>
+      )}
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div>
           <label
@@ -122,5 +141,13 @@ export default function LoginPage() {
         </a>
       </form>
     </AuthShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<FormPageSkeleton />}>
+      <LoginForm />
+    </Suspense>
   );
 }

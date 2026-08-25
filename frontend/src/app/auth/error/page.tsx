@@ -16,6 +16,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 
 const ERROR_MESSAGES: Record<string, string> = {
   GOOGLE_EMAIL_NOT_VERIFIED:
@@ -58,7 +59,7 @@ function AuthErrorBody() {
 
 export default function AuthErrorPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<FormPageSkeleton />}>
       <AuthErrorBody />
     </Suspense>
   );

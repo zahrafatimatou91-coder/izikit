@@ -3,11 +3,11 @@
 'use client';
 
 import { Suspense, useEffect, useState, type FormEvent } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 
 function VerifyEmailForm() {
   const router = useRouter();
@@ -17,6 +17,8 @@ function VerifyEmailForm() {
   const [code, setCode] = useState(params.get('code') ?? '');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const qEmail = params.get('email');
@@ -46,6 +48,24 @@ function VerifyEmailForm() {
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     void verify(email, code);
+  }
+
+  async function onResend() {
+    if (!email) {
+      setError('Renseigne ton adresse e-mail pour recevoir un nouveau code.');
+      return;
+    }
+    setResending(true);
+    setResendMessage(null);
+    setError(null);
+    try {
+      await api('/api/auth/resend-verification', { method: 'POST', body: { email } });
+      setResendMessage('Un nouveau code a été envoyé si ce compte existe. Vérifie tes spams.');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    } finally {
+      setResending(false);
+    }
   }
 
   return (
@@ -104,12 +124,22 @@ function VerifyEmailForm() {
           {submitting ? 'Vérification…' : 'Vérifier mon e-mail'}
         </button>
       </form>
+      {resendMessage && (
+        <p className="mt-6 font-body text-sm text-primary" role="status">
+          {resendMessage}
+        </p>
+      )}
+
       <p className="mt-6 font-body text-xs text-muted-foreground">
         Pas reçu de code ?{' '}
-        <Link href="/signup" className="font-medium text-primary">
-          Réessaie de t&apos;inscrire
-        </Link>
-        .
+        <button
+          type="button"
+          onClick={onResend}
+          disabled={resending}
+          className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+        >
+          {resending ? 'Envoi…' : 'Renvoyer le code'}
+        </button>
       </p>
     </AuthCard>
   );
@@ -117,7 +147,7 @@ function VerifyEmailForm() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<FormPageSkeleton />}>
       <VerifyEmailForm />
     </Suspense>
   );

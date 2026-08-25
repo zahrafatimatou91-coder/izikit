@@ -85,7 +85,7 @@ function Toggle({
 export default function SettingsPage() {
   const user = useUser();
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { refresh, logout, loggingOut } = useAuth();
   const { toast } = useToast();
 
   // Nom complet
@@ -235,6 +235,11 @@ export default function SettingsPage() {
     } finally {
       setDeleteSubmitting(false);
     }
+  }
+
+  async function onLogout() {
+    await logout();
+    router.push('/login');
   }
 
   return (
@@ -428,6 +433,25 @@ export default function SettingsPage() {
                     Lier Google
                   </a>
                 )}
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Session">
+              <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
+                <div>
+                  <p className="font-body text-sm font-medium text-foreground">Se déconnecter</p>
+                  <p className="font-body text-xs text-muted-foreground">
+                    Termine ta session sur cet appareil.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  disabled={loggingOut}
+                  className="flex-shrink-0 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+                >
+                  {loggingOut ? 'Déconnexion…' : 'Se déconnecter'}
+                </button>
               </div>
             </SectionCard>
 

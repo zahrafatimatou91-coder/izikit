@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { api, ApiError, clearCsrfToken, storeCsrfToken } from '@/lib/api';
 import { invalidateCachePrefix } from '@/lib/useApi';
 import { COOKIE_PREFIX } from '@/lib/constants';
@@ -134,12 +134,14 @@ export function useAuth(): AuthContextValue {
 export function useUser(redirectTo: string = '/login'): User | null {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace(redirectTo);
+      const next = pathname && pathname !== '/' ? `?next=${encodeURIComponent(pathname)}` : '';
+      router.replace(`${redirectTo}${next}`);
     }
-  }, [loading, user, redirectTo, router]);
+  }, [loading, user, redirectTo, pathname, router]);
 
   if (loading || !user) return null;
   return user;

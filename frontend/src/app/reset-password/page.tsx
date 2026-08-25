@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -118,7 +119,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<FormPageSkeleton />}>
       <ResetPasswordForm />
     </Suspense>
   );

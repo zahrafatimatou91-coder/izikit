@@ -39,7 +39,10 @@ export default function ForgotPasswordPage() {
           un code de réinitialisation dans la minute.
         </p>
         <p className="mt-4 font-body text-sm">
-          <Link href="/reset-password" className="font-medium text-primary">
+          <Link
+            href={`/reset-password?email=${encodeURIComponent(email)}`}
+            className="font-medium text-primary"
+          >
             Tu as déjà ton code ?
           </Link>
         </p>
