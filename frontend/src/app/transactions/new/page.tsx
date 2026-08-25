@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { envelopeSwatch } from '@/lib/envelope-colors';
@@ -42,7 +43,7 @@ export default function NewTransactionPage() {
       });
   }, [user]);
 
-  if (!user) return null;
+  if (!user) return <FormPageSkeleton />;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

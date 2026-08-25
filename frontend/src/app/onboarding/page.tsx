@@ -12,6 +12,7 @@ import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 
 const BUDGET_SUGGESTIONS = [
   { amount: 40000, label: 'Bourse standard' },
@@ -56,7 +57,7 @@ export default function OnboardingPage() {
     }
   }, [user, prefilledFromUser]);
 
-  if (!user) return null; // useUser() redirects to /login
+  if (!user) return <FormPageSkeleton />; // useUser() redirects to /login
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
   const perDay = Math.round(amount / 30);

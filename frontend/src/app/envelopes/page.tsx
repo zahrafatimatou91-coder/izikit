@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
+import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -48,7 +49,7 @@ export default function EnvelopesPage() {
     if (user) void load();
   }, [user, load]);
 
-  if (!user) return null;
+  if (!user) return <ListPageSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 

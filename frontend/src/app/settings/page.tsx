@@ -25,6 +25,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
+import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
 import { formatPrice } from '@/lib/utils';
 
 const ENVELOPE_THRESHOLD_PREF = 'ENVELOPE_THRESHOLD';
@@ -123,13 +124,7 @@ export default function SettingsPage() {
       .catch(() => setPrefsLoaded(true));
   }, [user]);
 
-  if (!user) {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-2 px-4">
-        <p className="text-sm text-muted-foreground">Chargement…</p>
-      </main>
-    );
-  }
+  if (!user) return <ListPageSkeleton rows={6} />;
 
   const hasPassword = user.hasPassword;
   const googleLinked = user.linkedProviders.includes('google');

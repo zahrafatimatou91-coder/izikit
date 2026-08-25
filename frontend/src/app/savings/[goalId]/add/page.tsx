@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
@@ -47,7 +48,7 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Objectif introuvable.'));
   }, [user, goalId]);
 
-  if (!user) return null;
+  if (!user) return <FormPageSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 

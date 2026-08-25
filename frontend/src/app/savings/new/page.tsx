@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/contexts/AuthContext';
+import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { SavingsGoalForm, type SavingsGoalFormValues } from '@/components/savings/SavingsGoalForm';
@@ -18,7 +19,7 @@ export default function NewSavingsGoalPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (!user) return null;
+  if (!user) return <FormPageSkeleton />;
 
   async function handleCreate(values: SavingsGoalFormValues) {
     setSubmitting(true);

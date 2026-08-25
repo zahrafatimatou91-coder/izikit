@@ -6,6 +6,7 @@ import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { EnvelopeCard } from '@/components/envelopes/EnvelopeCard';
@@ -54,7 +55,7 @@ export default function DashboardPage() {
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
   }, [user]);
 
-  if (!user) return null;
+  if (!user) return <DashboardSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 
@@ -67,7 +68,7 @@ export default function DashboardPage() {
   }
 
   if (!data) {
-    return <div className="min-h-screen bg-background" />;
+    return <DashboardSkeleton />;
   }
 
   if (data.totalBudget === null) {
