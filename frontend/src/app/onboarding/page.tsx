@@ -7,6 +7,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
@@ -33,6 +34,7 @@ const STEPS = [
 
 export default function OnboardingPage() {
   const user = useUser();
+  const router = useRouter();
   const [amount, setAmount] = useState(40000);
   const [frequency, setFrequency] = useState<(typeof FREQUENCIES)[number]['id']>('monthly');
   const [submitting, setSubmitting] = useState(false);
@@ -80,12 +82,20 @@ export default function OnboardingPage() {
       <div className="flex min-h-screen items-center justify-center bg-background px-4 font-body">
         <div className="flex max-w-md flex-col items-center gap-4 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-            <Icon i="check" size={32} className="text-white" />
+            <Icon i="check" size={32} className="text-primary-foreground" />
           </div>
           <h1 className="font-headings text-2xl font-bold text-foreground">Budget enregistré !</h1>
           <p className="font-body text-sm text-muted-foreground">
-            Le tableau de bord et la création d&apos;enveloppes arrivent très bientôt.
+            Crée tes enveloppes et suis tes dépenses dès maintenant depuis ton tableau de bord.
           </p>
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard')}
+            className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-8 py-3 font-body text-sm font-bold text-primary-foreground"
+          >
+            Aller au tableau de bord
+            <Icon i="arrow-right" size={16} />
+          </button>
         </div>
       </div>
     );
