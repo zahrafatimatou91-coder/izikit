@@ -15,6 +15,7 @@ import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
+import { budgetPeriodLabel } from '@/lib/budget-period-label';
 import { formatRelativeDateTime } from '@/lib/format-date';
 
 interface DashboardEnvelope {
@@ -119,6 +120,7 @@ export default function DashboardPage() {
             totalBudget={data.totalBudget}
             spent={data.spent}
             daysLeft={data.daysLeft}
+            budgetFrequency={data.budgetFrequency}
             avatarUrl={user.avatarUrl}
           />
         </div>
@@ -149,7 +151,9 @@ export default function DashboardPage() {
             {/* Desktop stat cards */}
             <div className="hidden grid-cols-4 gap-6 lg:grid">
               <div className="col-span-2 rounded-lg bg-primary p-8 text-primary-foreground">
-                <p className="mb-2 font-body text-sm opacity-70">Reste ce mois-ci</p>
+                <p className="mb-2 font-body text-sm opacity-70">
+                  Reste {budgetPeriodLabel(data.budgetFrequency)}
+                </p>
                 <p className="mb-1 font-headings text-5xl font-bold leading-none">
                   {formatPrice(data.totalBudget - data.spent)}
                   <span className="ml-3 font-body text-2xl font-normal opacity-80">FCFA</span>
@@ -274,10 +278,13 @@ export default function DashboardPage() {
                     <TransactionRow
                       key={t.id}
                       label={t.label}
-                      category={t.envelope?.name ?? 'Revenu'}
+                      category={t.envelope?.name ?? (t.amount > 0 ? 'Revenu' : 'Dépense')}
                       amount={t.amount}
                       time={formatRelativeDateTime(new Date(t.occurredAt))}
-                      icon={(t.envelope?.icon as IconName) ?? 'arrow-down-left'}
+                      icon={
+                        (t.envelope?.icon as IconName) ??
+                        (t.amount > 0 ? 'arrow-down-left' : 'arrow-up-right')
+                      }
                     />
                   ))}
                 </div>

@@ -1,12 +1,14 @@
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { formatPrice } from '@/lib/utils';
+import { budgetPeriodLabel } from '@/lib/budget-period-label';
 
 interface DashboardHeaderProps {
   name: string;
   totalBudget: number;
   spent: number;
   daysLeft: number;
+  budgetFrequency?: string | null;
   avatarUrl?: string | null;
 }
 
@@ -16,6 +18,7 @@ export function DashboardHeader({
   totalBudget,
   spent,
   daysLeft,
+  budgetFrequency = null,
   avatarUrl = null,
 }: DashboardHeaderProps) {
   const remaining = totalBudget - spent;
@@ -42,7 +45,9 @@ export function DashboardHeader({
       </div>
 
       <div className="mb-1">
-        <p className="mb-1 font-body text-xs text-primary-foreground/70">Reste ce mois-ci</p>
+        <p className="mb-1 font-body text-xs text-primary-foreground/70">
+          Reste {budgetPeriodLabel(budgetFrequency)}
+        </p>
         <p className="mb-2 font-headings text-4xl font-bold leading-none text-primary-foreground">
           {formatPrice(remaining)}
           <span className="ml-2 font-body text-lg font-normal text-primary-foreground/80">

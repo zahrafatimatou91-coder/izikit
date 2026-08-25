@@ -7,6 +7,7 @@ import { useUser } from '@/contexts/AuthContext';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { Icon } from '@/components/ui/Icon';
 import { TransactionRow } from '@/components/transactions/TransactionRow';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
@@ -107,7 +108,16 @@ export default function HistoryPage() {
           <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
             Historique des transactions
           </h2>
-          <NotificationBell />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/transactions/new"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-body text-sm font-bold text-primary-foreground"
+            >
+              <Icon i="plus" size={16} />
+              <span className="hidden lg:inline">Ajouter une transaction</span>
+            </Link>
+            <NotificationBell />
+          </div>
         </div>
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
@@ -142,10 +152,13 @@ export default function HistoryPage() {
                     <TransactionRow
                       key={t.id}
                       label={t.label}
-                      category={t.envelope?.name ?? 'Revenu'}
+                      category={t.envelope?.name ?? (t.amount > 0 ? 'Revenu' : 'Dépense')}
                       amount={t.amount}
                       time={formatRelativeDateTime(new Date(t.occurredAt))}
-                      icon={(t.envelope?.icon as IconName) ?? 'arrow-down-left'}
+                      icon={
+                        (t.envelope?.icon as IconName) ??
+                        (t.amount > 0 ? 'arrow-down-left' : 'arrow-up-right')
+                      }
                     />
                   ))}
                 </div>
