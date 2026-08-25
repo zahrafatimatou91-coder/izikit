@@ -105,6 +105,9 @@ export default function SettingsPage() {
   const [pwSubmitting, setPwSubmitting] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
 
+  // Logout
+  const [logoutConfirming, setLogoutConfirming] = useState(false);
+
   // Delete account
   const [deleteConfirming, setDeleteConfirming] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -239,7 +242,7 @@ export default function SettingsPage() {
 
   async function onLogout() {
     await logout();
-    router.push('/login');
+    router.replace('/login');
   }
 
   return (
@@ -446,7 +449,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={onLogout}
+                  onClick={() => setLogoutConfirming(true)}
                   disabled={loggingOut}
                   className="flex-shrink-0 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
                 >
@@ -545,6 +548,36 @@ export default function SettingsPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
+
+      {logoutConfirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6">
+            <h3 className="mb-2 font-headings text-lg font-bold text-foreground">
+              Se déconnecter ?
+            </h3>
+            <p className="mb-6 font-body text-sm text-muted-foreground">
+              Tu devras te reconnecter pour accéder à ton compte.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setLogoutConfirming(false)}
+                className="flex-1 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={loggingOut}
+                className="flex-1 rounded-lg bg-primary px-4 py-2 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {loggingOut ? 'Déconnexion…' : 'Se déconnecter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
