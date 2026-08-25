@@ -228,6 +228,52 @@ Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetche
     `DELETE /api/account` endpoint (not a manual DB cleanup — the endpoint
     under test doubled as its own teardown).
 
+- [x] **Post-Phase-5 hardening — dev-pool fix, skeleton loaders, auth UX fluidity** (2026-08-25):
+  - **Root-caused a real regression** the user hit live: `/api/auth/me` 500s and
+    `/api/onboarding` 401s. Traced to two duplicate `concurrently`-spawned dev
+    stacks (the local `dev-cron-runner.ts` poller added to auto-drain the
+    outbox/email queue in dev, since Vercel Cron never fires locally) both
+    hammering Neon through `DATABASE_URL`'s `connection_limit=1` — a
+    deliberate production-only serverless setting, too tight once a local
+    poller shares the pool — causing Prisma `P2024` pool-timeout errors.
+    Fixed by raising `connection_limit` to 10 in `.env.local` (gitignored,
+    not committed) and adding `-k`/`--kill-others` to the `concurrently`
+    `dev` script so a failed `next dev` bind can no longer leave
+    `dev-cron-runner` orphaned on the next restart. Re-verified live:
+    disposable signup → verify-email → `/api/auth/me` → `/api/onboarding` →
+    `/api/dashboard` → `/dashboard`, all 200, zero pool errors.
+  - **Skeleton loaders** — every one of the 13 authenticated pages did
+    `if (!user) return null;` while `useUser()` checked auth (dashboard
+    additionally blanked to an empty `<div>` during its own data fetch),
+    surfacing as the blank white screen the user explicitly flagged. Added
+    a `Skeleton` primitive (`src/components/ui/Skeleton.tsx`) plus three
+    composed page-shape skeletons (`DashboardSkeleton`, `ListPageSkeleton`,
+    `FormPageSkeleton` in `src/components/skeletons/`) and wired them into
+    all 13 pages (dashboard, envelopes, history, notifications, tips +
+    detail/apply, progress, settings, onboarding, transactions/new,
+    savings new/add/confirmed) in place of the blank returns.
+  - **Auth flow fluidity audit** (signup/verify/login/logout/forgot-reset,
+    per explicit user request) found and fixed real gaps, not just
+    polish: `logout()` existed in `AuthContext` but was **never wired to
+    any button anywhere in the app** — added a working "Se déconnecter"
+    action in Settings. `/verify-email` had no way to request a new code
+    even though `POST /api/auth/resend-verification` already existed
+    server-side — added a working resend button. `useUser()` always
+    redirected to a bare `/login` with no memory of the original
+    destination, so login dropped every user on `/dashboard` regardless of
+    what they'd clicked — now preserves `?next=` (open-redirect guarded to
+    same-origin relative paths) and returns them there post-login.
+    `forgot-password`'s "you already have a code?" link didn't carry the
+    email forward to `/reset-password`, forcing a retype. A successful
+    password reset silently landed on `/login` with no confirmation —
+    added a success banner. Four pages (`verify-email`, `reset-password`,
+    `login`, `auth/error`) used `<Suspense fallback={null}>` around
+    `useSearchParams()`, producing the same blank-flash bug — now use
+    `FormPageSkeleton`.
+  - No schema changes. Verified: `pnpm typecheck` / `pnpm lint` /
+    `pnpm test` green (582/582 — one unrelated rate-limit test timeout
+    flaked under full-suite load, confirmed passing in isolation).
+
 ## In progress
 _(none — ready to start Phase 6)_
 
