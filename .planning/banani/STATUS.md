@@ -274,8 +274,62 @@ Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetche
     `pnpm test` green (582/582 — one unrelated rate-limit test timeout
     flaked under full-suite load, confirmed passing in isolation).
 
+- [x] **Second live-test round — logout confirm, 2-step reset, transaction bug,
+  stale-page flash, dev-cron connection leak** (2026-08-25):
+  - Added a confirm/cancel modal before logout ("Se déconnecter ?") and
+    changed the post-logout destination from `/login` to `/` (landing
+    page) per explicit request; switched to `router.replace` so it
+    deterministically wins any race against `useUser()`'s own passive
+    `?next=` redirect.
+  - **Real security/UX gap in password reset**: `/reset-password`
+    submitted email + code + new password in one shot, so a wrong/expired
+    code only surfaced as an error after the user had already typed a new
+    password. Added `POST /api/auth/verify-reset-code` (read-only check,
+    does NOT consume the code) and split the page into two steps — code
+    verified first, password field only shown once valid. The new route
+    shares the existing `auth:reset` rate-limit bucket (5/15min combined)
+    so it can't become a cheaper oracle for brute-forcing codes than the
+    original route already was. E2E-verified on a disposable user: wrong
+    code rejected without touching the real one, correct code confirmed
+    still unused after check, full reset succeeds, old password rejected
+    after, replaying the same code afterward correctly fails.
+  - **Real bug found from a live repro**: `POST /api/transactions`
+    always 400'd with `VALIDATION_FAILED` for the most common case — no
+    envelope selected on an expense ("Aucune"), or any income
+    transaction — because both send `envelopeId: null` from the client,
+    but the Zod schema was `z.string().min(1).optional()`, which only
+    accepts `undefined`, never `null`. Widened to `.nullable().optional()`.
+    No test file existed for this route before — added one (5 tests)
+    covering the regression plus ownership-check and validation paths.
+  - **Stale-page flash** ("shows the old version, then resets itself")
+    reported when navigating between authenticated pages: Next's
+    client-side Router Cache can serve a previously-rendered dynamic
+    page's stale committed state instantly on navigation, before that
+    page's own effect refetches and replaces it — unacceptable for a
+    budgeting app showing live balances. Set
+    `experimental.staleTimes = { dynamic: 0, static: 0 }` in
+    `next.config.ts` explicitly rather than relying on the framework
+    default.
+  - **Root-caused a likely contributor to the broader "app is slow /
+    hangs" complaints**: `dev-cron-runner.ts`'s `setInterval` fired a new
+    poll tick every 10s regardless of whether the previous tick's
+    `fetch()` calls had resolved, and those `fetch()` calls had no
+    timeout. Any time the dev server was briefly slow (a Turbopack
+    recompile, a config-triggered restart, a DB hiccup), every
+    subsequent tick piled 2 more in-flight requests on top of the
+    already-hanging ones instead of waiting or giving up — observed
+    live accumulating 50+ simultaneous open connections against the same
+    local server the browser was using. Fixed with a re-entrancy guard
+    (skip the tick if the previous one hasn't finished) and a 5s
+    `AbortSignal.timeout` per fetch.
+  - No schema changes. Verified: `pnpm typecheck` / `pnpm lint` /
+    `pnpm test` green (595/595, +7 for `verify-reset-code`, +5 for the
+    new `transactions/route.test.ts`).
+
 ## In progress
-_(none — ready to start Phase 6)_
+_(none — ready to start Phase 6; a next.config.ts change is pending a
+manual dev-server restart on the user's machine before final live
+re-verification of this batch)_
 
 ## Pending — grouped by phase (see roadmap for rationale/order)
 
