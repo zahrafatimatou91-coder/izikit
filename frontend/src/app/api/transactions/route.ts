@@ -80,7 +80,7 @@ const CreateBody = z.object({
     .int()
     .refine((n) => n !== 0, 'amount must not be zero'),
   label: z.string().trim().min(1).max(120),
-  envelopeId: z.string().min(1).optional(),
+  envelopeId: z.string().min(1).nullable().optional(),
   occurredAt: z.string().datetime().optional(),
 });
 

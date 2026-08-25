@@ -242,7 +242,7 @@ export default function SettingsPage() {
 
   async function onLogout() {
     await logout();
-    router.replace('/login');
+    router.replace('/');
   }
 
   return (

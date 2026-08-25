@@ -30,6 +30,20 @@ const config: NextConfig = {
   // into .next/standalone — required by the Docker runtime image (frontend/Dockerfile).
   // Has no impact on `next dev` / `next start` workflows.
   output: 'standalone',
+  // Every authenticated page is a 'use client' component reading live,
+  // per-user financial data (budget/envelopes/transactions) via its own
+  // useEffect + fetch — never safe to serve from Next's client-side Router
+  // Cache. Without this, navigating dashboard -> envelopes -> dashboard
+  // within the cache window can flash the PREVIOUS render's stale state
+  // before the page's own effect refetches and replaces it. Explicit 0
+  // (rather than relying on the framework default) so a future Next
+  // upgrade can't silently reintroduce stale-financial-data flashes.
+  experimental: {
+    staleTimes: {
+      dynamic: 0,
+      static: 0,
+    },
+  },
   async headers() {
     return [
       {
