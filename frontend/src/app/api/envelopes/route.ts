@@ -29,28 +29,30 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
 
-    const user = await prisma.user.findUnique({
-      where: { id: auth.user.sub },
-      select: { budgetFrequency: true },
-    });
-    const period = currentBudgetPeriod(user?.budgetFrequency);
-
-    const [envelopes, spentByEnvelope] = await Promise.all([
+    // `envelopes` doesn't depend on the budget period, so it runs alongside
+    // the user lookup instead of waiting for `budgetFrequency` first.
+    const [user, envelopes] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: auth.user.sub },
+        select: { budgetFrequency: true },
+      }),
       prisma.envelope.findMany({
         where: { userId: auth.user.sub },
         orderBy: { createdAt: 'asc' },
       }),
-      prisma.transaction.groupBy({
-        by: ['envelopeId'],
-        where: {
-          userId: auth.user.sub,
-          envelopeId: { not: null },
-          amount: { lt: 0 },
-          occurredAt: { gte: period.start, lte: period.end },
-        },
-        _sum: { amount: true },
-      }),
     ]);
+    const period = currentBudgetPeriod(user?.budgetFrequency);
+
+    const spentByEnvelope = await prisma.transaction.groupBy({
+      by: ['envelopeId'],
+      where: {
+        userId: auth.user.sub,
+        envelopeId: { not: null },
+        amount: { lt: 0 },
+        occurredAt: { gte: period.start, lte: period.end },
+      },
+      _sum: { amount: true },
+    });
 
     const spentMap = new Map(
       spentByEnvelope.map((row) => [row.envelopeId, Math.abs(row._sum.amount ?? 0)]),

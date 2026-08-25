@@ -38,10 +38,13 @@ const config: NextConfig = {
   // before the page's own effect refetches and replaces it. Explicit 0
   // (rather than relying on the framework default) so a future Next
   // upgrade can't silently reintroduce stale-financial-data flashes.
+  // `static` is left at the framework default (300s) — Next enforces a
+  // 30s floor on this field (0 is rejected as invalid config, which was
+  // breaking `next dev` startup entirely), and none of this app's pages
+  // are eligible for static rendering anyway (all client-side auth-gated).
   experimental: {
     staleTimes: {
       dynamic: 0,
-      static: 0,
     },
   },
   async headers() {

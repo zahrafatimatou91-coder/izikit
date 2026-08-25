@@ -21,18 +21,30 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
 
-    const user = await prisma.user.findUnique({
-      where: { id: auth.user.sub },
-      select: { totalBudget: true, budgetFrequency: true },
-    });
-    const period = currentBudgetPeriod(user?.budgetFrequency);
-
-    const [envelopes, spentByEnvelope, totalSpentAgg, recentTransactions] = await Promise.all([
+    // `envelopes` and `recentTransactions` don't depend on the budget
+    // period, so they run alongside the user lookup instead of waiting for
+    // it — only the two period-scoped spend queries need to wait for
+    // `budgetFrequency` to compute `period.start`/`period.end` first.
+    const [user, envelopes, recentTransactions] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: auth.user.sub },
+        select: { totalBudget: true, budgetFrequency: true },
+      }),
       prisma.envelope.findMany({
         where: { userId: auth.user.sub },
         orderBy: { createdAt: 'asc' },
         take: TOP_ENVELOPES,
       }),
+      prisma.transaction.findMany({
+        where: { userId: auth.user.sub },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: RECENT_TRANSACTIONS,
+        include: { envelope: { select: { name: true, icon: true } } },
+      }),
+    ]);
+    const period = currentBudgetPeriod(user?.budgetFrequency);
+
+    const [spentByEnvelope, totalSpentAgg] = await Promise.all([
       prisma.transaction.groupBy({
         by: ['envelopeId'],
         where: {
@@ -50,12 +62,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           occurredAt: { gte: period.start, lte: period.end },
         },
         _sum: { amount: true },
-      }),
-      prisma.transaction.findMany({
-        where: { userId: auth.user.sub },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take: RECENT_TRANSACTIONS,
-        include: { envelope: { select: { name: true, icon: true } } },
       }),
     ]);
 
