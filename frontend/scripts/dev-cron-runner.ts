@@ -11,27 +11,41 @@ const PORT = process.env.PORT ?? '3000';
 const BASE_URL = `http://localhost:${PORT}`;
 const CRON_SECRET = process.env.CRON_SECRET;
 const POLL_MS = 10_000;
+const FETCH_TIMEOUT_MS = 5_000;
 
 const ROUTES = ['/api/cron/outbox-drain', '/api/cron/email-queue-drain'];
 
-async function tick(): Promise<void> {
-  if (!CRON_SECRET) return; // nothing to authenticate with — stay silent
+// Guards against a stuck/slow-compiling dev server: without this, a single
+// hung fetch() left setInterval firing a fresh overlapping tick every 10s
+// forever, piling up dozens of open connections against the same dev
+// server it was trying to poll — starving real page requests of the pool
+// and making the whole app feel slow/hung, not just the poller itself.
+let ticking = false;
 
-  for (const route of ROUTES) {
-    try {
-      const res = await fetch(`${BASE_URL}${route}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${CRON_SECRET}` },
-      });
-      if (!res.ok) continue; // server likely still booting — try again next tick
-      const body = (await res.json()) as { processed?: number };
-      if (body.processed && body.processed > 0) {
-        console.log(`[dev-cron] ${route} → processed ${body.processed}`);
+async function tick(): Promise<void> {
+  if (!CRON_SECRET || ticking) return;
+  ticking = true;
+  try {
+    for (const route of ROUTES) {
+      try {
+        const res = await fetch(`${BASE_URL}${route}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${CRON_SECRET}` },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (!res.ok) continue; // server likely still booting — try again next tick
+        const body = (await res.json()) as { processed?: number };
+        if (body.processed && body.processed > 0) {
+          console.log(`[dev-cron] ${route} → processed ${body.processed}`);
+        }
+      } catch {
+        // Server not up yet, timed out, or a transient network hiccup —
+        // silent, next tick retries. This is dev-only convenience, not a
+        // monitored job.
       }
-    } catch {
-      // Server not up yet, or a transient network hiccup — silent, next
-      // tick retries. This is dev-only convenience, not a monitored job.
     }
+  } finally {
+    ticking = false;
   }
 }
 
