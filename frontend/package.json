@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n next,cron -c blue,yellow \"next dev --port 3000 --turbopack\" \"tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/dev-cron-runner.ts\"",
+    "dev": "concurrently -k -n next,cron -c blue,yellow \"next dev --port 3000 --turbopack\" \"tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/dev-cron-runner.ts\"",
     "dev:next-only": "next dev --port 3000 --turbopack",
     "build": "next build",
     "start": "next start",
