@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
+import { withDbRetry } from '@/lib/server/db-retry';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
 const CreateBody = z.object({
@@ -37,19 +38,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const weekStart = startOfIsoWeek(new Date());
     // Independent queries — `entries` filters by userId through the
     // relation, not by the `goals` result — so they run in parallel.
-    const [goals, entries] = await Promise.all([
-      prisma.savingsGoal.findMany({
-        where: { userId: auth.user.sub },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.savingsEntry.findMany({
-        where: {
-          savingsGoal: { userId: auth.user.sub },
-          createdAt: { gte: weekStart },
-        },
-        select: { amount: true, createdAt: true },
-      }),
-    ]);
+    const [goals, entries] = await withDbRetry(() =>
+      Promise.all([
+        prisma.savingsGoal.findMany({
+          where: { userId: auth.user.sub },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.savingsEntry.findMany({
+          where: {
+            savingsGoal: { userId: auth.user.sub },
+            createdAt: { gte: weekStart },
+          },
+          select: { amount: true, createdAt: true },
+        }),
+      ]),
+    );
 
     const breakdown = Array.from({ length: 7 }, (_, i) => {
       const date = new Date(weekStart.getTime() + i * DAY_MS);

@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { currentBudgetPeriod } from '@/lib/server/budget-period';
+import { withDbRetry } from '@/lib/server/db-retry';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
 const TOP_ENVELOPES = 4;
@@ -25,45 +26,49 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // period, so they run alongside the user lookup instead of waiting for
     // it — only the two period-scoped spend queries need to wait for
     // `budgetFrequency` to compute `period.start`/`period.end` first.
-    const [user, envelopes, recentTransactions] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: auth.user.sub },
-        select: { totalBudget: true, budgetFrequency: true },
-      }),
-      prisma.envelope.findMany({
-        where: { userId: auth.user.sub },
-        orderBy: { createdAt: 'asc' },
-        take: TOP_ENVELOPES,
-      }),
-      prisma.transaction.findMany({
-        where: { userId: auth.user.sub },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take: RECENT_TRANSACTIONS,
-        include: { envelope: { select: { name: true, icon: true } } },
-      }),
-    ]);
+    const [user, envelopes, recentTransactions] = await withDbRetry(() =>
+      Promise.all([
+        prisma.user.findUnique({
+          where: { id: auth.user.sub },
+          select: { totalBudget: true, budgetFrequency: true },
+        }),
+        prisma.envelope.findMany({
+          where: { userId: auth.user.sub },
+          orderBy: { createdAt: 'asc' },
+          take: TOP_ENVELOPES,
+        }),
+        prisma.transaction.findMany({
+          where: { userId: auth.user.sub },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: RECENT_TRANSACTIONS,
+          include: { envelope: { select: { name: true, icon: true } } },
+        }),
+      ]),
+    );
     const period = currentBudgetPeriod(user?.budgetFrequency);
 
-    const [spentByEnvelope, totalSpentAgg] = await Promise.all([
-      prisma.transaction.groupBy({
-        by: ['envelopeId'],
-        where: {
-          userId: auth.user.sub,
-          envelopeId: { not: null },
-          amount: { lt: 0 },
-          occurredAt: { gte: period.start, lte: period.end },
-        },
-        _sum: { amount: true },
-      }),
-      prisma.transaction.aggregate({
-        where: {
-          userId: auth.user.sub,
-          amount: { lt: 0 },
-          occurredAt: { gte: period.start, lte: period.end },
-        },
-        _sum: { amount: true },
-      }),
-    ]);
+    const [spentByEnvelope, totalSpentAgg] = await withDbRetry(() =>
+      Promise.all([
+        prisma.transaction.groupBy({
+          by: ['envelopeId'],
+          where: {
+            userId: auth.user.sub,
+            envelopeId: { not: null },
+            amount: { lt: 0 },
+            occurredAt: { gte: period.start, lte: period.end },
+          },
+          _sum: { amount: true },
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            userId: auth.user.sub,
+            amount: { lt: 0 },
+            occurredAt: { gte: period.start, lte: period.end },
+          },
+          _sum: { amount: true },
+        }),
+      ]),
+    );
 
     const spentMap = new Map(
       spentByEnvelope.map((row) => [row.envelopeId, Math.abs(row._sum.amount ?? 0)]),

@@ -11,6 +11,7 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { currentBudgetPeriod } from '@/lib/server/budget-period';
+import { withDbRetry } from '@/lib/server/db-retry';
 import { ENVELOPE_SWATCHES } from '@/lib/envelope-colors';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
@@ -31,28 +32,32 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     // `envelopes` doesn't depend on the budget period, so it runs alongside
     // the user lookup instead of waiting for `budgetFrequency` first.
-    const [user, envelopes] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: auth.user.sub },
-        select: { budgetFrequency: true },
-      }),
-      prisma.envelope.findMany({
-        where: { userId: auth.user.sub },
-        orderBy: { createdAt: 'asc' },
-      }),
-    ]);
+    const [user, envelopes] = await withDbRetry(() =>
+      Promise.all([
+        prisma.user.findUnique({
+          where: { id: auth.user.sub },
+          select: { budgetFrequency: true },
+        }),
+        prisma.envelope.findMany({
+          where: { userId: auth.user.sub },
+          orderBy: { createdAt: 'asc' },
+        }),
+      ]),
+    );
     const period = currentBudgetPeriod(user?.budgetFrequency);
 
-    const spentByEnvelope = await prisma.transaction.groupBy({
-      by: ['envelopeId'],
-      where: {
-        userId: auth.user.sub,
-        envelopeId: { not: null },
-        amount: { lt: 0 },
-        occurredAt: { gte: period.start, lte: period.end },
-      },
-      _sum: { amount: true },
-    });
+    const spentByEnvelope = await withDbRetry(() =>
+      prisma.transaction.groupBy({
+        by: ['envelopeId'],
+        where: {
+          userId: auth.user.sub,
+          envelopeId: { not: null },
+          amount: { lt: 0 },
+          occurredAt: { gte: period.start, lte: period.end },
+        },
+        _sum: { amount: true },
+      }),
+    );
 
     const spentMap = new Map(
       spentByEnvelope.map((row) => [row.envelopeId, Math.abs(row._sum.amount ?? 0)]),

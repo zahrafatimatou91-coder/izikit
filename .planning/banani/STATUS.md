@@ -326,6 +326,69 @@ Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetche
     `pnpm test` green (595/595, +7 for `verify-reset-code`, +5 for the
     new `transactions/route.test.ts`).
 
+- [x] **Perf pass — parallel queries, loading.tsx everywhere, remaining data
+  bugs** (2026-08-25, commits `265e2d8` + `a9ea9f0`):
+  - `GET /api/dashboard`, `GET /api/envelopes`, `GET /api/savings-goals`:
+    split each route's Prisma calls into two `Promise.all` batches — the
+    queries independent of `budgetFrequency` run first, the two
+    period-scoped spend queries run in a second batch once the period
+    boundary is computed. More overlap per request, same round-trip count.
+  - Added a per-route `loading.tsx` (Next's route-segment Suspense
+    boundary, separate from in-page skeletons) to all 20 authenticated +
+    auth-flow routes, each rendering the matching `*Skeleton` component
+    instead of a blank flash while the route's JS chunk loads.
+  - Fixed the dashboard's hardcoded "Reste ce mois-ci" label always
+    showing regardless of the user's actual `budgetFrequency` (daily/
+    weekly/monthly) — new `lib/budget-period-label.ts` (client-side
+    counterpart to the server's `lib/server/budget-period.ts`), wired
+    into `DashboardHeader` and `dashboard/page.tsx`.
+  - Fixed envelope-less transactions (`envelopeId: null`, reachable only
+    since the `.nullable()` fix above) always rendering as "Revenu"
+    regardless of the real amount sign, on both `/dashboard` and
+    `/history` — category/icon now fall back on `amount > 0` ? Revenu :
+    Dépense.
+  - `/history` had no persistent "Ajouter une transaction" affordance
+    once the list was non-empty (the CTA only existed in the now-hidden
+    empty state) — added a permanent header button next to the
+    notification bell.
+  - Logout confirmation modal added to `/settings`; redirects to `/`
+    (landing page) after confirming, not to `/login` — corrected per
+    explicit user feedback (initial implementation redirected to the
+    auth area, which was wrong).
+  - No schema changes. Verified: `pnpm typecheck` / `pnpm lint` /
+    `pnpm test` green.
+
+- [x] **Neon cold-start 500s on `/envelopes`, `/dashboard` — root-caused +
+  fixed** (2026-08-26): live testing surfaced raw 500s (`ApiError`
+  falling back to the untranslated "The server is temporarily
+  unavailable" string in `lib/api.ts`, since the response body wasn't
+  JSON) on `/api/dashboard`, which cascaded into `/envelopes` (it
+  fetches both `/api/envelopes` and `/api/dashboard` in parallel for the
+  budget summary strip). Server log showed the actual cause: Prisma
+  `P1001` — `Can't reach database server at
+  ep-rough-haze-...pooler...neon.tech:5432` — Neon's serverless compute
+  auto-suspends after a few idle minutes, and the first query after a
+  suspend sometimes fails outright while the compute wakes, then
+  succeeds moments later (confirmed self-healing in the same log: the
+  next requests after the two failures returned 200 normally). This is
+  infra behavior, not an app bug, but the failure mode (silent Neon
+  wake-up) is exactly the shape of error a short retry can absorb.
+  - New `lib/server/db-retry.ts` — `withDbRetry(fn)` catches
+    `PrismaClientKnownRequestError` with a transient connection code
+    (`P1001`/`P1002`/`P1008`/`P1017`) and retries the call once after a
+    400ms delay before giving up. Deliberately scoped to **read-only**
+    queries only, mirroring the "retry only idempotent operations" rule
+    already enforced client-side in `lib/api.ts` — never wraps a
+    mutating call, since a retried write after a dropped connection
+    could double-write if the first attempt actually reached the server.
+  - Wrapped the Prisma reads in `GET /api/dashboard`, `GET /api/envelopes`,
+    `GET /api/savings-goals`, `GET /api/transactions` (history).
+  - Added `db-retry.test.ts` (5 tests: success-no-retry, retry-then-
+    succeed, retry-then-still-fail, ignores non-transient Prisma codes,
+    ignores non-Prisma errors).
+  - No schema changes. Verified: `pnpm typecheck` / `pnpm lint` /
+    `pnpm test` green (600/600).
+
 ## In progress
 _(none — ready to start Phase 6; a next.config.ts change is pending a
 manual dev-server restart on the user's machine before final live

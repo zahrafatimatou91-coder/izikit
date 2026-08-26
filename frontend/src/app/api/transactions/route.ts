@@ -13,6 +13,7 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { clampLimit, decodeCursor, cursorWhere, buildPage } from '@/lib/server/pagination/paginate';
 import { currentBudgetPeriod } from '@/lib/server/budget-period';
+import { withDbRetry } from '@/lib/server/db-retry';
 import { createNotification } from '@/lib/server/notifications';
 import { envelopeThresholdNotification } from '@/lib/server/notifications/templates';
 import { isChannelEnabled, type NotificationPrefs } from '@/lib/server/notifications/prefs-merge';
@@ -99,12 +100,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       ...cursorWhere(cursor),
     };
 
-    const rows = await prisma.transaction.findMany({
-      where,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: limit + 1,
-      include: { envelope: { select: { name: true, icon: true } } },
-    });
+    const rows = await withDbRetry(() =>
+      prisma.transaction.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        include: { envelope: { select: { name: true, icon: true } } },
+      }),
+    );
 
     const page = buildPage(rows, limit);
 
