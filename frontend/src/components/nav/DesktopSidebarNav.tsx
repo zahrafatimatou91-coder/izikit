@@ -1,29 +1,9 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { NAV_ITEMS, type NavId } from './nav-items';
 
-// 'notifications' has no entry in ITEMS below (not a primary nav
-// destination — reachable via the bell icon on every page instead, same
-// as Banani's own NotificationsDesktop.jsx source, which doesn't
-// highlight any sidebar item either). Included in the union purely so
-// pages can pass it and get the (correct) "nothing highlighted" result.
-type NavId =
-  | 'dashboard'
-  | 'envelopes'
-  | 'progress'
-  | 'tips'
-  | 'history'
-  | 'settings'
-  | 'notifications';
-
-const ITEMS: { id: NavId; href: string; icon: Parameters<typeof Icon>[0]['i']; label: string }[] = [
-  { id: 'dashboard', href: '/dashboard', icon: 'layout-dashboard', label: 'Tableau' },
-  { id: 'envelopes', href: '/envelopes', icon: 'package', label: 'Enveloppes' },
-  { id: 'progress', href: '/progress', icon: 'target', label: 'Objectifs' },
-  { id: 'tips', href: '/tips', icon: 'lightbulb', label: 'Conseils' },
-  { id: 'history', href: '/history', icon: 'clock', label: 'Historique' },
-  { id: 'settings', href: '/settings', icon: 'settings', label: 'Paramètres' },
-];
+export type { NavId };
 
 interface DesktopSidebarNavProps {
   active: NavId;
@@ -54,7 +34,7 @@ export function DesktopSidebarNav({
       </div>
 
       <nav className="mb-auto flex flex-col gap-2">
-        {ITEMS.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <Link
             key={item.id}
             href={item.href}

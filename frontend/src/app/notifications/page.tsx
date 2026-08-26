@@ -23,6 +23,7 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
+import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import { formatRelativeDateTime } from '@/lib/format-date';
 
 interface NotificationItem {
@@ -82,6 +83,7 @@ export default function NotificationsPage() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const loadPage = useCallback(async (activeFilter: FilterId, after: string | null) => {
     const params = new URLSearchParams();
@@ -149,9 +151,19 @@ export default function NotificationsPage() {
 
       <div className="flex flex-1 flex-col pb-24 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
-          <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
-            Notifications
-          </h2>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Menu"
+              className="text-foreground lg:hidden"
+            >
+              <Icon i="menu" size={22} />
+            </button>
+            <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
+              Notifications
+            </h2>
+          </div>
           <button
             type="button"
             onClick={() => router.push('/dashboard')}
@@ -259,6 +271,15 @@ export default function NotificationsPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
+
+      <MobileDrawerNav
+        active="notifications"
+        userName={displayName}
+        userEmail={user.email}
+        avatarUrl={user.avatarUrl}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { EnvelopeCard } from '@/components/envelopes/EnvelopeCard';
 import { TransactionRow } from '@/components/transactions/TransactionRow';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
+import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const user = useUser();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -122,6 +124,7 @@ export default function DashboardPage() {
             daysLeft={data.daysLeft}
             budgetFrequency={data.budgetFrequency}
             avatarUrl={user.avatarUrl}
+            onMenuClick={() => setDrawerOpen(true)}
           />
         </div>
 
@@ -297,6 +300,15 @@ export default function DashboardPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
+
+      <MobileDrawerNav
+        active="dashboard"
+        userName={displayName}
+        userEmail={user.email}
+        avatarUrl={user.avatarUrl}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
     </div>
   );
 }

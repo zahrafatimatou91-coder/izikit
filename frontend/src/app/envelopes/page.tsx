@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/Icon';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
+import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import { EnvelopeForm, type EnvelopeFormValues } from '@/components/envelopes/EnvelopeForm';
 import { envelopeSwatch, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
@@ -31,6 +32,7 @@ export default function EnvelopesPage() {
   const [error, setError] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'none' | 'create' | string>('none');
   const [submitting, setSubmitting] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -107,9 +109,19 @@ export default function EnvelopesPage() {
 
       <div className="flex flex-1 flex-col pb-24 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
-          <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
-            Mes enveloppes
-          </h2>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Menu"
+              className="text-foreground lg:hidden"
+            >
+              <Icon i="menu" size={22} />
+            </button>
+            <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
+              Mes enveloppes
+            </h2>
+          </div>
           <NotificationBell />
         </div>
 
@@ -266,6 +278,15 @@ export default function EnvelopesPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
+
+      <MobileDrawerNav
+        active="envelopes"
+        userName={displayName}
+        userEmail={user.email}
+        avatarUrl={user.avatarUrl}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
     </div>
   );
 }

@@ -389,6 +389,33 @@ Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetche
   - No schema changes. Verified: `pnpm typecheck` / `pnpm lint` /
     `pnpm test` green (600/600).
 
+- [x] **Mobile hamburger drawer nav** (2026-08-26): user reported no side
+  menu on mobile ("il n'y a pas le menu latéral"). Live-verified with a
+  real Chrome browser (Playwright, `channel: 'chrome'`, 390×844 viewport,
+  disposable `@example.com` test account — cleaned up after) that
+  `DesktopSidebarNav`/`BottomNav` responsive hiding was already correct
+  (sidebar hidden below `lg:`, bottom nav visible and fixed at the
+  bottom, single-column grids) — screenshots confirmed. The actual gap:
+  mobile only had `BottomNav`'s 6 icons, no classic slide-in side-menu
+  pattern. Added:
+  - `components/nav/nav-items.ts` — `NAV_ITEMS`/`NavId` extracted out of
+    `DesktopSidebarNav` (now imports from here) so a third nav surface
+    doesn't triplicate the destination list.
+  - `components/nav/MobileDrawerNav.tsx` — hamburger-triggered slide-in
+    drawer (backdrop + `translate-x` panel, Escape-to-close), same
+    branding/destinations/user-footer as `DesktopSidebarNav`. `BottomNav`
+    stays the primary always-visible mobile nav; this is additive.
+  - Wired a hamburger button (`lg:hidden`) into the mobile header of all
+    7 pages that carry `DesktopSidebarNav`: dashboard (added to
+    `DashboardHeader`'s greeting row), envelopes, history, notifications,
+    settings, progress, tips.
+  - Verified live: drawer opens on tap, highlights the active route,
+    tapping a link navigates and auto-closes the drawer (Playwright).
+  - No schema changes. Verified: `pnpm typecheck` / `pnpm lint` green;
+    `pnpm test` 599/600 (the 1 failure is the pre-existing
+    signup-rate-limit timing flake under full-suite load — passes in
+    isolation, unrelated to this change).
+
 ## In progress
 _(none — ready to start Phase 6; a next.config.ts change is pending a
 manual dev-server restart on the user's machine before final live
