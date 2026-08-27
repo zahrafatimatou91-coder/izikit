@@ -24,41 +24,49 @@ export function DesktopSidebarNav({
   avatarUrl = null,
 }: DesktopSidebarNavProps) {
   return (
-    <div className="sticky top-0 hidden h-screen w-64 flex-col overflow-y-auto border-r border-border bg-card px-6 py-8 lg:flex">
-      <div className="mb-12">
-        <h1 className="font-headings text-2xl font-bold text-primary">
-          Chaque
-          <br />
-          Franc
-        </h1>
-      </div>
+    // Outer element only reserves the w-64 column in the page's flex row —
+    // it carries no visuals. The real sidebar is `fixed` inside it, pinned
+    // to the viewport so it never scrolls with the (often much taller) main
+    // content column. A plain flex child here (even `sticky`) drifts because
+    // the flex row's height is driven by the main content, not the viewport;
+    // `fixed` sidesteps that entirely by not participating in document flow.
+    <div className="hidden w-64 flex-shrink-0 lg:block">
+      <div className="fixed inset-y-0 left-0 hidden h-screen w-64 flex-col overflow-y-auto border-r border-border bg-card px-6 py-8 lg:flex">
+        <div className="mb-12">
+          <h1 className="font-headings text-2xl font-bold text-primary">
+            Chaque
+            <br />
+            Franc
+          </h1>
+        </div>
 
-      <nav className="mb-auto flex flex-col gap-2">
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.id}
-            href={item.href}
-            className={`flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm font-medium ${
-              active === item.id
-                ? 'bg-primary text-primary-foreground'
-                : 'text-foreground hover:bg-muted'
-            }`}
-          >
-            <Icon i={item.icon} size={18} />
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+        <nav className="mb-auto flex flex-col gap-2">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm font-medium ${
+                active === item.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:bg-muted'
+              }`}
+            >
+              <Icon i={item.icon} size={18} />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-      <div className="flex items-center gap-3 border-t border-border pt-6">
-        <UserAvatar
-          name={userName}
-          avatarUrl={avatarUrl}
-          className="h-10 w-10 flex-shrink-0 rounded-lg"
-        />
-        <div className="min-w-0">
-          <p className="font-body text-sm font-medium text-foreground">{userName}</p>
-          <p className="truncate font-body text-xs text-muted-foreground">{userEmail}</p>
+        <div className="flex items-center gap-3 border-t border-border pt-6">
+          <UserAvatar
+            name={userName}
+            avatarUrl={avatarUrl}
+            className="h-10 w-10 flex-shrink-0 rounded-lg"
+          />
+          <div className="min-w-0">
+            <p className="font-body text-sm font-medium text-foreground">{userName}</p>
+            <p className="truncate font-body text-xs text-muted-foreground">{userEmail}</p>
+          </div>
         </div>
       </div>
     </div>

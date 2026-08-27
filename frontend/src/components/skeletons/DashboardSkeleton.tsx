@@ -6,18 +6,20 @@ import { BottomNav } from '@/components/nav/BottomNav';
 export function DashboardSkeleton() {
   return (
     <div className="flex min-h-screen bg-background font-body">
-      <div className="hidden w-72 flex-col gap-6 border-r border-border bg-card px-6 py-8 lg:flex">
-        <Skeleton className="h-8 w-32" />
-        <div className="mt-6 flex flex-col gap-3">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-9 w-full" />
-          ))}
-        </div>
-        <div className="mt-auto flex items-center gap-3">
-          <Skeleton className="h-10 w-10 rounded-lg" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-3 w-16" />
+      <div className="hidden w-72 flex-shrink-0 lg:block">
+        <div className="fixed inset-y-0 left-0 hidden h-screen w-72 flex-col gap-6 overflow-y-auto border-r border-border bg-card px-6 py-8 lg:flex">
+          <Skeleton className="h-8 w-32" />
+          <div className="mt-6 flex flex-col gap-3">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
+          <div className="mt-auto flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
           </div>
         </div>
       </div>

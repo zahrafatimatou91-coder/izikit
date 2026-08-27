@@ -8,12 +8,14 @@ import { BottomNav } from '@/components/nav/BottomNav';
 export function NotificationsSkeleton() {
   return (
     <div className="flex min-h-screen bg-background font-body">
-      <div className="hidden w-72 flex-col gap-6 border-r border-border bg-card px-6 py-8 lg:flex">
-        <Skeleton className="h-8 w-32" />
-        <div className="mt-6 flex flex-col gap-3">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-9 w-full" />
-          ))}
+      <div className="hidden w-72 flex-shrink-0 lg:block">
+        <div className="fixed inset-y-0 left-0 hidden h-screen w-72 flex-col gap-6 overflow-y-auto border-r border-border bg-card px-6 py-8 lg:flex">
+          <Skeleton className="h-8 w-32" />
+          <div className="mt-6 flex flex-col gap-3">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
         </div>
       </div>
 
