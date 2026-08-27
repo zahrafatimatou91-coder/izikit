@@ -19,7 +19,7 @@ import { envelopeThresholdNotification } from '@/lib/server/notifications/templa
 import { isChannelEnabled, type NotificationPrefs } from '@/lib/server/notifications/prefs-merge';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 
-const ALERT_THRESHOLDS = [0.8, 1] as const;
+const ALERT_THRESHOLDS = [0.5, 0.8, 1] as const;
 
 async function maybeFireEnvelopeThreshold(userId: string, envelopeId: string): Promise<void> {
   const [envelope, prefsRow, user] = await Promise.all([

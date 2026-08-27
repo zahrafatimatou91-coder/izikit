@@ -53,9 +53,9 @@ export function paymentReceived(
 
 /**
  * Fired from POST /api/transactions when an expense pushes an envelope's
- * period-scoped spend past 80% (`isOverLimit=false`) or 100%
- * (`isOverLimit=true`) of its monthlyLimit. `periodStartIso` scopes the
- * dedupeKey so the same threshold can fire again next period.
+ * period-scoped spend past 50%, 80% (`isOverLimit=false` for both), or
+ * 100% (`isOverLimit=true`) of its monthlyLimit. `periodStartIso` scopes
+ * the dedupeKey so the same threshold can fire again next period.
  */
 export function envelopeThresholdNotification(
   userId: string,

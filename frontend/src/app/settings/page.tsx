@@ -339,7 +339,7 @@ export default function SettingsPage() {
                     Alertes de dépassement
                   </p>
                   <p className="font-body text-xs text-muted-foreground">
-                    Notifie quand une enveloppe dépasse 80% de sa limite.
+                    Notifie quand une enveloppe dépasse 50% de sa limite.
                   </p>
                 </div>
                 <Toggle
