@@ -488,6 +488,37 @@ re-verification of this batch)_
   in place (still used by `settings`). Commit: `feat(loading): tailor
   each page's skeleton to its real layout`.
 
+## Done (2026-08-27, cont'd 2)
+- **Sidebar pinning, root-caused** — first attempt used `position: sticky`
+  on the sidebar, which only partially worked: sticky's "stuck" range is
+  bounded by its containing block (the page's own flex row, whose height
+  tracks the tall main content), so on a page much taller than one screen
+  the sidebar could still run out and scroll away before the bottom of
+  the page — reported live as "the end of the side menu becomes visible
+  mid-scroll, with blank space below it." Replaced with the standard
+  reserve-space + `fixed` overlay pattern (outer `w-64` flex spacer +
+  inner `fixed inset-y-0 left-0` sidebar), applied to `DesktopSidebarNav`
+  and all 7 skeleton components sharing its markup. Verified live via
+  Playwright (disposable account, padded-out dashboard): sidebar's
+  bounding-box top stays at 0 across scroll. Commit: `fix(nav): pin
+  sidebar with position:fixed instead of sticky (root-caused)`.
+- **Dashboard stat-card empty space** — the two side cards ("Tout va
+  bien" / "Gérer mes enveloppes") were flex children stretched to match
+  the tall hero card in a 4-col grid, leaving large empty gaps around
+  their short content. Regrouped into one stacked column (3-col grid:
+  2/3 hero + 1/3 stacked pair). Commit: `fix(ui): pin desktop sidebar
+  while scrolling, balance dashboard stat cards`.
+- **Transaction-row padding on desktop** — dashboard's "Dernières
+  dépenses" list wrapper had `lg:px-0`, so amounts touched the card's
+  edges on desktop. Fixed to `lg:px-6` (same commit as above).
+- **Duplicate "Repas planifiés" goal cleaned up** on the real account
+  (the pre-fix duplicate re-appeared after the DB restore, since the
+  restore point predated the first cleanup); the anti-duplicate unique
+  constraint from the earlier tips-apply fix is now actually deployed
+  to the database (was written but withheld until the duplicate was
+  gone) — `pnpm exec prisma migrate deploy` applied
+  `20260827084016_savings_goal_unique_tip_per_user` successfully.
+
 ## Notes
 - Every screen above is Desktop-only in Banani except `Dashboard.jsx` (mobile) and the 4 shared components. Per skill mandate, mobile-first is still required for ALL of them — mobile layout will be designed by us, not copied from Banani.
 - Raw Banani fetch (`_raw-fetch.txt`, 226KB JSON) was deleted after analysis — re-fetch via `mcp__banani__banani_get_selected_designs` when a phase starts implementation (select the relevant screens in Banani first).
