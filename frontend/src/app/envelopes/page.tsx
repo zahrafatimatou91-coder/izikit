@@ -26,9 +26,11 @@ interface EnvelopeRow {
 export default function EnvelopesPage() {
   const user = useUser();
   const [envelopes, setEnvelopes] = useState<EnvelopeRow[] | null>(null);
-  const [summary, setSummary] = useState<{ totalBudget: number | null; spent: number } | null>(
-    null,
-  );
+  const [summary, setSummary] = useState<{
+    totalBudget: number | null;
+    spent: number;
+    income: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'none' | 'create' | string>('none');
   const [submitting, setSubmitting] = useState(false);
@@ -38,10 +40,14 @@ export default function EnvelopesPage() {
     try {
       const [envRes, dashRes] = await Promise.all([
         api<{ envelopes: EnvelopeRow[] }>('/api/envelopes'),
-        api<{ totalBudget: number | null; spent: number }>('/api/dashboard'),
+        api<{ totalBudget: number | null; spent: number; income: number }>('/api/dashboard'),
       ]);
       setEnvelopes(envRes.envelopes);
-      setSummary({ totalBudget: dashRes.totalBudget, spent: dashRes.spent });
+      setSummary({
+        totalBudget: dashRes.totalBudget,
+        spent: dashRes.spent,
+        income: dashRes.income,
+      });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
     }
@@ -97,7 +103,7 @@ export default function EnvelopesPage() {
     }
   }
 
-  const remaining = summary ? (summary.totalBudget ?? 0) - summary.spent : 0;
+  const remaining = summary ? (summary.totalBudget ?? 0) + summary.income - summary.spent : 0;
 
   return (
     <div className="flex min-h-screen bg-background font-body">

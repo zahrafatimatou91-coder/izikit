@@ -47,7 +47,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
     const period = currentBudgetPeriod(user?.budgetFrequency);
 
-    const [spentByEnvelope, totalSpentAgg] = await withDbRetry(() =>
+    const [spentByEnvelope, totalSpentAgg, totalIncomeAgg] = await withDbRetry(() =>
       Promise.all([
         prisma.transaction.groupBy({
           by: ['envelopeId'],
@@ -67,6 +67,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           },
           _sum: { amount: true },
         }),
+        // Income (positive, un-enveloped transactions) restocks the period's
+        // available budget — "Reste ce mois-ci" isn't just a fixed allowance
+        // draining down, a logged income bumps it back up.
+        prisma.transaction.aggregate({
+          where: {
+            userId: auth.user.sub,
+            amount: { gt: 0 },
+            occurredAt: { gte: period.start, lte: period.end },
+          },
+          _sum: { amount: true },
+        }),
       ]),
     );
 
@@ -79,6 +90,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         totalBudget: user?.totalBudget ?? null,
         budgetFrequency: user?.budgetFrequency ?? null,
         spent: Math.abs(totalSpentAgg._sum.amount ?? 0),
+        income: totalIncomeAgg._sum.amount ?? 0,
         daysLeft: period.daysLeft,
         envelopes: envelopes.map((e) => ({
           id: e.id,

@@ -40,6 +40,7 @@ interface DashboardData {
   totalBudget: number | null;
   budgetFrequency: string | null;
   spent: number;
+  income: number;
   daysLeft: number;
   envelopes: DashboardEnvelope[];
   recentTransactions: DashboardTransaction[];
@@ -101,9 +102,12 @@ export default function DashboardPage() {
     .filter((e) => e.pct >= 85)
     .sort((a, b) => b.pct - a.pct)[0];
 
-  const perDay =
-    data.daysLeft > 0 ? Math.round((data.totalBudget - data.spent) / data.daysLeft) : 0;
-  const pctUsed = data.totalBudget > 0 ? Math.round((data.spent / data.totalBudget) * 100) : 0;
+  // Income restocks the period's available budget — "remaining" isn't just
+  // the original allowance draining down, a logged income bumps it back up.
+  const available = data.totalBudget + data.income;
+  const remaining = available - data.spent;
+  const perDay = data.daysLeft > 0 ? Math.round(remaining / data.daysLeft) : 0;
+  const pctUsed = available > 0 ? Math.round((data.spent / available) * 100) : 0;
 
   return (
     <div className="flex min-h-screen bg-background font-body">
@@ -121,6 +125,7 @@ export default function DashboardPage() {
             name={displayName}
             totalBudget={data.totalBudget}
             spent={data.spent}
+            income={data.income}
             daysLeft={data.daysLeft}
             budgetFrequency={data.budgetFrequency}
             avatarUrl={user.avatarUrl}
@@ -158,7 +163,7 @@ export default function DashboardPage() {
                   Reste {budgetPeriodLabel(data.budgetFrequency)}
                 </p>
                 <p className="mb-1 font-headings text-5xl font-bold leading-none">
-                  {formatPrice(data.totalBudget - data.spent)}
+                  {formatPrice(remaining)}
                   <span className="ml-3 font-body text-2xl font-normal opacity-80">FCFA</span>
                 </p>
                 <p className="mb-6 font-body text-xs opacity-60">
@@ -258,12 +263,22 @@ export default function DashboardPage() {
                 <h2 className="font-headings text-base font-bold text-foreground lg:text-lg">
                   Dernières dépenses
                 </h2>
-                <Link
-                  href="/history"
-                  className="font-body text-xs font-medium text-primary lg:text-sm"
-                >
-                  Tout voir
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/transactions/new"
+                    aria-label="Ajouter une transaction"
+                    className="flex items-center gap-1 font-body text-xs font-medium text-primary lg:text-sm"
+                  >
+                    <Icon i="plus-circle" size={16} />
+                    Ajouter
+                  </Link>
+                  <Link
+                    href="/history"
+                    className="font-body text-xs font-medium text-primary lg:text-sm"
+                  >
+                    Tout voir
+                  </Link>
+                </div>
               </div>
               {data.recentTransactions.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">

@@ -7,6 +7,7 @@ interface DashboardHeaderProps {
   name: string;
   totalBudget: number;
   spent: number;
+  income: number;
   daysLeft: number;
   budgetFrequency?: string | null;
   avatarUrl?: string | null;
@@ -18,13 +19,17 @@ export function DashboardHeader({
   name,
   totalBudget,
   spent,
+  income,
   daysLeft,
   budgetFrequency = null,
   avatarUrl = null,
   onMenuClick,
 }: DashboardHeaderProps) {
-  const remaining = totalBudget - spent;
-  const pct = totalBudget > 0 ? Math.round((spent / totalBudget) * 100) : 0;
+  // Income restocks the period's available budget — "remaining" isn't just
+  // the original allowance draining down, a logged income bumps it back up.
+  const available = totalBudget + income;
+  const remaining = available - spent;
+  const pct = available > 0 ? Math.round((spent / available) * 100) : 0;
   const perDay = daysLeft > 0 ? Math.round(remaining / daysLeft) : remaining;
 
   return (
