@@ -152,7 +152,7 @@ export default function DashboardPage() {
             )}
 
             {/* Desktop stat cards */}
-            <div className="hidden grid-cols-4 gap-6 lg:grid">
+            <div className="hidden grid-cols-3 gap-6 lg:grid">
               <div className="col-span-2 rounded-lg bg-primary p-8 text-primary-foreground">
                 <p className="mb-2 font-body text-sm opacity-70">
                   Reste {budgetPeriodLabel(data.budgetFrequency)}
@@ -179,37 +179,39 @@ export default function DashboardPage() {
                 <p className="text-xs opacity-70">{pctUsed}% du budget utilisé</p>
               </div>
 
-              {mostUrgentEnvelope ? (
-                <div className="flex flex-col rounded-lg bg-accent p-6 text-accent-foreground">
-                  <div className="mb-4 flex gap-2">
-                    <Icon i="alert-triangle" size={18} className="mt-0.5 flex-shrink-0" />
-                    <p className="font-body text-sm leading-snug">
-                      {mostUrgentEnvelope.name} à {mostUrgentEnvelope.pct}%
+              <div className="flex flex-col gap-6">
+                {mostUrgentEnvelope ? (
+                  <div className="flex flex-1 flex-col justify-center rounded-lg bg-accent p-6 text-accent-foreground">
+                    <div className="mb-4 flex gap-2">
+                      <Icon i="alert-triangle" size={18} className="mt-0.5 flex-shrink-0" />
+                      <p className="font-body text-sm leading-snug">
+                        {mostUrgentEnvelope.name} à {mostUrgentEnvelope.pct}%
+                      </p>
+                    </div>
+                    <p className="font-body text-xs opacity-80">
+                      Tu risques de dépasser avant la fin de la période.
                     </p>
                   </div>
-                  <p className="font-body text-xs opacity-80">
-                    Tu risques de dépasser avant la fin de la période.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col justify-center rounded-lg border border-border bg-card p-6">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Icon i="check-circle" size={18} className="text-primary" />
-                    <p className="font-body text-sm font-medium text-foreground">Tout va bien</p>
+                ) : (
+                  <div className="flex flex-1 flex-col justify-center rounded-lg border border-border bg-card p-6">
+                    <div className="mb-2 flex items-center gap-2">
+                      <Icon i="check-circle" size={18} className="text-primary" />
+                      <p className="font-body text-sm font-medium text-foreground">Tout va bien</p>
+                    </div>
+                    <p className="font-body text-xs text-muted-foreground">
+                      Aucune enveloppe proche de sa limite.
+                    </p>
                   </div>
-                  <p className="font-body text-xs text-muted-foreground">
-                    Aucune enveloppe proche de sa limite.
-                  </p>
-                </div>
-              )}
+                )}
 
-              <Link
-                href="/envelopes"
-                className="flex flex-col justify-center rounded-lg border border-dashed border-border bg-card p-6 text-center hover:border-primary"
-              >
-                <Icon i="plus-circle" size={20} className="mx-auto mb-2 text-primary" />
-                <p className="font-body text-xs font-medium text-primary">Gérer mes enveloppes</p>
-              </Link>
+                <Link
+                  href="/envelopes"
+                  className="flex flex-1 flex-col justify-center rounded-lg border border-dashed border-border bg-card p-6 text-center hover:border-primary"
+                >
+                  <Icon i="plus-circle" size={20} className="mx-auto mb-2 text-primary" />
+                  <p className="font-body text-xs font-medium text-primary">Gérer mes enveloppes</p>
+                </Link>
+              </div>
             </div>
 
             {/* Envelopes */}
@@ -276,7 +278,7 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="rounded-lg border border-border bg-card px-4 lg:px-0 lg:divide-y lg:divide-border">
+                <div className="rounded-lg border border-border bg-card px-4 lg:px-6 lg:divide-y lg:divide-border">
                   {data.recentTransactions.map((t) => (
                     <TransactionRow
                       key={t.id}

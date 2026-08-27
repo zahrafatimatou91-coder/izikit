@@ -24,7 +24,7 @@ export function DesktopSidebarNav({
   avatarUrl = null,
 }: DesktopSidebarNavProps) {
   return (
-    <div className="hidden w-64 flex-col border-r border-border bg-card px-6 py-8 lg:flex">
+    <div className="sticky top-0 hidden h-screen w-64 flex-col overflow-y-auto border-r border-border bg-card px-6 py-8 lg:flex">
       <div className="mb-12">
         <h1 className="font-headings text-2xl font-bold text-primary">
           Chaque
