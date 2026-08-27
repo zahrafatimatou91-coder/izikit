@@ -421,6 +421,49 @@ _(none — ready to start Phase 6; a next.config.ts change is pending a
 manual dev-server restart on the user's machine before final live
 re-verification of this batch)_
 
+## Done (2026-08-27)
+- **Per-page loading skeletons** — `envelopes`, `history`, `notifications`,
+  `progress`, `tips` pages each now gate their first render on
+  `initial-load-done` and show `ListPageSkeleton` until then, matching
+  the dashboard's existing behavior (previously these pages could flash
+  stale/empty state for several seconds before data arrived).
+  `notifications` needed a dedicated `initialLoadDone` flag distinct
+  from the existing `hasLoaded` (which resets per filter change) to
+  avoid re-triggering the full-page skeleton on filter-pill switches.
+  Commit: `fix(loading): gate list pages on initial-load state to stop
+  stale-data flash`.
+- **Tip-apply duplicate-goal/notification race fixed** — root cause:
+  `app/tips/[id]/apply/page.tsx` fires `POST /api/tips/[id]/apply` from
+  a page-mount `useEffect` (not a button), so React StrictMode's dev
+  double-invoke (and any sequential re-visit, e.g. "back to the tip"
+  then reapplying) could create two `SavingsGoal` rows for the same
+  `(userId, tipId)` — and since `tipAppliedNotification`'s `dedupeKey`
+  is keyed on the racy `goal.id`, two identical "Conseil appliqué"
+  notifications fired too. Added `@@unique([userId, tipId])` on
+  `SavingsGoal`; the route now does `findFirst` before `create`,
+  catching `P2002` so the race's loser re-reads the winner's row.
+  Commit: `fix(tips): close apply-tip duplicate-goal race with unique
+  constraint`. **Migration written, not yet deployed** — a duplicate
+  `(userId, tipId)` pair from before this fix still exists on the real
+  account and must be cleaned up before the unique index can be added
+  (Prisma refuses over existing duplicates); deferred at the user's
+  request, low priority since the route-level `findFirst` already
+  prevents the reported reproduction (sequential re-apply) without it.
+- **Incident (self-inflicted, resolved)**: a misused
+  `prisma migrate diff --shadow-database-url <DIRECT_URL>` pointed the
+  shadow-database flag at the real production connection string
+  instead of a dedicated empty database, wiping the entire production
+  dataset (all users, tips, envelopes, goals, transactions) on the
+  `production` Neon branch. Recovered via Neon's point-in-time restore
+  API (`POST /branches/{id}/restore` with `source_timestamp` ~25 min
+  before the incident) after several failed attempts through the Neon
+  console UI (its "restore to a past point in time" date picker did not
+  honor the selected date, always branching from the current — already
+  wiped — state). All data confirmed restored and intact. **Lesson**:
+  never pass a real/production connection string as
+  `--shadow-database-url` to any `prisma migrate diff` invocation — it
+  must be a disposable, genuinely empty database.
+
 ## Pending — grouped by phase (see roadmap for rationale/order)
 
 ### Phase 6 — Subscription / monetization
