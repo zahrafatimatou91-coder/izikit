@@ -48,6 +48,7 @@ export default function TipsPage() {
   }, [user]);
 
   if (!user) return <ListPageSkeleton />;
+  if (tips === null && !error) return <ListPageSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 

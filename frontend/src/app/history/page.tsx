@@ -92,6 +92,7 @@ export default function HistoryPage() {
   }
 
   if (!user) return <ListPageSkeleton />;
+  if (!hasLoaded && !error) return <ListPageSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
   const groups = groupByMonth(items);

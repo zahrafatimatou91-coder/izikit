@@ -52,6 +52,7 @@ export default function EnvelopesPage() {
   }, [user, load]);
 
   if (!user) return <ListPageSkeleton />;
+  if (envelopes === null && !error) return <ListPageSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 

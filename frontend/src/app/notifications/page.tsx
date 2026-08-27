@@ -81,6 +81,7 @@ export default function NotificationsPage() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -103,6 +104,7 @@ export default function NotificationsPage() {
         setItems(res.items);
         setCursor(res.nextCursor);
         setHasLoaded(true);
+        setInitialLoadDone(true);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
   }, [user, filter, loadPage]);
@@ -136,6 +138,7 @@ export default function NotificationsPage() {
   }
 
   if (!user) return <ListPageSkeleton />;
+  if (!initialLoadDone && !error) return <ListPageSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
   const hasUnread = items.some((n) => !n.readAt);

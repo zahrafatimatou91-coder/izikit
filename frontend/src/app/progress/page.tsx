@@ -74,6 +74,7 @@ export default function ProgressPage() {
   }, [user]);
 
   if (!user) return <ListPageSkeleton />;
+  if (goals === null && !error) return <ListPageSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
   const today = new Date();
