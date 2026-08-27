@@ -1,5 +1,5 @@
-import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
+import { NotificationsSkeleton } from '@/components/skeletons/NotificationsSkeleton';
 
 export default function Loading() {
-  return <ListPageSkeleton />;
+  return <NotificationsSkeleton />;
 }

@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
-import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
+import { ProgressSkeleton } from '@/components/skeletons/ProgressSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -73,8 +73,8 @@ export default function ProgressPage() {
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
   }, [user]);
 
-  if (!user) return <ListPageSkeleton />;
-  if (goals === null && !error) return <ListPageSkeleton />;
+  if (!user) return <ProgressSkeleton />;
+  if (goals === null && !error) return <ProgressSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
   const today = new Date();

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
 import Link from 'next/link';
 import { useUser } from '@/contexts/AuthContext';
-import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
+import { HistorySkeleton } from '@/components/skeletons/HistorySkeleton';
 import { api, ApiError } from '@/lib/api';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Icon } from '@/components/ui/Icon';
@@ -91,8 +91,8 @@ export default function HistoryPage() {
     }
   }
 
-  if (!user) return <ListPageSkeleton />;
-  if (!hasLoaded && !error) return <ListPageSkeleton />;
+  if (!user) return <HistorySkeleton />;
+  if (!hasLoaded && !error) return <HistorySkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
   const groups = groupByMonth(items);

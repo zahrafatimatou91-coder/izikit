@@ -18,7 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
-import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
+import { NotificationsSkeleton } from '@/components/skeletons/NotificationsSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
@@ -137,8 +137,8 @@ export default function NotificationsPage() {
     }
   }
 
-  if (!user) return <ListPageSkeleton />;
-  if (!initialLoadDone && !error) return <ListPageSkeleton />;
+  if (!user) return <NotificationsSkeleton />;
+  if (!initialLoadDone && !error) return <NotificationsSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
   const hasUnread = items.some((n) => !n.readAt);

@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
-import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
+import { TipsSkeleton } from '@/components/skeletons/TipsSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Icon } from '@/components/ui/Icon';
@@ -47,8 +47,8 @@ export default function TipsPage() {
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
   }, [user]);
 
-  if (!user) return <ListPageSkeleton />;
-  if (tips === null && !error) return <ListPageSkeleton />;
+  if (!user) return <TipsSkeleton />;
+  if (tips === null && !error) return <TipsSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 
