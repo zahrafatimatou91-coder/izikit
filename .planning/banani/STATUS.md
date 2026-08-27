@@ -477,6 +477,17 @@ re-verification of this batch)_
 - Remaining lower-priority items (recurring billing, budget model shape, "Ma Progression"
   achievements/streaks beyond the stats already shipped) — see `00-roadmap.md` §Still open.
 
+## Done (2026-08-27, cont'd)
+- **Per-page skeleton shapes** — replaced the generic `ListPageSkeleton`
+  on envelopes/history/notifications/progress/tips with a dedicated
+  skeleton per page (`EnvelopesSkeleton`, `HistorySkeleton`,
+  `NotificationsSkeleton`, `ProgressSkeleton`, `TipsSkeleton`) mirroring
+  each page's real layout, matching how `DashboardSkeleton` already
+  works for the dashboard. Wired into both the route's `loading.tsx`
+  and the page's initial-load render guard. `ListPageSkeleton` kept
+  in place (still used by `settings`). Commit: `feat(loading): tailor
+  each page's skeleton to its real layout`.
+
 ## Notes
 - Every screen above is Desktop-only in Banani except `Dashboard.jsx` (mobile) and the 4 shared components. Per skill mandate, mobile-first is still required for ALL of them — mobile layout will be designed by us, not copied from Banani.
 - Raw Banani fetch (`_raw-fetch.txt`, 226KB JSON) was deleted after analysis — re-fetch via `mcp__banani__banani_get_selected_designs` when a phase starts implementation (select the relevant screens in Banani first).
