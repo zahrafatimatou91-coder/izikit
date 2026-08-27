@@ -11,6 +11,7 @@ interface SavingsGoalCardProps {
   targetAmount: number;
   period: 'weekly' | 'monthly';
   completed: boolean;
+  onDelete?: () => void;
 }
 
 /** Progress card for one savings goal — used on /progress. Generalizes
@@ -24,6 +25,7 @@ export function SavingsGoalCard({
   targetAmount,
   period,
   completed,
+  onDelete,
 }: SavingsGoalCardProps) {
   const pct =
     targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0;
@@ -41,11 +43,25 @@ export function SavingsGoalCard({
             <p className="font-body text-xs text-muted-foreground">{periodLabel}</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="font-headings text-lg font-bold text-primary">
-            {formatPrice(currentAmount)}
-          </p>
-          <p className="font-body text-xs text-muted-foreground">sur {formatPrice(targetAmount)}</p>
+        <div className="flex items-start gap-2">
+          <div className="text-right">
+            <p className="font-headings text-lg font-bold text-primary">
+              {formatPrice(currentAmount)}
+            </p>
+            <p className="font-body text-xs text-muted-foreground">
+              sur {formatPrice(targetAmount)}
+            </p>
+          </div>
+          {onDelete && (
+            <button
+              type="button"
+              aria-label="Supprimer l'objectif"
+              onClick={onDelete}
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+            >
+              <Icon i="trash-2" size={16} />
+            </button>
+          )}
         </div>
       </div>
 

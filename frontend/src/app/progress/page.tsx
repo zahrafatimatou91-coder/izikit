@@ -17,7 +17,7 @@
 //   "Ajouter une économie" action instead.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
@@ -62,16 +62,32 @@ export default function ProgressPage() {
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const load = useCallback(async () => {
+    try {
+      const res = await api<{ goals: Goal[]; summary: Summary; weeklyBreakdown: DayBucket[] }>(
+        '/api/savings-goals',
+      );
+      setGoals(res.goals);
+      setSummary(res.summary);
+      setBreakdown(res.weeklyBreakdown);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    }
+  }, []);
+
   useEffect(() => {
-    if (!user) return;
-    api<{ goals: Goal[]; summary: Summary; weeklyBreakdown: DayBucket[] }>('/api/savings-goals')
-      .then((res) => {
-        setGoals(res.goals);
-        setSummary(res.summary);
-        setBreakdown(res.weeklyBreakdown);
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
-  }, [user]);
+    if (user) void load();
+  }, [user, load]);
+
+  async function handleDelete(id: string) {
+    if (!window.confirm('Supprimer cet objectif ? Cette action est définitive.')) return;
+    try {
+      await api(`/api/savings-goals/${id}`, { method: 'DELETE' });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    }
+  }
 
   if (!user) return <ProgressSkeleton />;
   if (goals === null && !error) return <ProgressSkeleton />;
@@ -151,6 +167,7 @@ export default function ProgressPage() {
                     targetAmount={g.targetAmount}
                     period={g.period}
                     completed={g.completed}
+                    onDelete={() => handleDelete(g.id)}
                   />
                 ))}
               </div>
