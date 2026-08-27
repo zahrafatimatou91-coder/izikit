@@ -3,10 +3,20 @@
 // returns it instead of creating a duplicate. Otherwise creates a
 // SavingsGoal seeded from the tip (name/icon from the tip, targetAmount
 // from its estimatedSavingsFcfa or a sensible default, period=monthly).
+//
+// The apply page (app/tips/[id]/apply/page.tsx) fires this POST from a
+// plain `useEffect` on mount — with React StrictMode's dev double-invoke
+// (or any other double-fire of that effect), two requests can race past
+// the `findFirst` check before either commits, both seeing no existing
+// goal. The `@@unique([userId, tipId])` constraint + catching P2002 below
+// closes that race at the database level: whichever request loses just
+// re-reads the winner's row instead of creating a second goal (and
+// firing a second "conseil appliqué" notification).
 export const runtime = 'nodejs';
 
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
@@ -42,20 +52,37 @@ export async function POST(
       where: { userId: auth.user.sub, tipId: tip.id },
     });
 
-    const goal =
-      existing ??
-      (await prisma.savingsGoal.create({
-        data: {
-          userId: auth.user.sub,
-          name: tip.title,
-          icon: tip.icon,
-          targetAmount: tip.estimatedSavingsFcfa ?? DEFAULT_TARGET_FCFA,
-          period: 'monthly',
-          tipId: tip.id,
-        },
-      }));
+    let goal = existing;
+    let created = false;
 
-    if (existing === null) {
+    if (goal === null) {
+      try {
+        goal = await prisma.savingsGoal.create({
+          data: {
+            userId: auth.user.sub,
+            name: tip.title,
+            icon: tip.icon,
+            targetAmount: tip.estimatedSavingsFcfa ?? DEFAULT_TARGET_FCFA,
+            period: 'monthly',
+            tipId: tip.id,
+          },
+        });
+        created = true;
+      } catch (err) {
+        // Lost the race to a concurrent apply (StrictMode double-invoke,
+        // a retry, ...) — the unique constraint means the winner's row
+        // now exists; use it instead of creating a second goal.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          goal = await prisma.savingsGoal.findFirstOrThrow({
+            where: { userId: auth.user.sub, tipId: tip.id },
+          });
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (created) {
       try {
         await createNotification(prisma, tipAppliedNotification(auth.user.sub, goal));
       } catch {
@@ -75,9 +102,9 @@ export async function POST(
           period: goal.period,
           completed: goal.currentAmount >= goal.targetAmount,
         },
-        alreadyApplied: existing !== null,
+        alreadyApplied: !created,
       },
-      { status: existing ? 200 : 201, headers: { 'x-request-id': reqCtx.requestId } },
+      { status: created ? 201 : 200, headers: { 'x-request-id': reqCtx.requestId } },
     );
   });
 }

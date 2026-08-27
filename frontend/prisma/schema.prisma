@@ -398,6 +398,7 @@ model SavingsGoal {
   tipId String?
   tip   Tip?    @relation(fields: [tipId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, tipId])
   @@index([userId])
   @@index([tipId])
 }
