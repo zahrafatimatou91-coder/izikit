@@ -2,26 +2,65 @@
 
 import { useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
-import { Icon } from '@/components/ui/Icon';
+import { IconPicker, stripAccents, type IconChoice } from '@/components/ui/IconPicker';
 import { ENVELOPE_SWATCHES, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
 
-// Curated set — envelopes are user-customizable but a free-text icon field
-// would need an icon search UI we don't have yet. These cover the common
-// student budget categories seen across the Banani screens.
-const ICON_CHOICES: IconName[] = [
-  'utensils',
-  'bus',
-  'music',
-  'home',
-  'heart-pulse',
-  'book-open',
-  'wifi',
-  'smartphone',
-  'gift',
-  'coffee',
-  'graduation-cap',
-  'shirt',
+// Broad catalog spanning common budget-envelope categories — student
+// living costs, recurring bills, one-off spending. Same search-first
+// IconPicker used for savings goals, swapped in here so envelopes get the
+// same "type 'wifi', land near the wifi icon" experience instead of the
+// old fixed 12-icon grid.
+const ICON_CATALOG: IconChoice[] = [
+  {
+    icon: 'utensils',
+    keywords: ['nourriture', 'repas', 'manger', 'cuisine', 'restaurant', 'alimentation'],
+  },
+  { icon: 'shopping-cart', keywords: ['course', 'supermarche', 'achat'] },
+  { icon: 'coffee', keywords: ['cafe', 'boisson', 'snack'] },
+  { icon: 'bus', keywords: ['transport', 'bus', 'taxi'] },
+  { icon: 'car', keywords: ['voiture', 'essence', 'carburant'] },
+  { icon: 'bike', keywords: ['velo', 'bicyclette'] },
+  { icon: 'home', keywords: ['loyer', 'maison', 'logement', 'appartement'] },
+  { icon: 'zap', keywords: ['electricite', 'facture', 'energie', 'courant'] },
+  { icon: 'droplet', keywords: ['eau', 'facture'] },
+  { icon: 'wifi', keywords: ['internet', 'wifi', 'abonnement'] },
+  { icon: 'smartphone', keywords: ['telephone', 'portable', 'forfait', 'mobile'] },
+  { icon: 'tv', keywords: ['abonnement', 'streaming', 'television', 'netflix'] },
+  { icon: 'music', keywords: ['musique', 'abonnement', 'instrument'] },
+  { icon: 'washing-machine', keywords: ['lessive', 'linge', 'pressing'] },
+  { icon: 'shirt', keywords: ['vetement', 'habit', 'mode'] },
+  { icon: 'graduation-cap', keywords: ['etude', 'ecole', 'formation', 'universite'] },
+  { icon: 'book-open', keywords: ['livre', 'lecture', 'cours', 'fourniture'] },
+  { icon: 'heart-pulse', keywords: ['sante', 'medecin', 'hopital'] },
+  { icon: 'pill', keywords: ['medicament', 'pharmacie'] },
+  { icon: 'shield', keywords: ['assurance', 'protection'] },
+  { icon: 'dumbbell', keywords: ['sport', 'gym', 'muscu', 'fitness'] },
+  { icon: 'gamepad-2', keywords: ['jeu', 'jouer', 'loisir'] },
+  { icon: 'gift', keywords: ['cadeau', 'anniversaire', 'fete'] },
+  { icon: 'party-popper', keywords: ['fete', 'evenement', 'sortie', 'celebration'] },
+  { icon: 'plane', keywords: ['voyage', 'vacance', 'avion'] },
+  { icon: 'briefcase', keywords: ['travail', 'bureau', 'business'] },
+  { icon: 'baby', keywords: ['bebe', 'enfant', 'famille'] },
+  { icon: 'dog', keywords: ['animal', 'chien'] },
+  { icon: 'cat', keywords: ['animal', 'chat'] },
+  { icon: 'scissors', keywords: ['coiffure', 'coupe', 'beaute'] },
+  { icon: 'sparkles', keywords: ['beaute', 'soin'] },
+  { icon: 'piggy-bank', keywords: ['epargne', 'economie'] },
+  { icon: 'wallet', keywords: ['argent', 'portefeuille', 'general', 'divers'] },
 ];
+
+/** Suggests an icon from the catalog by matching keywords against the
+ * (accent-stripped, lowercased) envelope name as the user types. Only sets
+ * the *initial* suggestion — tapping any icon by hand overrides it for
+ * good, and editing an existing envelope never overrides its already-set
+ * icon (see `iconTouched`'s initial value below). */
+function suggestIcon(name: string): IconName {
+  const normalized = stripAccents(name.toLowerCase());
+  for (const { icon, keywords } of ICON_CATALOG) {
+    if (keywords.some((k) => normalized.includes(k))) return icon;
+  }
+  return 'wallet';
+}
 
 export interface EnvelopeFormValues {
   name: string;
@@ -46,9 +85,17 @@ export function EnvelopeForm({
   onCancel,
 }: EnvelopeFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [icon, setIcon] = useState<IconName>(initial?.icon ?? ICON_CHOICES[0]!);
+  const [icon, setIcon] = useState<IconName>(initial?.icon ?? 'wallet');
+  // Editing an existing envelope already has a deliberately chosen icon —
+  // don't let a name tweak silently swap it out from under the user.
+  const [iconTouched, setIconTouched] = useState(Boolean(initial));
   const [color, setColor] = useState<EnvelopeSwatchKey>(initial?.color ?? ENVELOPE_SWATCHES[0].key);
   const [monthlyLimit, setMonthlyLimit] = useState(initial?.monthlyLimit ?? 10000);
+
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!iconTouched) setIcon(suggestIcon(value));
+  }
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -64,7 +111,7 @@ export function EnvelopeForm({
             id="envelope-name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleNameChange(e.target.value)}
             placeholder="ex: Nourriture"
             className="w-full rounded-lg border border-border bg-input px-3 py-2.5 font-body text-sm text-foreground outline-none"
           />
@@ -88,25 +135,20 @@ export function EnvelopeForm({
         </div>
 
         <div>
-          <p className="mb-2 font-body text-xs font-medium text-foreground">Icône</p>
-          <div className="flex flex-wrap gap-2">
-            {ICON_CHOICES.map((choice) => (
-              <button
-                key={choice}
-                type="button"
-                onClick={() => setIcon(choice)}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
-                  icon === choice ? 'border-primary bg-primary/10' : 'border-border bg-input'
-                }`}
-              >
-                <Icon
-                  i={choice}
-                  size={16}
-                  className={icon === choice ? 'text-primary' : 'text-muted-foreground'}
-                />
-              </button>
-            ))}
-          </div>
+          <p className="mb-2 font-body text-xs font-medium text-foreground">
+            Icône{' '}
+            <span className="font-normal text-muted-foreground">
+              (suggérée selon le nom, cherche pour en voir d&apos;autres)
+            </span>
+          </p>
+          <IconPicker
+            value={icon}
+            onChange={(i) => {
+              setIcon(i);
+              setIconTouched(true);
+            }}
+            catalog={ICON_CATALOG}
+          />
         </div>
 
         <div>
