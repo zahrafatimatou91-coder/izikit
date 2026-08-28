@@ -9,7 +9,6 @@ interface SavingsGoalCardProps {
   icon: IconName;
   currentAmount: number;
   targetAmount: number;
-  period: 'weekly' | 'monthly';
   completed: boolean;
   onDelete?: () => void;
 }
@@ -23,13 +22,11 @@ export function SavingsGoalCard({
   icon,
   currentAmount,
   targetAmount,
-  period,
   completed,
   onDelete,
 }: SavingsGoalCardProps) {
   const pct =
     targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0;
-  const periodLabel = period === 'weekly' ? 'Objectif hebdomadaire' : 'Objectif mensuel';
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -38,10 +35,7 @@ export function SavingsGoalCard({
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-secondary">
             <Icon i={icon} size={20} className="text-secondary-foreground" />
           </div>
-          <div>
-            <h3 className="font-headings text-base font-bold text-foreground">{name}</h3>
-            <p className="font-body text-xs text-muted-foreground">{periodLabel}</p>
-          </div>
+          <h3 className="font-headings text-base font-bold text-foreground">{name}</h3>
         </div>
         <div className="flex items-start gap-2">
           <div className="text-right">

@@ -165,7 +165,6 @@ export default function ProgressPage() {
                     icon={g.icon as IconName}
                     currentAmount={g.currentAmount}
                     targetAmount={g.targetAmount}
-                    period={g.period}
                     completed={g.completed}
                     onDelete={() => handleDelete(g.id)}
                   />
@@ -183,9 +182,12 @@ export default function ProgressPage() {
 
             {breakdown.length > 0 && (
               <div className="rounded-lg border border-border bg-card p-8">
-                <h3 className="mb-6 font-headings text-lg font-bold text-foreground">
+                <h3 className="mb-1 font-headings text-lg font-bold text-foreground">
                   Détail par jour (cette semaine)
                 </h3>
+                <p className="mb-5 font-body text-xs text-muted-foreground">
+                  Toutes tes économies confondues, tous objectifs réunis.
+                </p>
                 <div className="space-y-3">
                   {breakdown.map((b, i) => {
                     const date = new Date(b.date);

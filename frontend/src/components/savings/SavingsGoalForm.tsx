@@ -4,25 +4,76 @@ import { useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
 import { Icon } from '@/components/ui/Icon';
 
-// Curated set themed around "what are you saving for" — same posture as
-// EnvelopeForm's icon picker (a free-text icon field would need a search UI
-// we don't have yet).
+// Expanded set covering common "what are you saving for" categories. Paired
+// with the keyword auto-suggestion below — a goal named "biscuit" or "fleur"
+// used to silently default to whichever icon happened to be first in the
+// list, with nothing pointing the user at a better match further down.
 const ICON_CHOICES: IconName[] = [
-  'bike',
   'piggy-bank',
+  'utensils',
+  'coffee',
+  'shopping-bag',
+  'shirt',
+  'bus',
+  'bike',
+  'car',
+  'plane',
   'home',
   'graduation-cap',
   'smartphone',
-  'plane',
   'gift',
   'heart',
+  'flower-2',
+  'dumbbell',
 ];
+
+// Keyword → icon, matched against the (accent-stripped, lowercased) goal
+// name as the user types. First match wins; falls back to the generic
+// piggy-bank when nothing matches. This only sets the *initial* suggestion —
+// tapping any icon by hand overrides it for good.
+const ICON_KEYWORDS: Array<{ icon: IconName; words: string[] }> = [
+  {
+    icon: 'utensils',
+    words: ['nourriture', 'repas', 'manger', 'biscuit', 'gateau', 'cuisine', 'course', 'aliment'],
+  },
+  { icon: 'coffee', words: ['cafe', 'boisson', 'snack'] },
+  { icon: 'shirt', words: ['vetement', 'habit', 'mode', 'chaussure'] },
+  { icon: 'shopping-bag', words: ['shopping', 'achat'] },
+  { icon: 'bus', words: ['bus', 'transport', 'taxi'] },
+  { icon: 'bike', words: ['velo', 'bicyclette'] },
+  { icon: 'car', words: ['voiture', 'essence', 'carburant'] },
+  { icon: 'plane', words: ['voyage', 'vacance', 'avion'] },
+  { icon: 'home', words: ['maison', 'loyer', 'logement', 'appart', 'demenagement'] },
+  { icon: 'graduation-cap', words: ['etude', 'ecole', 'formation', 'universite', 'cours'] },
+  { icon: 'smartphone', words: ['telephone', 'portable', 'smartphone', 'ordinateur'] },
+  { icon: 'gift', words: ['cadeau', 'anniversaire', 'fete', 'noel'] },
+  { icon: 'heart', words: ['amour', 'couple', 'famille', 'mariage'] },
+  { icon: 'flower-2', words: ['fleur', 'beaute', 'coiffure'] },
+  { icon: 'dumbbell', words: ['sport', 'gym', 'muscu', 'fitness'] },
+];
+
+function stripAccents(s: string): string {
+  return s
+    .replace(/[àâ]/g, 'a')
+    .replace(/[éèêë]/g, 'e')
+    .replace(/[îï]/g, 'i')
+    .replace(/[ôö]/g, 'o')
+    .replace(/[ùûü]/g, 'u')
+    .replace(/ç/g, 'c');
+}
+
+function suggestIcon(name: string): IconName {
+  const normalized = stripAccents(name.toLowerCase());
+  for (const { icon, words } of ICON_KEYWORDS) {
+    if (words.some((w) => normalized.includes(w))) return icon;
+  }
+  return 'piggy-bank';
+}
 
 export interface SavingsGoalFormValues {
   name: string;
   icon: IconName;
   targetAmount: number;
-  period: 'weekly' | 'monthly';
 }
 
 interface SavingsGoalFormProps {
@@ -32,6 +83,10 @@ interface SavingsGoalFormProps {
   onCancel: () => void;
 }
 
+// No "rythme" (weekly/monthly) field — it used to be purely cosmetic (no
+// reset logic exists anywhere) and only confused users into thinking their
+// goal recurred or reset on a cadence it never did. A savings goal is just:
+// name, icon, target amount, add money whenever.
 export function SavingsGoalForm({
   submitLabel,
   submitting,
@@ -40,8 +95,13 @@ export function SavingsGoalForm({
 }: SavingsGoalFormProps) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState<IconName>(ICON_CHOICES[0]!);
+  const [iconTouched, setIconTouched] = useState(false);
   const [targetAmount, setTargetAmount] = useState(5000);
-  const [period, setPeriod] = useState<'weekly' | 'monthly'>('monthly');
+
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!iconTouched) setIcon(suggestIcon(value));
+  }
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -57,7 +117,7 @@ export function SavingsGoalForm({
             id="goal-name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleNameChange(e.target.value)}
             placeholder="ex: Transport malin"
             className="w-full rounded-lg border border-border bg-input px-3 py-2.5 font-body text-sm text-foreground outline-none"
           />
@@ -81,33 +141,21 @@ export function SavingsGoalForm({
         </div>
 
         <div>
-          <p className="mb-2 font-body text-xs font-medium text-foreground">Rythme</p>
-          <div className="flex gap-2">
-            {(['weekly', 'monthly'] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPeriod(p)}
-                className={`flex-1 rounded-lg border px-4 py-2.5 font-body text-sm font-medium ${
-                  period === p
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-input text-muted-foreground'
-                }`}
-              >
-                {p === 'weekly' ? 'Chaque semaine' : 'Chaque mois'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 font-body text-xs font-medium text-foreground">Icône</p>
+          <p className="mb-2 font-body text-xs font-medium text-foreground">
+            Icône{' '}
+            <span className="font-normal text-muted-foreground">
+              (suggérée selon le nom, modifiable)
+            </span>
+          </p>
           <div className="flex flex-wrap gap-2">
             {ICON_CHOICES.map((choice) => (
               <button
                 key={choice}
                 type="button"
-                onClick={() => setIcon(choice)}
+                onClick={() => {
+                  setIcon(choice);
+                  setIconTouched(true);
+                }}
                 className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
                   icon === choice ? 'border-primary bg-primary/10' : 'border-border bg-input'
                 }`}
@@ -126,7 +174,7 @@ export function SavingsGoalForm({
           <button
             type="button"
             disabled={submitting || !name.trim() || targetAmount <= 0}
-            onClick={() => onSubmit({ name: name.trim(), icon, targetAmount, period })}
+            onClick={() => onSubmit({ name: name.trim(), icon, targetAmount })}
             className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {submitting ? 'Création…' : submitLabel}

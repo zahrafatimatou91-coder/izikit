@@ -80,7 +80,6 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
       : 0;
   const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
   const lastEntry = entries[0];
-  const periodNoun = goal.period === 'weekly' ? 'cette semaine' : 'ce mois-ci';
 
   const avgPerEntry =
     entries.length >= 2 ? entries.reduce((s, e) => s + e.amount, 0) / entries.length : null;
@@ -151,7 +150,7 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
                 <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
               </div>
               <p className="mt-3 font-body text-xs text-muted-foreground">
-                {pct}% de ton objectif atteint {periodNoun} !
+                {pct}% de ton objectif atteint !
               </p>
 
               {lastEntry && (
@@ -209,7 +208,7 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
                   </div>
                   <div>
                     <p className="font-body text-xs font-medium text-foreground">
-                      Économise {formatPrice(remaining)} F de plus {periodNoun}
+                      Économise {formatPrice(remaining)} F de plus
                     </p>
                     <p className="mt-0.5 font-body text-xs text-muted-foreground">
                       Continue comme tu l&apos;as commencé, tu es sur la bonne voie !

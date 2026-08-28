@@ -74,7 +74,6 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
     goal && goal.targetAmount > 0
       ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
       : 0;
-  const periodLabel = goal?.period === 'weekly' ? 'Objectif hebdomadaire' : 'Objectif mensuel';
 
   return (
     <div className="flex min-h-screen bg-background font-body">
@@ -114,12 +113,7 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                         className="text-secondary-foreground"
                       />
                     </div>
-                    <div>
-                      <h3 className="font-headings text-sm font-bold text-foreground">
-                        {goal.name}
-                      </h3>
-                      <p className="font-body text-xs text-muted-foreground">{periodLabel}</p>
-                    </div>
+                    <h3 className="font-headings text-sm font-bold text-foreground">{goal.name}</h3>
                   </div>
                   <div className="text-right">
                     <p className="font-body text-sm font-bold text-primary">

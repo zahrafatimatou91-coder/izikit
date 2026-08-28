@@ -25,11 +25,14 @@ export default function NewSavingsGoalPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await api<{ goal: { id: string } }>('/api/savings-goals', {
+      await api<{ goal: { id: string } }>('/api/savings-goals', {
         method: 'POST',
         body: values,
       });
-      router.push(`/savings/${res.goal.id}/add`);
+      // Creating a goal isn't the same act as funding it — land back on the
+      // goals list; "Ajouter une économie" on the new card is the deliberate
+      // next step, not something to force immediately after creation.
+      router.push('/progress');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
     } finally {
