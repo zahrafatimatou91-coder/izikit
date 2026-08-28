@@ -13,6 +13,16 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { SavingsGoalForm, type SavingsGoalFormValues } from '@/components/savings/SavingsGoalForm';
 
+function goalErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.code === 'GOAL_NAME_TAKEN') {
+    // ApiError.message is the stable code (see lib/api.ts) — the friendly
+    // French sentence naming the goal lives in the response body instead.
+    const bodyMessage = err.body['message'];
+    if (typeof bodyMessage === 'string') return bodyMessage;
+  }
+  return 'Une erreur est survenue.';
+}
+
 export default function NewSavingsGoalPage() {
   const user = useUser();
   const router = useRouter();
@@ -34,7 +44,7 @@ export default function NewSavingsGoalPage() {
       // next step, not something to force immediately after creation.
       router.push('/progress');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+      setError(goalErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

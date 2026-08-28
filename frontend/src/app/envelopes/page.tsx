@@ -15,6 +15,16 @@ import { EnvelopeForm, type EnvelopeFormValues } from '@/components/envelopes/En
 import { envelopeSwatch, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 
+function envelopeErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.code === 'ENVELOPE_NAME_TAKEN') {
+    // ApiError.message is the stable code (see lib/api.ts) — the friendly
+    // French sentence naming the envelope lives in the response body.
+    const bodyMessage = err.body['message'];
+    if (typeof bodyMessage === 'string') return bodyMessage;
+  }
+  return err instanceof ApiError ? err.message : 'Une erreur est survenue.';
+}
+
 interface EnvelopeRow {
   id: string;
   name: string;
@@ -72,7 +82,7 @@ export default function EnvelopesPage() {
       setFormMode('none');
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+      setError(envelopeErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -85,7 +95,7 @@ export default function EnvelopesPage() {
       setFormMode('none');
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+      setError(envelopeErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

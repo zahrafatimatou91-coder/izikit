@@ -13,6 +13,7 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { withDbRetry } from '@/lib/server/db-retry';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { normalizeForCompare } from '@/lib/text';
 
 const CreateBody = z.object({
   name: z.string().trim().min(1).max(60),
@@ -128,6 +129,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         { error: 'VALIDATION_FAILED', message: 'Invalid request body' },
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
+
+    // Reject a name that already exists for this user (case/accent-
+    // insensitive) — two "photocopie" cards distinguished only by a small
+    // pace label is a real duplicate-looking bug, not two objectives.
+    // There's no separate "edit a goal" flow, so the intended path to fix
+    // a mis-set pace is delete + recreate, not a silent second card.
+    const existingGoals = await prisma.savingsGoal.findMany({
+      where: { userId: auth.user.sub },
+      select: { name: true },
+    });
+    const nameTarget = normalizeForCompare(parsed.data.name);
+    if (existingGoals.some((g) => normalizeForCompare(g.name) === nameTarget)) {
+      return NextResponse.json(
+        {
+          error: 'GOAL_NAME_TAKEN',
+          message: `Tu as déjà un objectif nommé « ${parsed.data.name} ».`,
+        },
+        { status: 409, headers: { 'x-request-id': ctx.requestId } },
       );
     }
 

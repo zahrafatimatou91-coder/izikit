@@ -10,6 +10,7 @@ import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { ENVELOPE_SWATCHES } from '@/lib/envelope-colors';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { normalizeForCompare } from '@/lib/text';
 
 const SWATCH_KEYS = ENVELOPE_SWATCHES.map((s) => s.key) as [string, ...string[]];
 
@@ -40,6 +41,25 @@ export async function PATCH(
         { error: 'VALIDATION_FAILED', message: 'Invalid request body' },
         { status: 400, headers: { 'x-request-id': reqCtx.requestId } },
       );
+    }
+
+    // Only check when the name is actually changing — renaming "Photocopie"
+    // to "photocopie" (itself, different case) must not falsely collide.
+    if (parsed.data.name !== undefined) {
+      const nameTarget = normalizeForCompare(parsed.data.name);
+      const others = await prisma.envelope.findMany({
+        where: { userId: auth.user.sub, id: { not: id } },
+        select: { name: true },
+      });
+      if (others.some((e) => normalizeForCompare(e.name) === nameTarget)) {
+        return NextResponse.json(
+          {
+            error: 'ENVELOPE_NAME_TAKEN',
+            message: `Tu as déjà une enveloppe nommée « ${parsed.data.name} ».`,
+          },
+          { status: 409, headers: { 'x-request-id': reqCtx.requestId } },
+        );
+      }
     }
 
     // Built via conditional spreads, not `parsed.data` directly — Zod's

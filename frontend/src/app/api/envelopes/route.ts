@@ -14,6 +14,7 @@ import { currentBudgetPeriod } from '@/lib/server/budget-period';
 import { withDbRetry } from '@/lib/server/db-retry';
 import { ENVELOPE_SWATCHES } from '@/lib/envelope-colors';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { normalizeForCompare } from '@/lib/text';
 
 const SWATCH_KEYS = ENVELOPE_SWATCHES.map((s) => s.key) as [string, ...string[]];
 
@@ -94,6 +95,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         { error: 'VALIDATION_FAILED', message: 'Invalid request body' },
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
+
+    // Reject a name that already exists for this user (case/accent-
+    // insensitive) — same rationale as savings-goals: a silent second
+    // envelope with the same name is a duplicate, not a new category.
+    const existingEnvelopes = await prisma.envelope.findMany({
+      where: { userId: auth.user.sub },
+      select: { name: true },
+    });
+    const nameTarget = normalizeForCompare(parsed.data.name);
+    if (existingEnvelopes.some((e) => normalizeForCompare(e.name) === nameTarget)) {
+      return NextResponse.json(
+        {
+          error: 'ENVELOPE_NAME_TAKEN',
+          message: `Tu as déjà une enveloppe nommée « ${parsed.data.name} ».`,
+        },
+        { status: 409, headers: { 'x-request-id': ctx.requestId } },
       );
     }
 
