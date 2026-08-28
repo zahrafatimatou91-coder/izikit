@@ -150,8 +150,10 @@ export default function DashboardPage() {
                   className="mt-0.5 flex-shrink-0 text-accent-foreground"
                 />
                 <p className="font-body text-sm leading-snug text-accent-foreground">
-                  {mostUrgentEnvelope.name} à {mostUrgentEnvelope.pct}% — tu risques de dépasser le
-                  budget.
+                  {mostUrgentEnvelope.name} à {mostUrgentEnvelope.pct}% —{' '}
+                  {mostUrgentEnvelope.pct >= 100
+                    ? 'budget déjà dépassé.'
+                    : 'tu risques de dépasser le budget.'}
                 </p>
               </div>
             )}
@@ -165,6 +167,9 @@ export default function DashboardPage() {
                 <p className="mb-1 font-headings text-5xl font-bold leading-none">
                   {formatPrice(remaining)}
                   <span className="ml-3 font-body text-2xl font-normal opacity-80">FCFA</span>
+                </p>
+                <p className="mb-2 font-body text-sm opacity-70">
+                  sur {formatPrice(data.totalBudget)} FCFA au total
                 </p>
                 <p className="mb-6 font-body text-xs opacity-60">
                   Soit {formatPrice(perDay)} FCFA / jour
@@ -194,7 +199,9 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <p className="font-body text-xs opacity-80">
-                      Tu risques de dépasser avant la fin de la période.
+                      {mostUrgentEnvelope.pct >= 100
+                        ? 'Budget déjà dépassé pour cette enveloppe.'
+                        : 'Tu risques de dépasser avant la fin de la période.'}
                     </p>
                   </div>
                 ) : (

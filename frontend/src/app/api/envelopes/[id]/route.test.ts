@@ -89,8 +89,11 @@ describe('PATCH /api/envelopes/[id]', () => {
 
   it('skips the name check entirely when name is not part of the patch', async () => {
     prismaMock.envelope.updateMany.mockResolvedValue({ count: 1 });
+    // monthlyLimit unchanged (25000 -> 25000) — not an increase, so the
+    // budget-exceeded check's own findMany("others") must not fire either.
     prismaMock.envelope.findUnique.mockResolvedValue({
       id: 'env-1',
+      userId: 'user-1',
       name: 'Transport',
       icon: 'car',
       color: 'envelope-1',
@@ -100,5 +103,64 @@ describe('PATCH /api/envelopes/[id]', () => {
     const res = await PATCH(makePatch({ monthlyLimit: 25000 }), withParams('env-1'));
     expect(res.status).toBe(200);
     expect(prismaMock.envelope.findMany).not.toHaveBeenCalled();
+  });
+
+  // Regression: raising one envelope's limit could push the sum of ALL
+  // envelope limits past the total budget with no guard at all.
+  it('rejects raising a limit past the remaining total budget', async () => {
+    prismaMock.envelope.findUnique.mockResolvedValue({
+      id: 'env-1',
+      userId: 'user-1',
+      name: 'Santé',
+      icon: 'heart-pulse',
+      color: 'envelope-1',
+      monthlyLimit: 10000, // current limit
+    } as never);
+    prismaMock.user.findUnique.mockResolvedValue({ totalBudget: 70000 } as never);
+    prismaMock.envelope.findMany.mockResolvedValue([
+      { monthlyLimit: 15000 },
+      { monthlyLimit: 10000 },
+    ] as never);
+
+    const res = await PATCH(makePatch({ monthlyLimit: 60000 }), withParams('env-1'));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error).toBe('ENVELOPE_BUDGET_EXCEEDED');
+    expect(prismaMock.envelope.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('allows LOWERING a limit even while other envelopes are already over-allocated', async () => {
+    // Total of other envelopes (60000 + 15000 + 10000 = 85000) already
+    // exceeds a 70000 budget — this edit only ever decreases its own
+    // limit, so it must never be blocked by that pre-existing state.
+    prismaMock.envelope.findUnique.mockResolvedValue({
+      id: 'env-cafe',
+      userId: 'user-1',
+      name: 'Café',
+      icon: 'coffee',
+      color: 'envelope-1',
+      monthlyLimit: 2800,
+    } as never);
+    prismaMock.envelope.updateMany.mockResolvedValue({ count: 1 });
+
+    const res = await PATCH(makePatch({ monthlyLimit: 1000 }), withParams('env-cafe'));
+    expect(res.status).toBe(200);
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.envelope.updateMany).toHaveBeenCalled();
+  });
+
+  it('returns NOT_FOUND when the envelope does not belong to this user', async () => {
+    prismaMock.envelope.findUnique.mockResolvedValue({
+      id: 'env-1',
+      userId: 'someone-else',
+      name: 'Santé',
+      icon: 'heart-pulse',
+      color: 'envelope-1',
+      monthlyLimit: 10000,
+    } as never);
+
+    const res = await PATCH(makePatch({ monthlyLimit: 60000 }), withParams('env-1'));
+    expect(res.status).toBe(404);
+    expect(prismaMock.envelope.updateMany).not.toHaveBeenCalled();
   });
 });

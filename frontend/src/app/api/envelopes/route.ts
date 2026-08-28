@@ -98,13 +98,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const [user, existingEnvelopes] = await Promise.all([
+      prisma.user.findUnique({ where: { id: auth.user.sub }, select: { totalBudget: true } }),
+      prisma.envelope.findMany({
+        where: { userId: auth.user.sub },
+        select: { name: true, monthlyLimit: true },
+      }),
+    ]);
+
     // Reject a name that already exists for this user (case/accent-
     // insensitive) — same rationale as savings-goals: a silent second
     // envelope with the same name is a duplicate, not a new category.
-    const existingEnvelopes = await prisma.envelope.findMany({
-      where: { userId: auth.user.sub },
-      select: { name: true },
-    });
     const nameTarget = normalizeForCompare(parsed.data.name);
     if (existingEnvelopes.some((e) => normalizeForCompare(e.name) === nameTarget)) {
       return NextResponse.json(
@@ -114,6 +118,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         },
         { status: 409, headers: { 'x-request-id': ctx.requestId } },
       );
+    }
+
+    // Reject an envelope limit that would push the sum of ALL envelope
+    // limits past the user's total budget — envelopes are sub-allocations
+    // of one pot, so over-allocating them is a real planning mistake
+    // (e.g. one 60 000F envelope inside a 70 000F total budget), not a
+    // valid configuration. Skipped when totalBudget isn't set yet.
+    if (user?.totalBudget != null) {
+      const sumExisting = existingEnvelopes.reduce((sum, e) => sum + e.monthlyLimit, 0);
+      const newTotal = sumExisting + parsed.data.monthlyLimit;
+      if (newTotal > user.totalBudget) {
+        const remaining = Math.max(0, user.totalBudget - sumExisting);
+        return NextResponse.json(
+          {
+            error: 'ENVELOPE_BUDGET_EXCEEDED',
+            message: `Cette limite dépasse ton budget total (${user.totalBudget} FCFA) — il reste ${remaining} FCFA à répartir entre tes enveloppes.`,
+          },
+          { status: 409, headers: { 'x-request-id': ctx.requestId } },
+        );
+      }
     }
 
     const envelope = await prisma.envelope.create({

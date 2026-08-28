@@ -80,6 +80,10 @@ interface EnvelopeFormProps {
   /** Called on every keystroke in the Nom field — lets the parent clear a
    * stale nameError as soon as the user starts correcting it. */
   onNameEdited?: () => void;
+  /** Server-side "this exceeds your total budget" error, shown inline
+   * under the Budget mensuel field for the same reason as nameError. */
+  limitError?: string | null;
+  onLimitEdited?: () => void;
   onSubmit: (values: EnvelopeFormValues) => void;
   onCancel: () => void;
 }
@@ -90,6 +94,8 @@ export function EnvelopeForm({
   submitting,
   nameError,
   onNameEdited,
+  limitError,
+  onLimitEdited,
   onSubmit,
   onCancel,
 }: EnvelopeFormProps) {
@@ -105,6 +111,11 @@ export function EnvelopeForm({
     setName(value);
     if (!iconTouched) setIcon(suggestIcon(value));
     onNameEdited?.();
+  }
+
+  function handleLimitChange(value: string) {
+    setMonthlyLimit(Math.max(0, Number(value)));
+    onLimitEdited?.();
   }
 
   return (
@@ -143,9 +154,13 @@ export function EnvelopeForm({
             type="number"
             min={1}
             value={monthlyLimit}
-            onChange={(e) => setMonthlyLimit(Math.max(0, Number(e.target.value)))}
-            className="w-full rounded-lg border border-border bg-input px-3 py-2.5 font-body text-sm text-foreground outline-none"
+            onChange={(e) => handleLimitChange(e.target.value)}
+            aria-invalid={limitError ? true : undefined}
+            className={`w-full rounded-lg border bg-input px-3 py-2.5 font-body text-sm text-foreground outline-none ${
+              limitError ? 'border-accent' : 'border-border'
+            }`}
           />
+          {limitError && <p className="mt-1 font-body text-xs text-accent">{limitError}</p>}
         </div>
 
         <div>

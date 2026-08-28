@@ -36,16 +36,20 @@ export default function EnvelopesPage() {
   // Shown inline under the Nom field of whichever form is open, instead of
   // the page banner above — it's a 2-second fix (retype the name).
   const [nameError, setNameError] = useState<string | null>(null);
+  // Same idea, for the "this exceeds your total budget" guard on
+  // monthlyLimit.
+  const [limitError, setLimitError] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'none' | 'create' | string>('none');
   const [submitting, setSubmitting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Every entry point that opens/closes/switches a form clears the stale
-  // nameError from whichever form was previously open.
+  // Every entry point that opens/closes/switches a form clears stale
+  // errors from whichever form was previously open.
   function openForm(mode: 'none' | 'create' | string) {
     setNameError(null);
+    setLimitError(null);
     setFormMode(mode);
   }
 
@@ -76,11 +80,17 @@ export default function EnvelopesPage() {
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 
   function handleFormError(err: unknown) {
+    // ApiError.message is the stable code (see lib/api.ts) — the friendly
+    // French sentence lives in the response body instead.
+    const bodyMessage = err instanceof ApiError ? err.body['message'] : null;
     if (err instanceof ApiError && err.code === 'ENVELOPE_NAME_TAKEN') {
-      // ApiError.message is the stable code (see lib/api.ts) — the
-      // friendly French sentence lives in the response body instead.
-      const bodyMessage = err.body['message'];
       setNameError(typeof bodyMessage === 'string' ? bodyMessage : 'Ce nom est déjà pris.');
+      return;
+    }
+    if (err instanceof ApiError && err.code === 'ENVELOPE_BUDGET_EXCEEDED') {
+      setLimitError(
+        typeof bodyMessage === 'string' ? bodyMessage : 'Ce montant dépasse ton budget total.',
+      );
       return;
     }
     setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
@@ -89,6 +99,7 @@ export default function EnvelopesPage() {
   async function handleCreate(values: EnvelopeFormValues) {
     setSubmitting(true);
     setNameError(null);
+    setLimitError(null);
     try {
       await api('/api/envelopes', { method: 'POST', body: values });
       setFormMode('none');
@@ -103,6 +114,7 @@ export default function EnvelopesPage() {
   async function handleUpdate(id: string, values: EnvelopeFormValues) {
     setSubmitting(true);
     setNameError(null);
+    setLimitError(null);
     try {
       await api(`/api/envelopes/${id}`, { method: 'PATCH', body: values });
       setFormMode('none');
@@ -211,6 +223,8 @@ export default function EnvelopesPage() {
                       submitting={submitting}
                       nameError={formMode === e.id ? nameError : null}
                       onNameEdited={() => setNameError(null)}
+                      limitError={formMode === e.id ? limitError : null}
+                      onLimitEdited={() => setLimitError(null)}
                       onSubmit={(values) => handleUpdate(e.id, values)}
                       onCancel={() => openForm('none')}
                     />
@@ -294,6 +308,8 @@ export default function EnvelopesPage() {
                 submitting={submitting}
                 nameError={nameError}
                 onNameEdited={() => setNameError(null)}
+                limitError={limitError}
+                onLimitEdited={() => setLimitError(null)}
                 onSubmit={handleCreate}
                 onCancel={() => openForm('none')}
               />

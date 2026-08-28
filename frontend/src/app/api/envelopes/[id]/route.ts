@@ -62,6 +62,48 @@ export async function PATCH(
       }
     }
 
+    // Only check when the limit is actually going UP — lowering it (or
+    // leaving it alone) can never newly push the total over budget, and
+    // blocking those edits would strand a user who's already over-
+    // allocated (e.g. can't even change an unrelated envelope's color)
+    // until they fix every envelope at once. The "others" query only runs
+    // once we know an increase is actually happening.
+    if (parsed.data.monthlyLimit !== undefined) {
+      const envelope = await prisma.envelope.findUnique({
+        where: { id },
+        select: { userId: true, monthlyLimit: true },
+      });
+      if (!envelope || envelope.userId !== auth.user.sub) {
+        return NextResponse.json(
+          { error: 'NOT_FOUND' },
+          { status: 404, headers: { 'x-request-id': reqCtx.requestId } },
+        );
+      }
+      if (parsed.data.monthlyLimit > envelope.monthlyLimit) {
+        const [user, others] = await Promise.all([
+          prisma.user.findUnique({ where: { id: auth.user.sub }, select: { totalBudget: true } }),
+          prisma.envelope.findMany({
+            where: { userId: auth.user.sub, id: { not: id } },
+            select: { monthlyLimit: true },
+          }),
+        ]);
+        if (user?.totalBudget != null) {
+          const sumOthers = others.reduce((sum, e) => sum + e.monthlyLimit, 0);
+          const newTotal = sumOthers + parsed.data.monthlyLimit;
+          if (newTotal > user.totalBudget) {
+            const remaining = Math.max(0, user.totalBudget - sumOthers);
+            return NextResponse.json(
+              {
+                error: 'ENVELOPE_BUDGET_EXCEEDED',
+                message: `Cette limite dépasse ton budget total (${user.totalBudget} FCFA) — il reste ${remaining} FCFA à répartir entre tes enveloppes.`,
+              },
+              { status: 409, headers: { 'x-request-id': reqCtx.requestId } },
+            );
+          }
+        }
+      }
+    }
+
     // Built via conditional spreads, not `parsed.data` directly — Zod's
     // `.optional()` fields are typed as `T | undefined` explicitly present,
     // which `exactOptionalPropertyTypes` rejects against Prisma's update input.
