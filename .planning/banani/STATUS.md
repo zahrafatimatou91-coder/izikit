@@ -519,6 +519,59 @@ re-verification of this batch)_
   gone) — `pnpm exec prisma migrate deploy` applied
   `20260827084016_savings_goal_unique_tip_per_user` successfully.
 
+## Done (2026-08-28)
+- **Envelope alert thresholds lowered to 50/80/100%** — user reported a real
+  71%-used envelope firing nothing; the (working-as-designed) `[0.8, 1]`
+  tier array in `POST /api/transactions` never crossed at that usage.
+  Changed `ALERT_THRESHOLDS` to `[0.5, 0.8, 1]` (`transactions/route.ts`),
+  updated the Settings copy to match. No schema change.
+- **Savings-goal delete (was missing entirely)** — `DELETE
+  /api/savings-goals/[id]` (ownership-checked, 404 on cross-tenant), trash
+  icon wired on `SavingsGoalCard` with a native confirm dialog.
+- **Income restocks the available budget** — previously logged but
+  functionally inert: the dashboard/envelopes "Reste"/"Restant" figures only
+  ever drained from `totalBudget`, never grew from a logged income
+  transaction, which the user flagged as counter-intuitive. `GET
+  /api/dashboard` now also aggregates positive-amount transactions for the
+  period (`income`); `available = totalBudget + income`, `remaining =
+  available - spent`, applied consistently in `DashboardHeader`,
+  `dashboard/page.tsx` (both mobile header and desktop hero card), and
+  `envelopes/page.tsx`'s summary strip.
+- **"Ajouter" always reachable from the Dashboard** — the only way to add a
+  transaction from `/dashboard` was via Historique, once transactions
+  existed (the empty-state CTA doesn't render once the list is non-empty).
+  Added a persistent "Ajouter" link next to "Tout voir" in the "Dernières
+  dépenses" section header.
+- **Savings-goal creation flow clarified** — a confused-user walkthrough
+  (4 screenshots) surfaced 3 real UX defects, not user error:
+  1. The "Rythme" (chaque semaine/chaque mois) picker on `/savings/new` had
+     **zero functional effect** anywhere in the app (no reset/cadence logic
+     exists, confirmed by code read) — it only implied a recurrence the app
+     never enforced. Removed from `SavingsGoalForm`; the field stays
+     accepted-but-optional server-side (`period` defaults to `'monthly'` in
+     `POST /api/savings-goals`) so no migration is needed, and every
+     display that showed the now-meaningless "Objectif hebdomadaire/mensuel"
+     label (`SavingsGoalCard`, `/savings/[id]/add`,
+     `/savings/[id]/confirmed`) had that copy dropped too.
+  2. Icon picker was a fixed 8-icon set with no relation to the typed goal
+     name (e.g. "biscuit"/"fleur" landed on a generic default). Expanded to
+     16 icons and added keyword-based auto-suggestion as the user types
+     (food/transport/home/studies/gifts/... → matching icon), still
+     overridable with one tap (`SavingsGoalForm`'s new `suggestIcon()`).
+  3. Creating a goal redirected straight into "Enregistrer une nouvelle
+     économie" (`/savings/[id]/add`) — conflating goal creation with
+     funding it. `/savings/new` now redirects to `/progress` on success;
+     funding stays a deliberate follow-up action.
+  Also added a one-line caption under "Détail par jour (cette semaine)" on
+  `/progress` clarifying it aggregates all goals together (it backs the
+  "Jours actifs" stat, not a per-goal breakdown) — not a bug, just
+  unlabeled scope. Commits: `feat(budget): income restocks available
+  budget; add-transaction always reachable`, `fix(savings-goals): clarify
+  creation flow (drop cosmetic rythme, smart icon, redirect)`. Verified:
+  `pnpm typecheck` / `pnpm lint` / `pnpm test` green (600/600 — one
+  pre-existing signup-rate-limit timing flake under full-suite load,
+  passes in isolation).
+
 ## Notes
 - Every screen above is Desktop-only in Banani except `Dashboard.jsx` (mobile) and the 4 shared components. Per skill mandate, mobile-first is still required for ALL of them — mobile layout will be designed by us, not copied from Banani.
 - Raw Banani fetch (`_raw-fetch.txt`, 226KB JSON) was deleted after analysis — re-fetch via `mcp__banani__banani_get_selected_designs` when a phase starts implementation (select the relevant screens in Banani first).
