@@ -49,9 +49,16 @@ interface Summary {
   activeDays: number;
 }
 
+interface DayEntry {
+  goalName: string;
+  amount: number;
+  note: string | null;
+}
+
 interface DayBucket {
   date: string;
   total: number;
+  entries: DayEntry[];
 }
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -203,27 +210,42 @@ export default function ProgressPage() {
                     const date = new Date(b.date);
                     const isFuture = date > today && date.toDateString() !== today.toDateString();
                     return (
-                      <div
-                        key={b.date}
-                        className="flex items-center justify-between rounded-lg bg-input p-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon
-                            i={b.total > 0 ? 'check-circle' : 'circle'}
-                            size={20}
-                            className={b.total > 0 ? 'text-primary' : 'text-muted'}
-                          />
+                      <div key={b.date} className="rounded-lg bg-input p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Icon
+                              i={b.total > 0 ? 'check-circle' : 'circle'}
+                              size={20}
+                              className={b.total > 0 ? 'text-primary' : 'text-muted'}
+                            />
+                            <span
+                              className={`font-body ${b.total > 0 ? 'text-foreground' : 'text-muted-foreground'}`}
+                            >
+                              {DAY_LABELS[i]}
+                            </span>
+                          </div>
                           <span
-                            className={`font-body ${b.total > 0 ? 'text-foreground' : 'text-muted-foreground'}`}
+                            className={`font-body ${b.total > 0 ? 'font-bold text-primary' : 'text-muted-foreground'}`}
                           >
-                            {DAY_LABELS[i]}
+                            {isFuture ? '—' : b.total > 0 ? `${formatPrice(b.total)} F` : '—'}
                           </span>
                         </div>
-                        <span
-                          className={`font-body ${b.total > 0 ? 'font-bold text-primary' : 'text-muted-foreground'}`}
-                        >
-                          {isFuture ? '—' : b.total > 0 ? `${formatPrice(b.total)} F` : '—'}
-                        </span>
+                        {/* Which goal(s) the day's total went to — a lump sum
+                            alone is easy to forget the reason for by the time
+                            you look back at the week. */}
+                        {b.entries.length > 0 && (
+                          <div className="mt-2 flex flex-col gap-1 pl-8">
+                            {b.entries.map((e, entryIndex) => (
+                              <p
+                                key={entryIndex}
+                                className="font-body text-xs text-muted-foreground"
+                              >
+                                {formatPrice(e.amount)} F — {e.goalName}
+                                {e.note ? ` (${e.note})` : ''}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

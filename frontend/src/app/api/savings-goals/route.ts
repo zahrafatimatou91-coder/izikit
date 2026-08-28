@@ -54,24 +54,38 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             savingsGoal: { userId: auth.user.sub },
             createdAt: { gte: weekStart },
           },
-          select: { amount: true, createdAt: true },
+          select: {
+            amount: true,
+            note: true,
+            createdAt: true,
+            savingsGoal: { select: { name: true } },
+          },
         }),
       ]),
     );
 
+    // Per-day detail (not just a total) — a user can forget what a lump sum
+    // was actually for by the time they look back at the week, so each day
+    // lists which goal(s) it went to (and the note, if one was left).
     const breakdown = Array.from({ length: 7 }, (_, i) => {
       const date = new Date(weekStart.getTime() + i * DAY_MS);
-      const total = entries
-        .filter((e) => {
-          const d = e.createdAt;
-          return (
-            d.getFullYear() === date.getFullYear() &&
-            d.getMonth() === date.getMonth() &&
-            d.getDate() === date.getDate()
-          );
-        })
-        .reduce((sum, e) => sum + e.amount, 0);
-      return { date: date.toISOString(), total };
+      const dayEntries = entries.filter((e) => {
+        const d = e.createdAt;
+        return (
+          d.getFullYear() === date.getFullYear() &&
+          d.getMonth() === date.getMonth() &&
+          d.getDate() === date.getDate()
+        );
+      });
+      return {
+        date: date.toISOString(),
+        total: dayEntries.reduce((sum, e) => sum + e.amount, 0),
+        entries: dayEntries.map((e) => ({
+          goalName: e.savingsGoal.name,
+          amount: e.amount,
+          note: e.note,
+        })),
+      };
     });
 
     return NextResponse.json(
