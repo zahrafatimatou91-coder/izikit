@@ -56,16 +56,20 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
   const router = useRouter();
   const [goal, setGoal] = useState<GoalResult | null>(null);
   const [tip, setTip] = useState<TipDetail | null>(null);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      api<{ goal: GoalResult }>(`/api/tips/${id}/apply`, { method: 'POST' }),
+      api<{ goal: GoalResult; alreadyApplied: boolean }>(`/api/tips/${id}/apply`, {
+        method: 'POST',
+      }),
       api<{ tip: TipDetail }>(`/api/tips/${id}`),
     ])
       .then(([applyRes, tipRes]) => {
         setGoal(applyRes.goal);
+        setAlreadyApplied(applyRes.alreadyApplied);
         setTip(tipRes.tip);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
@@ -119,10 +123,15 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
               <Icon i="check-circle-2" size={24} className="flex-shrink-0 text-primary" />
               <div>
                 <h3 className="mb-1 font-headings font-bold text-foreground">
-                  Conseil appliqué avec succès !
+                  {alreadyApplied
+                    ? 'Tu as déjà appliqué ce conseil'
+                    : 'Conseil appliqué avec succès !'}
                 </h3>
                 <p className="font-body text-xs text-muted-foreground">
-                  Le conseil a été ajouté à tes objectifs. Suis ta progression ci-dessous.
+                  {alreadyApplied
+                    ? `Cet objectif d'épargne, « ${goal.name} », avait déjà été créé à partir de ce conseil — voici où tu en es.`
+                    : `Un nouvel objectif d'épargne, « ${goal.name} », vient d'être créé à partir de ce conseil.`}{' '}
+                  Suis sa progression ci-dessous et ajoute ta première économie quand tu es prête.
                 </p>
               </div>
             </div>
