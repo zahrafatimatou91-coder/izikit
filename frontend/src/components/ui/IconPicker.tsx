@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
 import { Icon } from '@/components/ui/Icon';
+import { stripAccents } from '@/lib/text';
 
 export interface IconChoice {
   icon: IconName;
@@ -17,15 +18,11 @@ interface IconPickerProps {
   catalog: IconChoice[];
 }
 
-export function stripAccents(s: string): string {
-  return s
-    .replace(/[àâ]/g, 'a')
-    .replace(/[éèêë]/g, 'e')
-    .replace(/[îï]/g, 'i')
-    .replace(/[ôö]/g, 'o')
-    .replace(/[ùûü]/g, 'u')
-    .replace(/ç/g, 'c');
-}
+// Re-exported for existing callers (SavingsGoalForm, EnvelopeForm) — the
+// canonical implementation now lives in lib/text.ts so server code (the
+// tips-apply route) can use the same normalization without importing a
+// 'use client' module.
+export { stripAccents };
 
 /** Searchable icon grid — closer to a WhatsApp/emoji-picker (search first,
  * then tap) than the fixed 8-16 icon shortlists this app used to ship per
