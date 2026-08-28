@@ -9,6 +9,7 @@ import { api, ApiError } from '@/lib/api';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Icon } from '@/components/ui/Icon';
 import { TransactionRow } from '@/components/transactions/TransactionRow';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
@@ -60,6 +61,8 @@ export default function HistoryPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadPage = useCallback(async (after: string | null) => {
     const qs = after ? `?cursor=${encodeURIComponent(after)}` : '';
@@ -88,6 +91,22 @@ export default function HistoryPage() {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
     } finally {
       setLoadingMore(false);
+    }
+  }
+
+  async function confirmDeleteTransaction() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api(`/api/transactions/${deleteTarget.id}`, { method: 'DELETE' });
+      // Remove locally rather than refetching — the cursor-paginated list
+      // has no simple "just reload the current window" call.
+      setItems((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -164,6 +183,7 @@ export default function HistoryPage() {
                   {group.items.map((t) => (
                     <TransactionRow
                       key={t.id}
+                      id={t.id}
                       label={t.label}
                       category={t.envelope?.name ?? (t.amount > 0 ? 'Revenu' : 'Dépense')}
                       amount={t.amount}
@@ -172,6 +192,7 @@ export default function HistoryPage() {
                         (t.envelope?.icon as IconName) ??
                         (t.amount > 0 ? 'arrow-down-left' : 'arrow-up-right')
                       }
+                      onDeleteRequested={(id, label) => setDeleteTarget({ id, label })}
                     />
                   ))}
                 </div>
@@ -203,6 +224,19 @@ export default function HistoryPage() {
         avatarUrl={user.avatarUrl}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={
+          deleteTarget ? `Supprimer « ${deleteTarget.label} » ?` : 'Supprimer cette transaction ?'
+        }
+        description="Cette action est irréversible."
+        confirmLabel={deleting ? 'Suppression…' : 'Supprimer'}
+        destructive
+        confirming={deleting}
+        onConfirm={confirmDeleteTransaction}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

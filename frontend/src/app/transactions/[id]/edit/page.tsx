@@ -1,10 +1,10 @@
-// No Banani source for this screen — the design only covers "Ajouter une
-// économie" (savings). We design "Ajouter une transaction" ourselves,
-// mobile-first, following the same interaction pattern (top bar with back
-// button, card-based form, quick amount buttons).
+// /transactions/[id]/edit — reuses TransactionForm (see /transactions/new)
+// pre-filled from GET /api/transactions/[id]. Deleting a transaction is
+// deliberately NOT duplicated here — it lives in the row's own menu
+// (TransactionRow), the single entry point for that action.
 'use client';
 
-import { useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/contexts/AuthContext';
@@ -13,22 +13,45 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import {
   TransactionForm,
+  type TransactionFormInitial,
   type TransactionFormValues,
 } from '@/components/transactions/TransactionForm';
 
-export default function NewTransactionPage() {
+interface TransactionDetail {
+  id: string;
+  amount: number;
+  label: string;
+  envelope: { id: string; name: string; icon: string } | null;
+}
+
+export default function EditTransactionPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const user = useUser();
   const router = useRouter();
+  const [initial, setInitial] = useState<TransactionFormInitial | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!user) return;
+    api<{ transaction: TransactionDetail }>(`/api/transactions/${id}`)
+      .then((res) =>
+        setInitial({
+          amount: res.transaction.amount,
+          label: res.transaction.label,
+          envelopeId: res.transaction.envelope?.id ?? null,
+        }),
+      )
+      .catch((err) => setError(err instanceof ApiError ? err.message : 'Transaction introuvable.'));
+  }, [user, id]);
+
   if (!user) return <FormPageSkeleton />;
 
-  async function handleCreate(values: TransactionFormValues) {
+  async function handleUpdate(values: TransactionFormValues) {
     setSubmitting(true);
     setError(null);
     try {
-      await api('/api/transactions', { method: 'POST', body: values });
+      await api(`/api/transactions/${id}`, { method: 'PATCH', body: values });
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
@@ -44,7 +67,7 @@ export default function NewTransactionPage() {
           <Icon i="arrow-left" size={20} />
         </Link>
         <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
-          Ajouter une transaction
+          Modifier la transaction
         </h2>
       </div>
 
@@ -55,11 +78,14 @@ export default function NewTransactionPage() {
               {error}
             </p>
           )}
-          <TransactionForm
-            submitLabel="Enregistrer"
-            submitting={submitting}
-            onSubmit={handleCreate}
-          />
+          {initial && (
+            <TransactionForm
+              initial={initial}
+              submitLabel="Enregistrer les modifications"
+              submitting={submitting}
+              onSubmit={handleUpdate}
+            />
+          )}
         </div>
       </div>
     </div>

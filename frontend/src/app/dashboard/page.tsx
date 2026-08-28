@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { EnvelopeCard } from '@/components/envelopes/EnvelopeCard';
 import { TransactionRow } from '@/components/transactions/TransactionRow';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
@@ -51,13 +52,35 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await api<DashboardData>('/api/dashboard');
+      setData(res);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    }
+  }, []);
 
   useEffect(() => {
-    if (!user) return;
-    api<DashboardData>('/api/dashboard')
-      .then(setData)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
-  }, [user]);
+    if (user) void load();
+  }, [user, load]);
+
+  async function confirmDeleteTransaction() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api(`/api/transactions/${deleteTarget.id}`, { method: 'DELETE' });
+      setDeleteTarget(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (!user) return <DashboardSkeleton />;
 
@@ -324,6 +347,7 @@ export default function DashboardPage() {
                   {data.recentTransactions.map((t) => (
                     <TransactionRow
                       key={t.id}
+                      id={t.id}
                       label={t.label}
                       category={t.envelope?.name ?? (t.amount > 0 ? 'Revenu' : 'Dépense')}
                       amount={t.amount}
@@ -332,6 +356,7 @@ export default function DashboardPage() {
                         (t.envelope?.icon as IconName) ??
                         (t.amount > 0 ? 'arrow-down-left' : 'arrow-up-right')
                       }
+                      onDeleteRequested={(id, label) => setDeleteTarget({ id, label })}
                     />
                   ))}
                 </div>
@@ -352,6 +377,19 @@ export default function DashboardPage() {
         avatarUrl={user.avatarUrl}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={
+          deleteTarget ? `Supprimer « ${deleteTarget.label} » ?` : 'Supprimer cette transaction ?'
+        }
+        description="Cette action est irréversible."
+        confirmLabel={deleting ? 'Suppression…' : 'Supprimer'}
+        destructive
+        confirming={deleting}
+        onConfirm={confirmDeleteTransaction}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );
