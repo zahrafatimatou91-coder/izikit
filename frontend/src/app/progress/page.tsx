@@ -28,6 +28,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SavingsGoalCard } from '@/components/savings/SavingsGoalCard';
 import { formatPrice } from '@/lib/utils';
 
@@ -61,6 +62,8 @@ export default function ProgressPage() {
   const [breakdown, setBreakdown] = useState<DayBucket[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -79,13 +82,17 @@ export default function ProgressPage() {
     if (user) void load();
   }, [user, load]);
 
-  async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cet objectif ? Cette action est définitive.')) return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await api(`/api/savings-goals/${id}`, { method: 'DELETE' });
+      await api(`/api/savings-goals/${deleteTarget.id}`, { method: 'DELETE' });
+      setDeleteTarget(null);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -166,7 +173,7 @@ export default function ProgressPage() {
                     currentAmount={g.currentAmount}
                     targetAmount={g.targetAmount}
                     completed={g.completed}
-                    onDelete={() => handleDelete(g.id)}
+                    onDelete={() => setDeleteTarget({ id: g.id, name: g.name })}
                   />
                 ))}
               </div>
@@ -265,6 +272,17 @@ export default function ProgressPage() {
         avatarUrl={user.avatarUrl}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={deleteTarget ? `Supprimer « ${deleteTarget.name} » ?` : 'Supprimer cet objectif ?'}
+        description="Cette action est définitive — les économies déjà enregistrées sur cet objectif seront perdues."
+        confirmLabel={deleting ? 'Suppression…' : 'Supprimer'}
+        destructive
+        confirming={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

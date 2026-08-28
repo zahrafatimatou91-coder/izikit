@@ -23,6 +23,7 @@ import { useAuth, useUser } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Icon } from '@/components/ui/Icon';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
@@ -574,35 +575,15 @@ export default function SettingsPage() {
         onClose={() => setDrawerOpen(false)}
       />
 
-      {logoutConfirming && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6">
-            <h3 className="mb-2 font-headings text-lg font-bold text-foreground">
-              Se déconnecter ?
-            </h3>
-            <p className="mb-6 font-body text-sm text-muted-foreground">
-              Tu devras te reconnecter pour accéder à ton compte.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setLogoutConfirming(false)}
-                className="flex-1 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={onLogout}
-                disabled={loggingOut}
-                className="flex-1 rounded-lg bg-primary px-4 py-2 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
-              >
-                {loggingOut ? 'Déconnexion…' : 'Se déconnecter'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={logoutConfirming}
+        title="Se déconnecter ?"
+        description="Tu devras te reconnecter pour accéder à ton compte."
+        confirmLabel={loggingOut ? 'Déconnexion…' : 'Se déconnecter'}
+        confirming={loggingOut}
+        onConfirm={onLogout}
+        onCancel={() => setLogoutConfirming(false)}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EnvelopeForm, type EnvelopeFormValues } from '@/components/envelopes/EnvelopeForm';
 import { envelopeSwatch, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
@@ -35,6 +36,8 @@ export default function EnvelopesPage() {
   const [formMode, setFormMode] = useState<'none' | 'create' | string>('none');
   const [submitting, setSubmitting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -88,18 +91,17 @@ export default function EnvelopesPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (
-      !window.confirm(
-        'Supprimer cette enveloppe ? Les transactions liées resteront dans ton historique.',
-      )
-    )
-      return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await api(`/api/envelopes/${id}`, { method: 'DELETE' });
+      await api(`/api/envelopes/${deleteTarget.id}`, { method: 'DELETE' });
+      setDeleteTarget(null);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -216,7 +218,7 @@ export default function EnvelopesPage() {
                           <button
                             type="button"
                             aria-label="Supprimer"
-                            onClick={() => handleDelete(e.id)}
+                            onClick={() => setDeleteTarget({ id: e.id, name: e.name })}
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                           >
                             <Icon i="trash-2" size={16} />
@@ -293,6 +295,19 @@ export default function EnvelopesPage() {
         avatarUrl={user.avatarUrl}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={
+          deleteTarget ? `Supprimer « ${deleteTarget.name} » ?` : 'Supprimer cette enveloppe ?'
+        }
+        description="Les transactions déjà liées resteront dans ton historique."
+        confirmLabel={deleting ? 'Suppression…' : 'Supprimer'}
+        destructive
+        confirming={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );
