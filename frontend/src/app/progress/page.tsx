@@ -38,7 +38,8 @@ interface Goal {
   icon: string;
   targetAmount: number;
   currentAmount: number;
-  period: 'weekly' | 'monthly';
+  period: 'daily' | 'weekly' | 'monthly';
+  paceAmount: number | null;
   completed: boolean;
 }
 
@@ -172,6 +173,8 @@ export default function ProgressPage() {
                     icon={g.icon as IconName}
                     currentAmount={g.currentAmount}
                     targetAmount={g.targetAmount}
+                    period={g.period}
+                    paceAmount={g.paceAmount}
                     completed={g.completed}
                     onDelete={() => setDeleteTarget({ id: g.id, name: g.name })}
                   />

@@ -387,7 +387,13 @@ model SavingsGoal {
   icon          String
   targetAmount  Int
   currentAmount Int      @default(0)
-  period        String // "weekly" | "monthly"
+  period        String // "daily" | "weekly" | "monthly" — the pace cadence
+  // How much the user intends to save per `period` (e.g. 500 F/week). Real
+  // behavior, not cosmetic: the savings-goal-reminders cron checks the most
+  // recently completed period's entries against this and notifies once if
+  // it fell short. Null on goals created before this field existed — they
+  // just never get checked.
+  paceAmount    Int?
   createdAt     DateTime @default(now())
 
   entries SavingsEntry[]

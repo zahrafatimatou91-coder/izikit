@@ -2,78 +2,89 @@
 
 import { useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
-import { Icon } from '@/components/ui/Icon';
+import { IconPicker, stripAccents, type IconChoice } from '@/components/ui/IconPicker';
+import { pacePeriodNoun } from '@/lib/savings-pace-label';
 
-// Expanded set covering common "what are you saving for" categories. Paired
-// with the keyword auto-suggestion below — a goal named "biscuit" or "fleur"
-// used to silently default to whichever icon happened to be first in the
-// list, with nothing pointing the user at a better match further down.
-const ICON_CHOICES: IconName[] = [
-  'piggy-bank',
-  'utensils',
-  'coffee',
-  'shopping-bag',
-  'shirt',
-  'bus',
-  'bike',
-  'car',
-  'plane',
-  'home',
-  'graduation-cap',
-  'smartphone',
-  'gift',
-  'heart',
-  'flower-2',
-  'dumbbell',
+// Broad catalog spanning most "what's this for" categories — search filters
+// this down instead of forcing a fixed 8-16 icon shortlist (closer to a
+// WhatsApp/emoji-picker than a curated palette, per user feedback that the
+// old fixed set didn't cover things like "biscuit" or "fleur").
+const ICON_CATALOG: IconChoice[] = [
+  { icon: 'piggy-bank', keywords: ['epargne', 'economie', 'general'] },
+  { icon: 'wallet', keywords: ['portefeuille', 'argent', 'epargne'] },
+  { icon: 'utensils', keywords: ['nourriture', 'repas', 'manger', 'cuisine', 'restaurant'] },
+  { icon: 'coffee', keywords: ['cafe', 'boisson', 'snack'] },
+  { icon: 'cookie', keywords: ['biscuit', 'gateau', 'snack', 'sucre'] },
+  { icon: 'shopping-bag', keywords: ['shopping', 'achat', 'sac'] },
+  { icon: 'shopping-cart', keywords: ['course', 'supermarche', 'achat'] },
+  { icon: 'shirt', keywords: ['vetement', 'habit', 'mode'] },
+  { icon: 'footprints', keywords: ['chaussure'] },
+  { icon: 'bus', keywords: ['transport', 'bus', 'taxi'] },
+  { icon: 'bike', keywords: ['velo', 'bicyclette', 'transport'] },
+  { icon: 'car', keywords: ['voiture', 'essence', 'carburant', 'transport'] },
+  { icon: 'fuel', keywords: ['essence', 'carburant'] },
+  { icon: 'plane', keywords: ['voyage', 'vacance', 'avion'] },
+  { icon: 'palmtree', keywords: ['vacance', 'plage', 'voyage'] },
+  { icon: 'home', keywords: ['maison', 'loyer', 'logement', 'appartement'] },
+  { icon: 'building-2', keywords: ['immeuble', 'appartement', 'logement'] },
+  { icon: 'graduation-cap', keywords: ['etude', 'ecole', 'formation', 'universite'] },
+  { icon: 'book-open', keywords: ['livre', 'lecture', 'etude', 'cours'] },
+  { icon: 'pencil', keywords: ['fourniture', 'ecole', 'etude'] },
+  { icon: 'smartphone', keywords: ['telephone', 'portable', 'mobile'] },
+  { icon: 'laptop', keywords: ['ordinateur', 'pc', 'travail', 'tech'] },
+  { icon: 'headphones', keywords: ['musique', 'audio', 'ecouteur'] },
+  { icon: 'gamepad-2', keywords: ['jeu', 'jouer', 'loisir'] },
+  { icon: 'gift', keywords: ['cadeau', 'anniversaire', 'fete', 'noel'] },
+  { icon: 'party-popper', keywords: ['fete', 'anniversaire', 'evenement', 'celebration'] },
+  { icon: 'cake', keywords: ['anniversaire', 'gateau', 'fete'] },
+  { icon: 'heart', keywords: ['amour', 'couple', 'famille', 'coeur'] },
+  { icon: 'baby', keywords: ['bebe', 'enfant', 'famille'] },
+  { icon: 'users', keywords: ['famille', 'amis', 'groupe'] },
+  { icon: 'flower-2', keywords: ['fleur', 'beaute', 'nature'] },
+  { icon: 'sparkles', keywords: ['beaute', 'soin', 'special'] },
+  { icon: 'scissors', keywords: ['coiffure', 'coupe', 'beaute'] },
+  { icon: 'dumbbell', keywords: ['sport', 'gym', 'muscu', 'fitness'] },
+  { icon: 'heart-pulse', keywords: ['sante', 'medecin', 'hopital'] },
+  { icon: 'stethoscope', keywords: ['sante', 'medecin', 'docteur'] },
+  { icon: 'pill', keywords: ['medicament', 'sante', 'pharmacie'] },
+  { icon: 'dog', keywords: ['animal', 'chien'] },
+  { icon: 'cat', keywords: ['animal', 'chat'] },
+  { icon: 'briefcase', keywords: ['travail', 'business', 'bureau'] },
+  { icon: 'wrench', keywords: ['reparation', 'bricolage', 'outil'] },
+  { icon: 'camera', keywords: ['photo', 'appareil'] },
+  { icon: 'music', keywords: ['musique', 'instrument'] },
+  { icon: 'palette', keywords: ['art', 'peinture', 'creatif'] },
+  { icon: 'watch', keywords: ['montre', 'accessoire'] },
+  { icon: 'glasses', keywords: ['lunette', 'accessoire'] },
+  { icon: 'sun', keywords: ['ete', 'plage', 'vacance'] },
+  { icon: 'umbrella', keywords: ['pluie', 'protection'] },
+  { icon: 'target', keywords: ['objectif', 'but'] },
+  { icon: 'star', keywords: ['favori', 'special'] },
 ];
 
-// Keyword → icon, matched against the (accent-stripped, lowercased) goal
-// name as the user types. First match wins; falls back to the generic
-// piggy-bank when nothing matches. This only sets the *initial* suggestion —
-// tapping any icon by hand overrides it for good.
-const ICON_KEYWORDS: Array<{ icon: IconName; words: string[] }> = [
-  {
-    icon: 'utensils',
-    words: ['nourriture', 'repas', 'manger', 'biscuit', 'gateau', 'cuisine', 'course', 'aliment'],
-  },
-  { icon: 'coffee', words: ['cafe', 'boisson', 'snack'] },
-  { icon: 'shirt', words: ['vetement', 'habit', 'mode', 'chaussure'] },
-  { icon: 'shopping-bag', words: ['shopping', 'achat'] },
-  { icon: 'bus', words: ['bus', 'transport', 'taxi'] },
-  { icon: 'bike', words: ['velo', 'bicyclette'] },
-  { icon: 'car', words: ['voiture', 'essence', 'carburant'] },
-  { icon: 'plane', words: ['voyage', 'vacance', 'avion'] },
-  { icon: 'home', words: ['maison', 'loyer', 'logement', 'appart', 'demenagement'] },
-  { icon: 'graduation-cap', words: ['etude', 'ecole', 'formation', 'universite', 'cours'] },
-  { icon: 'smartphone', words: ['telephone', 'portable', 'smartphone', 'ordinateur'] },
-  { icon: 'gift', words: ['cadeau', 'anniversaire', 'fete', 'noel'] },
-  { icon: 'heart', words: ['amour', 'couple', 'famille', 'mariage'] },
-  { icon: 'flower-2', words: ['fleur', 'beaute', 'coiffure'] },
-  { icon: 'dumbbell', words: ['sport', 'gym', 'muscu', 'fitness'] },
-];
-
-function stripAccents(s: string): string {
-  return s
-    .replace(/[àâ]/g, 'a')
-    .replace(/[éèêë]/g, 'e')
-    .replace(/[îï]/g, 'i')
-    .replace(/[ôö]/g, 'o')
-    .replace(/[ùûü]/g, 'u')
-    .replace(/ç/g, 'c');
-}
-
+/** Suggests an icon from the catalog by matching keywords against the
+ * (accent-stripped, lowercased) goal name as the user types. Only sets the
+ * *initial* suggestion — tapping any icon by hand overrides it for good. */
 function suggestIcon(name: string): IconName {
   const normalized = stripAccents(name.toLowerCase());
-  for (const { icon, words } of ICON_KEYWORDS) {
-    if (words.some((w) => normalized.includes(w))) return icon;
+  for (const { icon, keywords } of ICON_CATALOG) {
+    if (keywords.some((k) => normalized.includes(k))) return icon;
   }
   return 'piggy-bank';
 }
+
+const PACES: Array<{ value: 'daily' | 'weekly' | 'monthly'; label: string }> = [
+  { value: 'daily', label: 'Chaque jour' },
+  { value: 'weekly', label: 'Chaque semaine' },
+  { value: 'monthly', label: 'Chaque mois' },
+];
 
 export interface SavingsGoalFormValues {
   name: string;
   icon: IconName;
   targetAmount: number;
+  period: 'daily' | 'weekly' | 'monthly';
+  paceAmount: number;
 }
 
 interface SavingsGoalFormProps {
@@ -83,10 +94,11 @@ interface SavingsGoalFormProps {
   onCancel: () => void;
 }
 
-// No "rythme" (weekly/monthly) field — it used to be purely cosmetic (no
-// reset logic exists anywhere) and only confused users into thinking their
-// goal recurred or reset on a cadence it never did. A savings goal is just:
-// name, icon, target amount, add money whenever.
+// The "rythme" is real: pair a cadence (jour/semaine/mois) with an amount —
+// "combien tu veux mettre par [x]" — and the savings-goal-reminders cron
+// notifies the user once when a completed period closed under that amount.
+// It used to be a cosmetic label with no amount and no reminder behind it;
+// this is the fix, not a removal.
 export function SavingsGoalForm({
   submitLabel,
   submitting,
@@ -94,9 +106,11 @@ export function SavingsGoalForm({
   onCancel,
 }: SavingsGoalFormProps) {
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState<IconName>(ICON_CHOICES[0]!);
+  const [icon, setIcon] = useState<IconName>('piggy-bank');
   const [iconTouched, setIconTouched] = useState(false);
   const [targetAmount, setTargetAmount] = useState(5000);
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [paceAmount, setPaceAmount] = useState(500);
 
   function handleNameChange(value: string) {
     setName(value);
@@ -141,40 +155,68 @@ export function SavingsGoalForm({
         </div>
 
         <div>
-          <p className="mb-2 font-body text-xs font-medium text-foreground">
-            Icône{' '}
-            <span className="font-normal text-muted-foreground">
-              (suggérée selon le nom, modifiable)
-            </span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {ICON_CHOICES.map((choice) => (
+          <p className="mb-2 font-body text-xs font-medium text-foreground">Rythme</p>
+          <div className="flex gap-2">
+            {PACES.map((p) => (
               <button
-                key={choice}
+                key={p.value}
                 type="button"
-                onClick={() => {
-                  setIcon(choice);
-                  setIconTouched(true);
-                }}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
-                  icon === choice ? 'border-primary bg-primary/10' : 'border-border bg-input'
+                onClick={() => setPeriod(p.value)}
+                className={`flex-1 rounded-lg border px-3 py-2.5 font-body text-sm font-medium ${
+                  period === p.value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-input text-muted-foreground'
                 }`}
               >
-                <Icon
-                  i={choice}
-                  size={16}
-                  className={icon === choice ? 'text-primary' : 'text-muted-foreground'}
-                />
+                {p.label}
               </button>
             ))}
           </div>
         </div>
 
+        <div>
+          <label
+            htmlFor="goal-pace-amount"
+            className="mb-1 block font-body text-xs font-medium text-foreground"
+          >
+            Combien par {pacePeriodNoun(period)} ?
+          </label>
+          <input
+            id="goal-pace-amount"
+            type="number"
+            min={1}
+            value={paceAmount}
+            onChange={(e) => setPaceAmount(Math.max(0, Number(e.target.value)))}
+            className="w-full rounded-lg border border-border bg-input px-3 py-2.5 font-body text-sm text-foreground outline-none"
+          />
+          <p className="mt-1 font-body text-xs text-muted-foreground">
+            Si tu n&apos;as pas mis cette somme de côté d&apos;ici la fin du{' '}
+            {pacePeriodNoun(period)}, on te le rappelle.
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-2 font-body text-xs font-medium text-foreground">
+            Icône{' '}
+            <span className="font-normal text-muted-foreground">
+              (suggérée selon le nom, cherche pour en voir d&apos;autres)
+            </span>
+          </p>
+          <IconPicker
+            value={icon}
+            onChange={(i) => {
+              setIcon(i);
+              setIconTouched(true);
+            }}
+            catalog={ICON_CATALOG}
+          />
+        </div>
+
         <div className="flex gap-3 pt-2">
           <button
             type="button"
-            disabled={submitting || !name.trim() || targetAmount <= 0}
-            onClick={() => onSubmit({ name: name.trim(), icon, targetAmount })}
+            disabled={submitting || !name.trim() || targetAmount <= 0 || paceAmount <= 0}
+            onClick={() => onSubmit({ name: name.trim(), icon, targetAmount, period, paceAmount })}
             className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {submitting ? 'Création…' : submitLabel}

@@ -48,6 +48,7 @@ export async function GET(
           targetAmount: goal.targetAmount,
           currentAmount: goal.currentAmount,
           period: goal.period,
+          paceAmount: goal.paceAmount,
           completed: goal.currentAmount >= goal.targetAmount,
         },
         recentEntries: goal.entries.map((e) => ({

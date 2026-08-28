@@ -66,6 +66,12 @@ const TYPE_STYLE: Record<
     iconWrap: 'bg-primary',
     iconColor: 'text-primary-foreground',
   },
+  SAVINGS_GOAL_PACE_MISSED: {
+    icon: 'alarm-clock',
+    wrap: 'bg-accent/10 border-accent/20',
+    iconWrap: 'bg-accent',
+    iconColor: 'text-accent-foreground',
+  },
 };
 const DEFAULT_STYLE = {
   icon: 'bell' as IconName,

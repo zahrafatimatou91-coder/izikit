@@ -18,6 +18,7 @@ import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatPrice } from '@/lib/utils';
+import { paceLabel } from '@/lib/savings-pace-label';
 
 interface GoalDetail {
   id: string;
@@ -25,7 +26,8 @@ interface GoalDetail {
   icon: string;
   targetAmount: number;
   currentAmount: number;
-  period: 'weekly' | 'monthly';
+  period: 'daily' | 'weekly' | 'monthly';
+  paceAmount: number | null;
   completed: boolean;
 }
 
@@ -113,7 +115,16 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                         className="text-secondary-foreground"
                       />
                     </div>
-                    <h3 className="font-headings text-sm font-bold text-foreground">{goal.name}</h3>
+                    <div>
+                      <h3 className="font-headings text-sm font-bold text-foreground">
+                        {goal.name}
+                      </h3>
+                      {paceLabel(goal.period, goal.paceAmount) && (
+                        <p className="font-body text-xs text-muted-foreground">
+                          {paceLabel(goal.period, goal.paceAmount)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="font-body text-sm font-bold text-primary">

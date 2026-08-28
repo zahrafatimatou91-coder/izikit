@@ -18,10 +18,12 @@ const CreateBody = z.object({
   name: z.string().trim().min(1).max(60),
   icon: z.string().min(1).max(40),
   targetAmount: z.number().int().positive(),
-  // Optional — the creation form no longer exposes a "rythme" picker (it was
-  // cosmetic only, no reset logic ever backed it). Kept accepted-but-unused
-  // here so the column doesn't need dropping; new goals just default to it.
-  period: z.enum(['weekly', 'monthly']).optional(),
+  // "Rythme" (pace) is real: paceAmount is how much the user intends to
+  // save per period. The savings-goal-reminders cron checks the most
+  // recently completed period's entries against it and notifies once if it
+  // fell short — see lib/server/savings-goals/pace.ts.
+  period: z.enum(['daily', 'weekly', 'monthly']),
+  paceAmount: z.number().int().positive(),
 });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -81,6 +83,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           targetAmount: g.targetAmount,
           currentAmount: g.currentAmount,
           period: g.period,
+          paceAmount: g.paceAmount,
           completed: g.currentAmount >= g.targetAmount,
           createdAt: g.createdAt.toISOString(),
         })),
@@ -120,7 +123,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         name: parsed.data.name,
         icon: parsed.data.icon,
         targetAmount: parsed.data.targetAmount,
-        period: parsed.data.period ?? 'monthly',
+        period: parsed.data.period,
+        paceAmount: parsed.data.paceAmount,
       },
     });
 
@@ -133,6 +137,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           targetAmount: goal.targetAmount,
           currentAmount: goal.currentAmount,
           period: goal.period,
+          paceAmount: goal.paceAmount,
           completed: false,
           createdAt: goal.createdAt.toISOString(),
         },

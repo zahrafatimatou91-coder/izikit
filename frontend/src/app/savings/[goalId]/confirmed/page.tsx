@@ -9,8 +9,11 @@
 // yet — same anti-pattern as the dashboard's dropped "Conseil du jour").
 // The "à ce rythme" projection is computed from real entries (only shown
 // once there are ≥2, since a rate needs at least two data points) instead of
-// Banani's fabricated "5 jours" example. "cette semaine" copy switches to
-// "ce mois-ci" for monthly-period goals.
+// Banani's fabricated "5 jours" example.
+// Footer collapsed from Banani's 2 buttons ("Retour à ma progression" +
+// "Ajouter une autre économie") to 1 — user feedback flagged the pair as
+// repetitive; funding a goal again is already one tap away from its card
+// on /progress.
 'use client';
 
 import { use, useEffect, useState } from 'react';
@@ -31,7 +34,7 @@ interface GoalDetail {
   icon: string;
   targetAmount: number;
   currentAmount: number;
-  period: 'weekly' | 'monthly';
+  period: 'daily' | 'weekly' | 'monthly';
   completed: boolean;
 }
 
@@ -241,22 +244,13 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
               </div>
             )}
 
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => router.push('/progress')}
-                className="flex-1 rounded-lg border border-primary bg-transparent px-6 py-3 font-body text-sm font-medium text-primary"
-              >
-                Retour à ma progression
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push(`/savings/${goalId}/add`)}
-                className="flex-1 rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-white"
-              >
-                Ajouter une autre économie
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/progress')}
+              className="w-full rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
+            >
+              Retour à ma progression
+            </button>
           </div>
         </div>
       </div>

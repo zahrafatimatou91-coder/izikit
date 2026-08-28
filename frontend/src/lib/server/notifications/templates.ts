@@ -114,3 +114,33 @@ export function goalMilestoneNotification(
     dedupeKey: `goal-completed:${goal.id}`,
   };
 }
+
+const PACE_NOUN: Record<'daily' | 'weekly' | 'monthly', string> = {
+  daily: 'hier',
+  weekly: 'la semaine dernière',
+  monthly: 'le mois dernier',
+};
+
+/** Fired from the savings-goal-reminders cron when a goal's most recently
+ * completed pace period (yesterday/last week/last month) closed with less
+ * saved than the user's stated `paceAmount`. `periodStartIso` scopes the
+ * dedupeKey so the same goal can be reminded again next period, but only
+ * once per period even if the cron runs more than once that day. */
+export function savingsGoalPaceMissedNotification(
+  userId: string,
+  goal: { id: string; name: string; pace: 'daily' | 'weekly' | 'monthly'; paceAmount: number },
+  savedFcfa: number,
+  periodStartIso: string,
+): CreateNotificationInput {
+  return {
+    userId,
+    type: 'SAVINGS_GOAL_PACE_MISSED',
+    title: `Objectif « ${goal.name} » en retard`,
+    body:
+      savedFcfa > 0
+        ? `Tu as économisé ${savedFcfa} F sur ${goal.paceAmount} F prévus ${PACE_NOUN[goal.pace]}. Rattrape-toi !`
+        : `Tu n'as rien économisé pour « ${goal.name} » ${PACE_NOUN[goal.pace]} (objectif : ${goal.paceAmount} F). Ajoute une économie !`,
+    data: { goalId: goal.id, paceAmount: goal.paceAmount, savedFcfa },
+    dedupeKey: `savings-goal-pace-missed:${goal.id}:${periodStartIso}`,
+  };
+}

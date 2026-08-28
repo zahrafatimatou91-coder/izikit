@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { Icon } from '@/components/ui/Icon';
 import { formatPrice } from '@/lib/utils';
+import { paceLabel } from '@/lib/savings-pace-label';
 
 interface SavingsGoalCardProps {
   id: string;
@@ -9,6 +10,8 @@ interface SavingsGoalCardProps {
   icon: IconName;
   currentAmount: number;
   targetAmount: number;
+  period: string;
+  paceAmount: number | null;
   completed: boolean;
   onDelete?: () => void;
 }
@@ -22,11 +25,14 @@ export function SavingsGoalCard({
   icon,
   currentAmount,
   targetAmount,
+  period,
+  paceAmount,
   completed,
   onDelete,
 }: SavingsGoalCardProps) {
   const pct =
     targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0;
+  const pace = paceLabel(period, paceAmount);
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -35,7 +41,10 @@ export function SavingsGoalCard({
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-secondary">
             <Icon i={icon} size={20} className="text-secondary-foreground" />
           </div>
-          <h3 className="font-headings text-base font-bold text-foreground">{name}</h3>
+          <div>
+            <h3 className="font-headings text-base font-bold text-foreground">{name}</h3>
+            {pace && <p className="font-body text-xs text-muted-foreground">{pace}</p>}
+          </div>
         </div>
         <div className="flex items-start gap-2">
           <div className="text-right">
