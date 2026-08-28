@@ -90,6 +90,13 @@ export interface SavingsGoalFormValues {
 interface SavingsGoalFormProps {
   submitLabel: string;
   submitting: boolean;
+  /** Server-side "this name is already taken" error, shown inline under
+   * the Nom field rather than as a page-level banner — it's a 2-second
+   * fix (retype the name), not something that needs a modal interrupt. */
+  nameError?: string | null;
+  /** Called on every keystroke in the Nom field — lets the parent clear a
+   * stale nameError as soon as the user starts correcting it. */
+  onNameEdited?: () => void;
   onSubmit: (values: SavingsGoalFormValues) => void;
   onCancel: () => void;
 }
@@ -102,6 +109,8 @@ interface SavingsGoalFormProps {
 export function SavingsGoalForm({
   submitLabel,
   submitting,
+  nameError,
+  onNameEdited,
   onSubmit,
   onCancel,
 }: SavingsGoalFormProps) {
@@ -115,6 +124,7 @@ export function SavingsGoalForm({
   function handleNameChange(value: string) {
     setName(value);
     if (!iconTouched) setIcon(suggestIcon(value));
+    onNameEdited?.();
   }
 
   return (
@@ -133,8 +143,12 @@ export function SavingsGoalForm({
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="ex: Transport malin"
-            className="w-full rounded-lg border border-border bg-input px-3 py-2.5 font-body text-sm text-foreground outline-none"
+            aria-invalid={nameError ? true : undefined}
+            className={`w-full rounded-lg border bg-input px-3 py-2.5 font-body text-sm text-foreground outline-none ${
+              nameError ? 'border-accent' : 'border-border'
+            }`}
           />
+          {nameError && <p className="mt-1 font-body text-xs text-accent">{nameError}</p>}
         </div>
 
         <div>

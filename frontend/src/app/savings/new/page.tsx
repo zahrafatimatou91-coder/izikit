@@ -13,20 +13,20 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { SavingsGoalForm, type SavingsGoalFormValues } from '@/components/savings/SavingsGoalForm';
 
-function goalErrorMessage(err: unknown): string {
-  if (err instanceof ApiError && err.code === 'GOAL_NAME_TAKEN') {
-    // ApiError.message is the stable code (see lib/api.ts) — the friendly
-    // French sentence naming the goal lives in the response body instead.
-    const bodyMessage = err.body['message'];
-    if (typeof bodyMessage === 'string') return bodyMessage;
-  }
-  return 'Une erreur est survenue.';
+// ApiError.message is the stable code (see lib/api.ts), not a display
+// string — the friendly French sentence lives in the response body.
+function bodyErrorMessage(err: ApiError): string | null {
+  const bodyMessage = err.body['message'];
+  return typeof bodyMessage === 'string' ? bodyMessage : null;
 }
 
 export default function NewSavingsGoalPage() {
   const user = useUser();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  // Shown inline under the Nom field instead of the page banner above —
+  // it's a 2-second fix (retype the name), not worth a full-page alert.
+  const [nameError, setNameError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!user) return <FormPageSkeleton />;
@@ -34,6 +34,7 @@ export default function NewSavingsGoalPage() {
   async function handleCreate(values: SavingsGoalFormValues) {
     setSubmitting(true);
     setError(null);
+    setNameError(null);
     try {
       await api<{ goal: { id: string } }>('/api/savings-goals', {
         method: 'POST',
@@ -44,7 +45,11 @@ export default function NewSavingsGoalPage() {
       // next step, not something to force immediately after creation.
       router.push('/progress');
     } catch (err) {
-      setError(goalErrorMessage(err));
+      if (err instanceof ApiError && err.code === 'GOAL_NAME_TAKEN') {
+        setNameError(bodyErrorMessage(err) ?? 'Ce nom est déjà pris.');
+      } else {
+        setError('Une erreur est survenue.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -71,6 +76,8 @@ export default function NewSavingsGoalPage() {
           <SavingsGoalForm
             submitLabel="Créer l'objectif"
             submitting={submitting}
+            nameError={nameError}
+            onNameEdited={() => setNameError(null)}
             onSubmit={handleCreate}
             onCancel={() => router.push('/progress')}
           />

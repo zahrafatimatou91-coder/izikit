@@ -15,16 +15,6 @@ import { EnvelopeForm, type EnvelopeFormValues } from '@/components/envelopes/En
 import { envelopeSwatch, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 
-function envelopeErrorMessage(err: unknown): string {
-  if (err instanceof ApiError && err.code === 'ENVELOPE_NAME_TAKEN') {
-    // ApiError.message is the stable code (see lib/api.ts) — the friendly
-    // French sentence naming the envelope lives in the response body.
-    const bodyMessage = err.body['message'];
-    if (typeof bodyMessage === 'string') return bodyMessage;
-  }
-  return err instanceof ApiError ? err.message : 'Une erreur est survenue.';
-}
-
 interface EnvelopeRow {
   id: string;
   name: string;
@@ -43,11 +33,21 @@ export default function EnvelopesPage() {
     income: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Shown inline under the Nom field of whichever form is open, instead of
+  // the page banner above — it's a 2-second fix (retype the name).
+  const [nameError, setNameError] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'none' | 'create' | string>('none');
   const [submitting, setSubmitting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Every entry point that opens/closes/switches a form clears the stale
+  // nameError from whichever form was previously open.
+  function openForm(mode: 'none' | 'create' | string) {
+    setNameError(null);
+    setFormMode(mode);
+  }
 
   const load = useCallback(async () => {
     try {
@@ -75,14 +75,26 @@ export default function EnvelopesPage() {
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 
+  function handleFormError(err: unknown) {
+    if (err instanceof ApiError && err.code === 'ENVELOPE_NAME_TAKEN') {
+      // ApiError.message is the stable code (see lib/api.ts) — the
+      // friendly French sentence lives in the response body instead.
+      const bodyMessage = err.body['message'];
+      setNameError(typeof bodyMessage === 'string' ? bodyMessage : 'Ce nom est déjà pris.');
+      return;
+    }
+    setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
+  }
+
   async function handleCreate(values: EnvelopeFormValues) {
     setSubmitting(true);
+    setNameError(null);
     try {
       await api('/api/envelopes', { method: 'POST', body: values });
       setFormMode('none');
       await load();
     } catch (err) {
-      setError(envelopeErrorMessage(err));
+      handleFormError(err);
     } finally {
       setSubmitting(false);
     }
@@ -90,12 +102,13 @@ export default function EnvelopesPage() {
 
   async function handleUpdate(id: string, values: EnvelopeFormValues) {
     setSubmitting(true);
+    setNameError(null);
     try {
       await api(`/api/envelopes/${id}`, { method: 'PATCH', body: values });
       setFormMode('none');
       await load();
     } catch (err) {
-      setError(envelopeErrorMessage(err));
+      handleFormError(err);
     } finally {
       setSubmitting(false);
     }
@@ -196,8 +209,10 @@ export default function EnvelopesPage() {
                       }}
                       submitLabel="Enregistrer"
                       submitting={submitting}
+                      nameError={formMode === e.id ? nameError : null}
+                      onNameEdited={() => setNameError(null)}
                       onSubmit={(values) => handleUpdate(e.id, values)}
-                      onCancel={() => setFormMode('none')}
+                      onCancel={() => openForm('none')}
                     />
                   ) : (
                     <div key={e.id} className="rounded-lg border border-border bg-card p-6">
@@ -220,7 +235,7 @@ export default function EnvelopesPage() {
                           <button
                             type="button"
                             aria-label="Modifier"
-                            onClick={() => setFormMode(e.id)}
+                            onClick={() => openForm(e.id)}
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                           >
                             <Icon i="edit-2" size={16} />
@@ -277,13 +292,15 @@ export default function EnvelopesPage() {
               <EnvelopeForm
                 submitLabel="Ajouter"
                 submitting={submitting}
+                nameError={nameError}
+                onNameEdited={() => setNameError(null)}
                 onSubmit={handleCreate}
-                onCancel={() => setFormMode('none')}
+                onCancel={() => openForm('none')}
               />
             ) : (
               <button
                 type="button"
-                onClick={() => setFormMode('create')}
+                onClick={() => openForm('create')}
                 className="flex w-fit items-center gap-2 rounded-lg bg-primary px-6 py-3 font-body text-sm font-medium text-primary-foreground"
               >
                 <Icon i="plus" size={18} />
