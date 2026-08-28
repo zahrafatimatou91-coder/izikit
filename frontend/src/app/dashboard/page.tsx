@@ -219,6 +219,26 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            <Link
+              href="/insights"
+              className="flex items-center justify-between rounded-lg border border-border bg-card p-4 hover:border-primary lg:p-5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-secondary/20">
+                  <Icon i="trending-up" size={18} className="text-secondary-foreground" />
+                </div>
+                <div>
+                  <p className="font-body text-sm font-medium text-foreground">
+                    Voir tes tendances
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground">
+                    Comparaisons, répartition par enveloppe, projections d&apos;objectifs
+                  </p>
+                </div>
+              </div>
+              <Icon i="chevron-right" size={18} className="flex-shrink-0 text-muted-foreground" />
+            </Link>
+
             {/* Envelopes */}
             <div>
               <div className="mb-3 flex items-center justify-between lg:mb-4">

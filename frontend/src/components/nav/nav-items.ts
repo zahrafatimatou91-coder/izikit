@@ -11,6 +11,7 @@ export type NavId =
   | 'progress'
   | 'tips'
   | 'history'
+  | 'insights'
   | 'settings'
   | 'notifications';
 
@@ -28,5 +29,6 @@ export const NAV_ITEMS: {
   { id: 'progress', href: '/progress', icon: 'target', label: 'Objectifs' },
   { id: 'tips', href: '/tips', icon: 'lightbulb', label: 'Conseils' },
   { id: 'history', href: '/history', icon: 'clock', label: 'Historique' },
+  { id: 'insights', href: '/insights', icon: 'trending-up', label: 'Tendances' },
   { id: 'settings', href: '/settings', icon: 'settings', label: 'Paramètres' },
 ];
