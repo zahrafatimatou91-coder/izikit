@@ -33,6 +33,7 @@ import { prisma } from '@/lib/server/prisma';
 import {
   parseSubscriptionOrderMetadata,
   SUBSCRIPTION_PERIOD_DAYS,
+  SUBSCRIPTION_PRICE_FCFA,
 } from '@/lib/server/subscriptions/tier';
 import { reactivateArchivedForProUpgrade } from '@/lib/server/subscriptions/archive';
 
@@ -65,7 +66,8 @@ export const POST = createWebhookHandler({
     // inside the same Serializable tx as the Order status flip so a crash
     // between the two is impossible (both commit together or neither does).
     const subMeta = parseSubscriptionOrderMetadata(order.metadata);
-    if (subMeta && order.userId) {
+    const expectedPrice = subMeta ? SUBSCRIPTION_PRICE_FCFA[subMeta.period] : null;
+    if (subMeta && order.userId && order.amount === expectedPrice) {
       const existingSub = await tx.subscription.findUnique({ where: { userId: order.userId } });
       const now = new Date();
       const base =
