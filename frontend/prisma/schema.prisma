@@ -358,6 +358,12 @@ model Envelope {
   monthlyLimit Int // smallest unit (FCFA has no decimals)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  // Set when a Free downgrade pushes this envelope past the 2-envelope
+  // limit (oldest-created first). Never deleted — see
+  // docs/superpowers/specs/2026-08-29-monetization-subscription-design.md
+  // "Downgrade". Reactivated (set back to null) the moment the user is Pro
+  // again.
+  archivedAt   DateTime?
 
   transactions Transaction[]
 
@@ -394,6 +400,9 @@ model SavingsGoal {
   // it fell short. Null on goals created before this field existed — they
   // just never get checked.
   paceAmount    Int?
+  // Same archiving mechanism as Envelope.archivedAt — see that field's
+  // comment.
+  archivedAt    DateTime?
   createdAt     DateTime @default(now())
 
   entries SavingsEntry[]
