@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
+import { Icon } from '@/components/ui/Icon';
 import { formatPrice } from '@/lib/utils';
 
 type Frequency = 'monthly' | 'weekly' | 'daily';
+
+const DEFAULT_BUDGET = 40000;
 
 const FREQUENCIES: { id: Frequency; label: string }[] = [
   { id: 'monthly', label: 'Mensuel' },
@@ -29,9 +32,16 @@ interface BudgetEditorProps {
 export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEditorProps) {
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
-  const [amount, setAmount] = useState(totalBudget ?? 40000);
+  // Held as a digits-only string so the field can be cleared while typing;
+  // parsed back to an integer (FCFA has no decimals) on save.
+  const [amountText, setAmountText] = useState(String(totalBudget ?? DEFAULT_BUDGET));
   const [frequency, setFrequency] = useState<Frequency>(asFrequency(budgetFrequency));
   const [saving, setSaving] = useState(false);
+  // Sum of envelope limits — fetched when the editor opens, so we can warn
+  // (not block) when the new budget would leave the envelopes over-allocated.
+  const [allocated, setAllocated] = useState<number | null>(null);
+
+  const amount = Number(amountText || '0');
 
   const currentLabel =
     totalBudget != null
@@ -39,9 +49,15 @@ export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEd
       : 'Non défini';
 
   function startEditing() {
-    setAmount(totalBudget ?? 40000);
+    setAmountText(String(totalBudget ?? DEFAULT_BUDGET));
     setFrequency(asFrequency(budgetFrequency));
+    setAllocated(null);
     setEditing(true);
+    api<{ envelopes: { monthlyLimit: number }[] }>('/api/dashboard')
+      .then((d) => setAllocated(d.envelopes.reduce((sum, e) => sum + e.monthlyLimit, 0)))
+      .catch(() => {
+        /* the warning is best-effort — a failed fetch just means no warning */
+      });
   }
 
   async function save() {
@@ -91,14 +107,15 @@ export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEd
         >
           Montant reçu
         </label>
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-input px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-input px-3 py-2.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40">
           <input
             id="budget-amount"
-            type="number"
-            min={1}
-            value={amount}
-            onChange={(e) => setAmount(Math.max(0, Number(e.target.value)))}
-            className="w-full bg-transparent font-headings text-lg font-bold text-foreground outline-none"
+            type="text"
+            inputMode="numeric"
+            value={amountText}
+            onChange={(e) => setAmountText(e.target.value.replace(/\D/g, ''))}
+            placeholder={String(DEFAULT_BUDGET)}
+            className="w-full bg-transparent font-headings text-lg font-bold text-foreground outline-none placeholder:font-body placeholder:text-base placeholder:font-normal placeholder:text-muted-foreground"
           />
           <span className="font-body text-sm text-muted-foreground">FCFA</span>
         </div>
@@ -110,6 +127,7 @@ export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEd
             key={f.id}
             type="button"
             onClick={() => setFrequency(f.id)}
+            aria-pressed={frequency === f.id}
             className={`rounded-lg border px-4 py-2 font-body text-sm font-medium ${
               frequency === f.id
                 ? 'border-primary bg-primary/5 text-primary'
@@ -120,6 +138,16 @@ export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEd
           </button>
         ))}
       </div>
+
+      {allocated !== null && amount > 0 && amount < allocated && (
+        <div className="flex items-start gap-2 rounded-lg bg-accent/10 p-3">
+          <Icon i="alert-triangle" size={16} className="mt-0.5 flex-shrink-0 text-accent" />
+          <p className="font-body text-xs text-foreground">
+            Tes enveloppes totalisent {formatPrice(allocated)} FCFA. En dessous de ce montant, ton
+            tableau de bord sera en sur-répartition — pense à ajuster tes enveloppes.
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <button
