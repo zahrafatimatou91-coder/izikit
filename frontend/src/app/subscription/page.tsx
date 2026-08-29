@@ -20,7 +20,11 @@ import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
-import { SUBSCRIPTION_PRICES, getDailyEquivalentFcfa } from '@/lib/subscription-plans';
+import {
+  SUBSCRIPTION_PRICES,
+  getDailyEquivalentFcfa,
+  FEATURE_ROWS,
+} from '@/lib/subscription-plans';
 import { formatPrice } from '@/lib/utils';
 
 interface SubscriptionStatus {
@@ -31,15 +35,6 @@ interface SubscriptionStatus {
 }
 
 type BillingPeriod = 'monthly' | 'annual';
-
-const FEATURE_ROWS: { label: string; free: string; pro: string }[] = [
-  { label: 'Enveloppes', free: '2 max', pro: 'Illimitées' },
-  { label: "Objectifs d'épargne", free: '—', pro: 'Illimités' },
-  { label: 'Historique', free: '2 derniers mois', pro: 'Complet' },
-  { label: 'Tendances', free: '—', pro: '✓' },
-  { label: 'Conseils personnalisés', free: '—', pro: '✓' },
-  { label: 'Notifications', free: 'Dépassement uniquement', pro: 'Toutes' },
-];
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
