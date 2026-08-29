@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
-const PAYMENT_METHODS = ['MTN MoMo', 'Orange Money', 'Wave', 'Airtel Money'];
+const PAYMENT_METHODS = ['Wave', 'Orange Money', 'Free Money', 'Carte bancaire'];
 
 const ENVELOPE_PREVIEW = [
   { cat: 'Alimentation', pct: 68, warn: true },
