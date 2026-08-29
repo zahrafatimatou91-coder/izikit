@@ -16,7 +16,7 @@ vi.mock('@/lib/server/middleware', () => ({
 }));
 
 import { requireAuth } from '@/lib/server/middleware';
-import { POST } from './route';
+import { GET, POST } from './route';
 
 const mockRequireAuth = vi.mocked(requireAuth);
 const authedCtx = { user: { sub: 'user-1', email: 'me@example.com' } };
@@ -100,5 +100,33 @@ describe('POST /api/transactions', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe('VALIDATION_FAILED');
+  });
+});
+
+describe('GET /api/transactions — Free history floor', () => {
+  it('adds an occurredAt floor to the query for a Free account', async () => {
+    prismaMock.subscription.findUnique.mockResolvedValue(null); // Free
+    prismaMock.transaction.findMany.mockResolvedValue([]);
+
+    await GET(new NextRequest('http://test/api/transactions'));
+
+    const callArgs = prismaMock.transaction.findMany.mock.calls[0]?.[0];
+    expect(callArgs).toBeDefined();
+    expect(callArgs!.where!.occurredAt).toEqual({ gte: expect.any(Date) });
+  });
+
+  it('adds no occurredAt floor for a Pro account', async () => {
+    const future = new Date(Date.now() + 60_000);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      plan: 'PRO',
+      currentPeriodEnd: future,
+    } as never);
+    prismaMock.transaction.findMany.mockResolvedValue([]);
+
+    await GET(new NextRequest('http://test/api/transactions'));
+
+    const callArgs = prismaMock.transaction.findMany.mock.calls[0]?.[0];
+    expect(callArgs).toBeDefined();
+    expect(callArgs!.where!.occurredAt).toBeUndefined();
   });
 });

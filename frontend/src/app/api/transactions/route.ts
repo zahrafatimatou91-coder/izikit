@@ -15,6 +15,7 @@ import { clampLimit, decodeCursor, cursorWhere, buildPage } from '@/lib/server/p
 import { withDbRetry } from '@/lib/server/db-retry';
 import { maybeFireEnvelopeThreshold } from '@/lib/server/transactions/envelope-threshold';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { getEffectivePlan, getHistoryFloor } from '@/lib/server/subscriptions/tier';
 
 const CreateBody = z.object({
   amount: z
@@ -32,6 +33,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
 
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: auth.user.sub },
+    });
+    const historyFloor = getHistoryFloor(getEffectivePlan(subscription));
+
     const url = req.nextUrl;
     const limit = clampLimit(url.searchParams.get('limit'));
     const cursor = decodeCursor(url.searchParams.get('cursor'));
@@ -39,6 +45,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const where: Prisma.TransactionWhereInput = {
       userId: auth.user.sub,
       ...cursorWhere(cursor),
+      ...(historyFloor ? { occurredAt: { gte: historyFloor } } : {}),
     };
 
     const rows = await withDbRetry(() =>
