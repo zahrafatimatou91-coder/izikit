@@ -12,7 +12,7 @@ vi.mock('@/lib/server/middleware', () => ({
 }));
 
 import { requireAuth } from '@/lib/server/middleware';
-import { POST } from './route';
+import { GET, POST } from './route';
 
 const mockRequireAuth = vi.mocked(requireAuth);
 const authedCtx = { user: { sub: 'user-1', email: 'me@example.com' } };
@@ -134,5 +134,95 @@ describe('POST /api/envelopes', () => {
     );
     expect(res.status).toBe(201);
     expect(prismaMock.envelope.create).toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/envelopes — Free tier limit', () => {
+  it('blocks a 3rd envelope for a Free account with ENVELOPE_TIER_LIMIT', async () => {
+    prismaMock.subscription.findUnique.mockResolvedValue(null); // no row = Free
+    prismaMock.envelope.findMany.mockResolvedValue([
+      { name: 'Nourriture', monthlyLimit: 10000, archivedAt: null },
+      { name: 'Transport', monthlyLimit: 10000, archivedAt: null },
+    ] as never);
+
+    const res = await POST(
+      makePost({ name: 'Loisirs', icon: 'star', color: 'envelope-3', monthlyLimit: 5000 }),
+    );
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error).toBe('ENVELOPE_TIER_LIMIT');
+    expect(prismaMock.envelope.create).not.toHaveBeenCalled();
+  });
+
+  it('does not count archived envelopes against the Free limit', async () => {
+    prismaMock.subscription.findUnique.mockResolvedValue(null);
+    prismaMock.envelope.findMany.mockResolvedValue([
+      { name: 'Nourriture', monthlyLimit: 10000, archivedAt: null },
+      { name: 'Ancienne', monthlyLimit: 10000, archivedAt: new Date() },
+    ] as never);
+    prismaMock.envelope.create.mockResolvedValue({
+      id: 'env-2',
+      name: 'Loisirs',
+      icon: 'star',
+      color: 'envelope-3',
+      monthlyLimit: 5000,
+    } as never);
+
+    const res = await POST(
+      makePost({ name: 'Loisirs', icon: 'star', color: 'envelope-3', monthlyLimit: 5000 }),
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it('allows a 3rd+ envelope for a Pro account', async () => {
+    const future = new Date(Date.now() + 60_000);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      plan: 'PRO',
+      currentPeriodEnd: future,
+    } as never);
+    prismaMock.envelope.findMany.mockResolvedValue([
+      { name: 'Nourriture', monthlyLimit: 10000, archivedAt: null },
+      { name: 'Transport', monthlyLimit: 10000, archivedAt: null },
+    ] as never);
+    prismaMock.envelope.create.mockResolvedValue({
+      id: 'env-3',
+      name: 'Loisirs',
+      icon: 'star',
+      color: 'envelope-3',
+      monthlyLimit: 5000,
+    } as never);
+
+    const res = await POST(
+      makePost({ name: 'Loisirs', icon: 'star', color: 'envelope-3', monthlyLimit: 5000 }),
+    );
+    expect(res.status).toBe(201);
+  });
+});
+
+describe('GET /api/envelopes — archived flag', () => {
+  it('exposes archived: true for an envelope with archivedAt set', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ budgetFrequency: 'monthly' } as never);
+    prismaMock.envelope.findMany.mockResolvedValue([
+      {
+        id: 'env-1',
+        name: 'Ancienne',
+        icon: 'star',
+        color: 'envelope-1',
+        monthlyLimit: 10000,
+        archivedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ] as never);
+    // `groupBy`'s generic overload signature defeats vitest-mock-extended's
+    // inference here — cast to bypass, same pragmatic escape used elsewhere
+    // in this suite for Prisma's heavily-generic methods.
+    (
+      prismaMock.transaction.groupBy as unknown as { mockResolvedValue: (v: unknown[]) => void }
+    ).mockResolvedValue([]);
+
+    const res = await GET(new NextRequest('http://test/api/envelopes'));
+    const body = await res.json();
+    expect(body.envelopes[0].archived).toBe(true);
   });
 });

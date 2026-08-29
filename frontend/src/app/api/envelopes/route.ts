@@ -15,6 +15,7 @@ import { withDbRetry } from '@/lib/server/db-retry';
 import { ENVELOPE_SWATCHES } from '@/lib/envelope-colors';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { normalizeForCompare } from '@/lib/text';
+import { getEffectivePlan, FREE_MAX_ENVELOPES } from '@/lib/server/subscriptions/tier';
 
 const SWATCH_KEYS = ENVELOPE_SWATCHES.map((s) => s.key) as [string, ...string[]];
 
@@ -73,6 +74,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           color: e.color,
           monthlyLimit: e.monthlyLimit,
           spent: spentMap.get(e.id) ?? 0,
+          archived: e.archivedAt !== null,
         })),
       },
       { headers: { 'x-request-id': ctx.requestId } },
@@ -98,13 +100,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const [user, existingEnvelopes] = await Promise.all([
+    const [user, existingEnvelopes, subscription] = await Promise.all([
       prisma.user.findUnique({ where: { id: auth.user.sub }, select: { totalBudget: true } }),
       prisma.envelope.findMany({
         where: { userId: auth.user.sub },
-        select: { name: true, monthlyLimit: true },
+        select: { name: true, monthlyLimit: true, archivedAt: true },
       }),
+      prisma.subscription.findUnique({ where: { userId: auth.user.sub } }),
     ]);
+
+    const plan = getEffectivePlan(subscription);
+    const activeCount = existingEnvelopes.filter((e) => e.archivedAt === null).length;
+    if (plan === 'FREE' && activeCount >= FREE_MAX_ENVELOPES) {
+      return NextResponse.json(
+        {
+          error: 'ENVELOPE_TIER_LIMIT',
+          message: `Le plan Free est limité à ${FREE_MAX_ENVELOPES} enveloppes — passe à Pro pour en ajouter.`,
+        },
+        { status: 403, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
 
     // Reject a name that already exists for this user (case/accent-
     // insensitive) — same rationale as savings-goals: a silent second
