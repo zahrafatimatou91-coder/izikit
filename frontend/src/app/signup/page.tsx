@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
+import { PasswordField } from '@/components/auth/PasswordField';
 import { Icon } from '@/components/ui/Icon';
 
 // Top-level navigation (not fetch) — same-origin Next.js API route.
@@ -68,20 +69,13 @@ export default function SignupPage() {
           >
             Mot de passe
           </label>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-input px-3 py-2.5">
-            <Icon i="lock" size={16} className="flex-shrink-0 text-muted-foreground" />
-            <input
-              id="password"
-              type="password"
-              required
-              autoComplete="new-password"
-              minLength={10}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent font-body text-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
+          <PasswordField
+            id="password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            minLength={10}
+          />
           <p className="mt-1 font-body text-xs text-muted-foreground">Au moins 10 caractères.</p>
         </div>
 

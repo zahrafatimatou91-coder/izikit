@@ -7,6 +7,7 @@ import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
+import { PasswordField } from '@/components/auth/PasswordField';
 import { Icon } from '@/components/ui/Icon';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 
@@ -90,19 +91,12 @@ function LoginForm() {
           >
             Mot de passe
           </label>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-input px-3 py-2.5">
-            <Icon i="lock" size={16} className="flex-shrink-0 text-muted-foreground" />
-            <input
-              id="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent font-body text-sm text-foreground outline-none placeholder:text-muted-foreground"
-            />
-          </div>
+          <PasswordField
+            id="password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="current-password"
+          />
           <p className="mt-1 text-right">
             <Link href="/forgot-password" className="font-body text-xs font-medium text-primary">
               Mot de passe oublié ?
