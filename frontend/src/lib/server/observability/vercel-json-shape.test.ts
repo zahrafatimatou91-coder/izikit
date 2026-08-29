@@ -1,11 +1,11 @@
 // frontend/src/lib/server/observability/vercel-json-shape.test.ts — Phase 5 D-20.
 //
-// Tripwire: verifies vercel.json declares all 9 cron entries (8 unique
+// Tripwire: verifies vercel.json declares all 10 cron entries (9 unique
 // routes — inactivity-nudges is scheduled twice daily, same route hit at
 // two different times) with valid cron-format strings and paths that
 // correspond to actual route.ts files. (5 Phase-5 canonical + 1
 // post-audit email-job-purge + 1 savings-goal-reminders + 1
-// inactivity-nudges ×2 schedules.)
+// inactivity-nudges ×2 schedules + 1 subscription-expiration.)
 //
 // Wave 0 status: RED until Wave 1 plan 05-08 ships frontend/vercel.json.
 // Once GREEN, this test guards against route-rename / schedule-drift
@@ -36,11 +36,11 @@ describe('vercel.json schema (CRON-07, D-20)', () => {
     expect(existsSync(VERCEL_JSON)).toBe(true);
   });
 
-  it('declares exactly 9 cron entries (8 unique routes, one scheduled twice)', () => {
+  it('declares exactly 10 cron entries (9 unique routes, one scheduled twice)', () => {
     if (!existsSync(VERCEL_JSON)) return; // skip silently when RED-by-design
     const cfg = JSON.parse(readFileSync(VERCEL_JSON, 'utf8')) as VercelConfig;
     expect(cfg.crons).toBeDefined();
-    expect(cfg.crons!.length).toBe(9);
+    expect(cfg.crons!.length).toBe(10);
   });
 
   it('every cron path matches /^\\/api\\/cron\\/[a-z-]+$/ and schedule is valid 5-field cron', () => {
@@ -66,7 +66,7 @@ describe('vercel.json schema (CRON-07, D-20)', () => {
     }
   });
 
-  it('declares schedules for the 8 canonical unique cron routes (Phase 5 + post-audit)', () => {
+  it('declares schedules for the 9 canonical unique cron routes (Phase 5 + post-audit)', () => {
     if (!existsSync(VERCEL_JSON)) return;
     const cfg = JSON.parse(readFileSync(VERCEL_JSON, 'utf8')) as VercelConfig;
     const uniquePaths = [...new Set((cfg.crons ?? []).map((c) => c.path))].sort();
@@ -77,6 +77,7 @@ describe('vercel.json schema (CRON-07, D-20)', () => {
       '/api/cron/order-expiration',
       '/api/cron/outbox-drain',
       '/api/cron/savings-goal-reminders',
+      '/api/cron/subscription-expiration',
       '/api/cron/verification-cleanup',
       '/api/cron/webhook-log-purge',
     ]);
