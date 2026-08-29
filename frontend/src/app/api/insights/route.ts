@@ -20,6 +20,7 @@ import {
 } from '@/lib/server/insights/period';
 import { projectGoalCompletion } from '@/lib/server/insights/projection';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { getEffectivePlan } from '@/lib/server/subscriptions/tier';
 
 const DEFAULT_RANGE: InsightsRange = 'this_month';
 
@@ -28,6 +29,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   return withRequestContext(ctx, async () => {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: auth.user.sub },
+    });
+    if (getEffectivePlan(subscription) === 'FREE') {
+      return NextResponse.json(
+        {
+          error: 'INSIGHTS_REQUIRES_PRO',
+          message: 'Les tendances sont réservées à Pro — passe à Pro pour y accéder.',
+        },
+        { status: 403, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
 
     // The calendar picker always resolves to concrete dates (presets
     // included) and sends `from`/`to`; `range` is the fallback used only
