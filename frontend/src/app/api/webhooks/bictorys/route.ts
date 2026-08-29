@@ -30,6 +30,11 @@ import { createWebhookHandler } from '@/lib/server/webhook/handler';
 import { bictorysWebhookProvider } from '@/lib/server/webhook/bictorys';
 import { enqueueOutbox } from '@/lib/server/outbox';
 import { prisma } from '@/lib/server/prisma';
+import {
+  parseSubscriptionOrderMetadata,
+  SUBSCRIPTION_PERIOD_DAYS,
+} from '@/lib/server/subscriptions/tier';
+import { reactivateArchivedForProUpgrade } from '@/lib/server/subscriptions/archive';
 
 export const POST = createWebhookHandler({
   prisma,
@@ -54,6 +59,41 @@ export const POST = createWebhookHandler({
         ...(paymentMethod !== null ? { paymentMethod } : {}),
       },
     });
+
+    // Subscription purchase — activate/extend Pro and reactivate any
+    // envelopes/savings-goals archived by a prior Free downgrade. Runs
+    // inside the same Serializable tx as the Order status flip so a crash
+    // between the two is impossible (both commit together or neither does).
+    const subMeta = parseSubscriptionOrderMetadata(order.metadata);
+    if (subMeta && order.userId) {
+      const existingSub = await tx.subscription.findUnique({ where: { userId: order.userId } });
+      const now = new Date();
+      const base =
+        existingSub?.currentPeriodEnd && existingSub.currentPeriodEnd.getTime() > now.getTime()
+          ? existingSub.currentPeriodEnd
+          : now;
+      const periodMs = SUBSCRIPTION_PERIOD_DAYS[subMeta.period] * 24 * 60 * 60 * 1000;
+      const currentPeriodEnd = new Date(base.getTime() + periodMs);
+
+      await tx.subscription.upsert({
+        where: { userId: order.userId },
+        create: {
+          userId: order.userId,
+          plan: 'PRO',
+          status: 'ACTIVE',
+          currentPeriodEnd,
+          lastOrderId: order.id,
+        },
+        update: {
+          plan: 'PRO',
+          status: 'ACTIVE',
+          currentPeriodEnd,
+          lastOrderId: order.id,
+        },
+      });
+
+      await reactivateArchivedForProUpgrade(tx, order.userId);
+    }
 
     // Outbox emits stay inside the factory's Serializable tx so the rows
     // commit atomically with the status change. The drain cron picks them up
