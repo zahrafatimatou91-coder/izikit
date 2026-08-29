@@ -19,7 +19,7 @@ import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
 import { formatRelativeDateTime } from '@/lib/format-date';
-import { dailyTagline, firstName, timeOfDayGreeting } from '@/lib/greeting';
+import { dailyTagline, firstName, timeOfDayEmoji, timeOfDayGreeting } from '@/lib/greeting';
 
 interface DashboardEnvelope {
   id: string;
@@ -168,7 +168,7 @@ export default function DashboardPage() {
             {/* Desktop greeting — mobile gets its own inside DashboardHeader */}
             <div className="hidden lg:block">
               <h1 className="font-headings text-2xl font-bold text-foreground">
-                {timeOfDayGreeting()}, {firstName(displayName)} 👋
+                {timeOfDayGreeting()}, {firstName(displayName)} {timeOfDayEmoji()}
               </h1>
               <p className="mt-1 font-body text-sm text-muted-foreground">{dailyTagline()}</p>
             </div>

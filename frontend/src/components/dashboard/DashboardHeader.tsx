@@ -2,7 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
-import { dailyTagline, firstName, timeOfDayGreeting } from '@/lib/greeting';
+import { dailyTagline, firstName, timeOfDayEmoji, timeOfDayGreeting } from '@/lib/greeting';
 
 interface DashboardHeaderProps {
   name: string;
@@ -48,7 +48,7 @@ export function DashboardHeader({
           <div>
             <p className="font-body text-xs text-primary-foreground/70">{timeOfDayGreeting()},</p>
             <p className="font-headings text-lg font-bold text-primary-foreground">
-              {firstName(name)} 👋
+              {firstName(name)} {timeOfDayEmoji()}
             </p>
           </div>
         </div>

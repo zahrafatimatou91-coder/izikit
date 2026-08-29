@@ -152,12 +152,12 @@ export type InactivitySlot = 'midday' | 'evening';
 // same way Duolingo's reminder copy varies by time of day.
 const INACTIVITY_COPY: Record<InactivitySlot, { title: string; body: string }> = {
   midday: {
-    title: 'Ta journée financière attend 🔥',
-    body: "Tu n'as encore rien enregistré aujourd'hui sur Chaque Franc. 10 secondes suffisent pour noter une dépense !",
+    title: 'On n’a encore rien noté aujourd’hui 👀',
+    body: 'Chaque franc compte, même celui du matin. Prends 10 secondes pour l’enregistrer — ton futur toi te dira merci. 🔥',
   },
   evening: {
-    title: 'Dernière ligne droite 🌙',
-    body: "La journée se termine et rien n'est encore enregistré. Note tes dépenses maintenant, pas demain — tu oublieras !",
+    title: 'La journée se termine, pas ton objectif 🌙',
+    body: 'Un champion ne remet jamais à demain ce qu’il peut noter ce soir. 10 secondes, et c’est fait. ✨',
   },
 };
 
