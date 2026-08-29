@@ -39,7 +39,8 @@ extension future.
 - Accès à Tendances et Conseils personnalisés.
 - Toutes les notifications (rappels, jalons d'objectifs, rythme d'épargne
   manqué, etc.).
-- Prix : 1 500 FCFA/mois, ou 12 000 FCFA/an (équivalent à 2 mois offerts).
+- Prix : 1 500 FCFA/mois, ou 13 500 FCFA/an (équivalent à 3 mois offerts —
+  9 mois payés sur 12, soit 25% de réduction par rapport au tarif mensuel).
 
 ### Pourquoi ces limites précisément
 
@@ -111,8 +112,8 @@ Objectifs d'épargne (— | illimités), Historique (2 derniers mois | complet),
 Tendances (— | ✓), Conseils personnalisés (— | ✓), Notifications (dépassement
 uniquement | toutes).
 
-**Facturation** : toggle Mensuel (1 500 FCFA/mois) / Annuel (12 000 FCFA/an,
-badge "2 mois offerts") → bouton "Passer à Pro".
+**Facturation** : toggle Mensuel (1 500 FCFA/mois) / Annuel (13 500 FCFA/an,
+badge "3 mois offerts") → bouton "Passer à Pro".
 
 **FAQ courte** :
 - *Puis-je annuler quand je veux ?* → Oui, tu restes Pro jusqu'à la fin de la
