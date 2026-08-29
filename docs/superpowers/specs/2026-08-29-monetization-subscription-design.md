@@ -110,7 +110,10 @@ vers cette page plutôt que d'ouvrir un paywall dédié par fonctionnalité
 **Tableau comparatif** (Free | Pro) : Enveloppes (2 max | illimitées),
 Objectifs d'épargne (— | illimités), Historique (2 derniers mois | complet),
 Tendances (— | ✓), Conseils personnalisés (— | ✓), Notifications (dépassement
-uniquement | toutes).
+uniquement | toutes). La colonne Pro est visuellement mise en avant (bordure
+colorée, fond légèrement teinté, badge "Recommandé") plutôt que présentée à
+poids égal avec Free — un tableau neutre invite à comparer froidement, une
+colonne mise en avant guide le regard vers le choix qu'on veut encourager.
 
 **Facturation** : toggle Mensuel (1 500 FCFA/mois) / Annuel (13 500 FCFA/an,
 badge "3 mois offerts") → bouton "Passer à Pro". L'annuel est présenté comme
@@ -136,9 +139,13 @@ voir les limites Free avant la fin de son essai.
   jours d'essai Pro, jusqu'au [date]" (pas "Tu es Pro jusqu'au [date]", qui
   laisserait croire à un abonnement payé).
 - **Rappel de fin d'essai** : nouvelle notification à `currentPeriodEnd - 2
-  jours` ("Ton essai Pro se termine bientôt — passe à Pro pour tout garder"),
-  distincte du rappel de renouvellement payé (copy différente : on invite à
-  *démarrer* un abonnement, pas à le *renouveler*).
+  jours`, personnalisée avec les vrais chiffres du compte plutôt qu'un texte
+  générique — ex. "Ton essai Pro se termine dans 2 jours. Tu as 4 enveloppes
+  et 2 objectifs d'épargne actifs : passe à Pro pour qu'ils restent actifs."
+  Une perte concrète et chiffrée convertit mieux qu'une formule vague, et
+  reste honnête : rien n'est supprimé (voir Downgrade), donc on parle de
+  "rester actif", pas de "garder tes données" — ça décrirait une perte qui
+  n'a pas lieu.
 - **Fin d'essai non converti** : géré par le même cron
   `subscription-expiration` déjà prévu ci-dessus (`currentPeriodEnd < now`
   déclenche le retour en Free + archivage du surplus) — aucune logique
@@ -186,6 +193,13 @@ identifié dans le suivi Banani `.planning/banani/STATUS.md`).
   existants) doit gater : création d'enveloppe au-delà de 2, création
   d'objectif d'épargne, accès aux routes Tendances/Conseils, et filtrer
   l'historique par date pour les comptes Free.
+- Journaliser (via le `log` scopé existant de `request-context.ts`, aucun
+  nouvel outil) les transitions clés du cycle de vie d'un abonnement :
+  `trial_started`, `trial_reminder_sent`, `trial_converted`,
+  `trial_expired`, `subscription_renewed`, `subscription_lapsed`. Sans ça,
+  il est impossible de mesurer un taux de conversion essai→payant ou de
+  savoir si le rappel à -2 jours sert à quelque chose — donc impossible de
+  décider quoi ajuster ensuite.
 
 ## Chantier 3 — Landing page
 
@@ -294,12 +308,52 @@ verte). Concrètement :
   chantier 1, avec des CTA vers l'inscription plutôt que vers le paiement
   ("Créer un compte gratuit" / "Commencer" — le visiteur n'a pas encore de
   compte, le paiement effectif se fait sur `/subscription` une fois connecté).
+  L'essai de 7 jours (voir chantier 2) doit être annoncé explicitement ici —
+  c'est le meilleur argument pour lever la friction de l'inscription : le CTA
+  de la colonne Pro devient "Commencer — 7 jours Pro offerts" plutôt qu'un
+  "Commencer" générique identique à celui de Free.
 - **Témoignages, CTA final, footer** : hors scope de cette conception — pas
   de changement demandé au-delà de la cohérence de style générale. *Note
   signalée mais non traitée ici* : les témoignages actuels (noms, citations)
   semblent être des exemples fictifs plutôt que de vrais retours
   utilisateurs — à trancher séparément si l'app doit un jour les présenter
   comme authentiques.
+
+## Audit marketing & psychologie utilisateur
+
+Relecture de la spec avec un œil croissance/conversion. Ce qui a été corrigé
+directement dans les sections ci-dessus :
+
+- **Rappel de fin d'essai trop générique** → reformulé avec les vrais
+  chiffres du compte (nombre d'enveloppes/objectifs concernés) : une perte
+  concrète convertit mieux qu'une formule vague.
+- **"Passe à Pro pour tout garder" était limite malhonnête** → rien n'est
+  supprimé au downgrade (voir Downgrade), donc la copy ne doit pas laisser
+  croire à une perte de données. Reformulé en "rester actif".
+- **Tableau comparatif à poids égal** → la colonne Pro doit être visuellement
+  mise en avant (bordure, badge "Recommandé"), sinon le tableau invite à
+  comparer froidement plutôt qu'à choisir.
+- **L'essai de 7 jours n'était nulle part mentionné sur la landing page** →
+  c'est pourtant le meilleur argument pour lever la friction à l'inscription,
+  ajouté explicitement au CTA de la section Tarifs.
+- **Aucune mesure du succès de ces mécaniques** → ajout d'une journalisation
+  minimale des transitions du cycle de vie d'un abonnement (voir
+  Implications techniques), sans quoi personne ne peut savoir si l'essai ou
+  le rappel fonctionnent.
+
+Ce que j'ai délibérément choisi de **ne pas** ajouter, et pourquoi :
+
+- **Urgence ou rareté artificielle** ("offre limitée", compte à rebours,
+  "plus que 3 places") — technique classique de conversion, mais c'est un
+  dark pattern quand la rareté est fausse, et une app qui gère l'argent des
+  gens ne peut pas se permettre de perdre leur confiance pour un gain de
+  conversion à court terme. Aucune urgence artificielle nulle part dans
+  cette conception.
+- **Notifications de relance multiples pendant l'essai** (ex. J-5, J-3, J-1)
+  — mesurablement plus efficace qu'un rappel unique, mais ajoute des crons,
+  des templates et de la complexité pour un gain incertain tant qu'on n'a
+  pas mesuré le taux de conversion actuel (voir journalisation ci-dessus). À
+  reconsidérer une fois qu'on a des chiffres réels, pas avant.
 
 ## Hors scope (explicitement reporté)
 
