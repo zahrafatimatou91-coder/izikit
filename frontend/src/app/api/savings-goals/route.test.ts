@@ -17,7 +17,7 @@ vi.mock('@/lib/server/middleware', () => ({
 }));
 
 import { requireAuth } from '@/lib/server/middleware';
-import { POST } from './route';
+import { GET, POST } from './route';
 
 const mockRequireAuth = vi.mocked(requireAuth);
 const authedCtx = { user: { sub: 'user-1', email: 'me@example.com' } };
@@ -34,9 +34,15 @@ function makePost(body: unknown): NextRequest {
   });
 }
 
+const proSubscription = { plan: 'PRO', currentPeriodEnd: new Date(Date.now() + 60_000) };
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAuth.mockResolvedValue(authedCtx as never);
+  // Savings goals are entirely Pro-gated (see the "Free tier gate" describe
+  // block below) — the pre-existing tests in this block exercise the
+  // duplicate-name guard, which only a Pro account can even reach now.
+  prismaMock.subscription.findUnique.mockResolvedValue(proSubscription as never);
 });
 
 describe('POST /api/savings-goals', () => {
@@ -101,5 +107,75 @@ describe('POST /api/savings-goals', () => {
     );
     expect(res.status).toBe(409);
     expect(prismaMock.savingsGoal.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/savings-goals — Free tier gate', () => {
+  it('blocks any goal creation for a Free account with SAVINGS_GOAL_REQUIRES_PRO', async () => {
+    prismaMock.subscription.findUnique.mockResolvedValue(null);
+
+    const res = await POST(
+      makePost({
+        name: 'Vélo',
+        icon: 'bike',
+        targetAmount: 50000,
+        period: 'weekly',
+        paceAmount: 5000,
+      }),
+    );
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error).toBe('SAVINGS_GOAL_REQUIRES_PRO');
+    expect(prismaMock.savingsGoal.create).not.toHaveBeenCalled();
+    expect(prismaMock.savingsGoal.findMany).not.toHaveBeenCalled(); // gate short-circuits before the duplicate-name check
+  });
+
+  it('allows goal creation for a Pro account', async () => {
+    prismaMock.subscription.findUnique.mockResolvedValue(proSubscription as never);
+    prismaMock.savingsGoal.findMany.mockResolvedValue([]);
+    prismaMock.savingsGoal.create.mockResolvedValue({
+      id: 'goal-1',
+      name: 'Vélo',
+      icon: 'bike',
+      targetAmount: 50000,
+      currentAmount: 0,
+      period: 'weekly',
+      paceAmount: 5000,
+      createdAt: new Date(),
+    } as never);
+
+    const res = await POST(
+      makePost({
+        name: 'Vélo',
+        icon: 'bike',
+        targetAmount: 50000,
+        period: 'weekly',
+        paceAmount: 5000,
+      }),
+    );
+    expect(res.status).toBe(201);
+  });
+});
+
+describe('GET /api/savings-goals — archived flag', () => {
+  it('exposes archived: true for a goal with archivedAt set', async () => {
+    prismaMock.savingsGoal.findMany.mockResolvedValue([
+      {
+        id: 'goal-1',
+        name: 'Ancien',
+        icon: 'bike',
+        targetAmount: 50000,
+        currentAmount: 0,
+        period: 'weekly',
+        paceAmount: 5000,
+        archivedAt: new Date(),
+        createdAt: new Date(),
+      },
+    ] as never);
+    prismaMock.savingsEntry.findMany.mockResolvedValue([]);
+
+    const res = await GET(new NextRequest('http://test/api/savings-goals'));
+    const body = await res.json();
+    expect(body.goals[0].archived).toBe(true);
   });
 });

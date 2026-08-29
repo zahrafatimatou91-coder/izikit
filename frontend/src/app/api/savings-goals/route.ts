@@ -14,6 +14,7 @@ import { prisma } from '@/lib/server/prisma';
 import { withDbRetry } from '@/lib/server/db-retry';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { normalizeForCompare } from '@/lib/text';
+import { getEffectivePlan } from '@/lib/server/subscriptions/tier';
 
 const CreateBody = z.object({
   name: z.string().trim().min(1).max(60),
@@ -101,6 +102,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           paceAmount: g.paceAmount,
           completed: g.currentAmount >= g.targetAmount,
           createdAt: g.createdAt.toISOString(),
+          archived: g.archivedAt !== null,
         })),
         summary: {
           activeGoals: goals.length,
@@ -122,6 +124,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: auth.user.sub },
+    });
+    if (getEffectivePlan(subscription) === 'FREE') {
+      return NextResponse.json(
+        {
+          error: 'SAVINGS_GOAL_REQUIRES_PRO',
+          message:
+            "Les objectifs d'épargne sont réservés à Pro — passe à Pro pour commencer à épargner.",
+        },
+        { status: 403, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
 
     const body = await req.json().catch(() => null);
     const parsed = CreateBody.safeParse(body);
