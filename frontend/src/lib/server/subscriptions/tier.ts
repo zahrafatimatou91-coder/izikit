@@ -53,3 +53,45 @@ export function getHistoryFloor(plan: EffectivePlan, now: Date = new Date()): Da
   if (plan === 'PRO') return null;
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - FREE_HISTORY_MONTHS_BACK, 1));
 }
+
+/** Trial length granted once at signup — see isTrial() above and the
+ * signup route. */
+export const SUBSCRIPTION_TRIAL_DAYS = 7;
+
+/** Paid period lengths in days, keyed by the `period` value a subscription
+ * checkout is created with (`POST /api/orders` body's
+ * `metadata: { purpose: 'subscription', period }`). 13 500 FCFA/an buys 365
+ * days flat — no leap-year adjustment, matches the "3 mois offerts" pricing
+ * framing in the spec rather than a precise 9×30-day count. */
+export const SUBSCRIPTION_PERIOD_DAYS: Record<'monthly' | 'annual', number> = {
+  monthly: 30,
+  annual: 365,
+};
+
+/** Reminder windows before `currentPeriodEnd`, in days — consumed by the
+ * subscription-expiration cron. A trial (never billed) and a paid renewal
+ * get distinct copy and distinct windows (spec: -2j essai, -3j payant). */
+export const SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS = 2;
+export const SUBSCRIPTION_RENEWAL_REMINDER_DAYS = 3;
+
+export interface SubscriptionOrderMetadata {
+  purpose: 'subscription';
+  period: 'monthly' | 'annual';
+}
+
+/**
+ * Reads `Order.metadata` (an opaque `Prisma.JsonValue`) and returns a typed
+ * subscription-purchase descriptor, or `null` if this order isn't a
+ * subscription purchase (any other Order shape — e.g. a future non-
+ * subscription use of the same generic checkout — is left untouched by the
+ * webhook's subscription-activation branch).
+ */
+export function parseSubscriptionOrderMetadata(
+  metadata: unknown,
+): SubscriptionOrderMetadata | null {
+  if (typeof metadata !== 'object' || metadata === null) return null;
+  const m = metadata as Record<string, unknown>;
+  if (m.purpose !== 'subscription') return null;
+  if (m.period !== 'monthly' && m.period !== 'annual') return null;
+  return { purpose: 'subscription', period: m.period };
+}

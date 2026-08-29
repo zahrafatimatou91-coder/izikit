@@ -24,6 +24,7 @@ import { isBanned } from '@/lib/server/auth/banned-passwords';
 import { isPwned } from '@/lib/server/auth/hibp';
 import { dummyBcryptCompare } from '@/lib/server/auth/dummy-bcrypt';
 import { enqueueOutbox } from '@/lib/server/outbox';
+import { SUBSCRIPTION_TRIAL_DAYS } from '@/lib/server/subscriptions/tier';
 
 const PASSWORD_MIN = Number(process.env.AUTH_PASSWORD_MIN_LENGTH ?? 10);
 const VERIFICATION_TTL_MS = Number(process.env.AUTH_VERIFICATION_TTL_MIN ?? 15) * 60 * 1000;
@@ -123,6 +124,20 @@ export async function POST(req: NextRequest): Promise<Response> {
         data: { email, passwordHash },
         select: { id: true },
       });
+      // Reverse-trial: every new account starts Pro for 7 days, no card/
+      // payment required. `lastOrderId: null` marks it as a trial (see
+      // isTrial() in subscriptions/tier.ts) until a real payment lands.
+      // Granted exactly once, here — never retriggered by any other flow.
+      await tx.subscription.create({
+        data: {
+          userId: user.id,
+          plan: 'PRO',
+          status: 'ACTIVE',
+          currentPeriodEnd: new Date(Date.now() + SUBSCRIPTION_TRIAL_DAYS * 24 * 60 * 60 * 1000),
+          lastOrderId: null,
+        },
+      });
+      log.info('subscription trial_started', { userId: user.id });
       await tx.verificationCode.create({
         data: {
           userId: user.id,
