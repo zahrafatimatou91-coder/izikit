@@ -4,18 +4,36 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 
 const PAYMENT_METHODS = ['Wave', 'Orange Money', 'Free Money', 'Carte bancaire'];
 
-const ENVELOPE_PREVIEW = [
-  { cat: 'Alimentation', pct: 68, warn: true },
-  { cat: 'Transport', pct: 42, warn: false },
-  { cat: 'Loisirs', pct: 87, warn: true },
-  { cat: 'Études', pct: 15, warn: false },
+interface PreviewEnvelope {
+  cat: string;
+  pct: number;
+  tendu: boolean;
+}
+
+const HERO_ENVELOPES_DESKTOP: PreviewEnvelope[] = [
+  { cat: 'Nourriture', pct: 65, tendu: false },
+  { cat: 'Transport', pct: 40, tendu: false },
+  { cat: 'Famille', pct: 85, tendu: true },
 ];
 
-const SIDEBAR_PREVIEW = [
-  { icon: 'layout-dashboard' as const, label: 'Tableau', active: true },
-  { icon: 'package' as const, label: 'Enveloppes', active: false },
-  { icon: 'trending-up' as const, label: 'Objectifs', active: false },
-  { icon: 'settings' as const, label: 'Paramètres', active: false },
+const HERO_ENVELOPES_MOBILE: PreviewEnvelope[] = [
+  { cat: 'Nourriture', pct: 65, tendu: false },
+  { cat: 'Famille', pct: 85, tendu: true },
+];
+
+const HERO_GOAL = { name: 'Ordinateur portable', pct: 55 };
+
+const HERO_BADGES = [
+  {
+    icon: 'wallet' as const,
+    title: 'Enveloppes',
+    desc: 'Alloue ton argent avant de le dépenser.',
+  },
+  {
+    icon: 'target' as const,
+    title: 'Objectifs',
+    desc: 'Suis ta progression, jour après jour.',
+  },
 ];
 
 const FEATURES_DESKTOP = [
@@ -90,7 +108,31 @@ const TESTIMONIALS_MOBILE = [
   { text: "L'appli que j'attendais.", name: 'Fatima Ndiaye', role: 'Médecine, Abidjan' },
 ];
 
-function DashboardMockup({ compact = false }: { compact?: boolean }) {
+function HeroEnvelopeRow({ e }: { e: PreviewEnvelope }) {
+  return (
+    <div
+      className={`rounded-xl border px-4 py-3 ${
+        e.tendu ? 'border-amber-300 bg-amber-50' : 'border-border bg-card'
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <p className="font-body text-sm font-bold text-foreground">{e.cat}</p>
+        <p className={`font-body text-sm font-bold ${e.tendu ? 'text-amber-700' : 'text-primary'}`}>
+          {e.pct}%
+        </p>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full ${e.tendu ? 'bg-amber-400' : 'bg-primary'}`}
+          style={{ width: `${e.pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function HeroProductPreview({ compact = false }: { compact?: boolean }) {
+  const envelopes = compact ? HERO_ENVELOPES_MOBILE : HERO_ENVELOPES_DESKTOP;
   return (
     <div className="overflow-hidden rounded-2xl border-2 border-border bg-white shadow-lg lg:rounded-3xl lg:shadow-2xl">
       <div className="flex items-center gap-2 border-b-2 border-border bg-input px-3 py-3 lg:gap-3 lg:px-6 lg:py-4">
@@ -104,80 +146,35 @@ function DashboardMockup({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 bg-background p-4 lg:flex-row lg:gap-6 lg:p-8">
-        <div className="hidden w-48 flex-shrink-0 flex-col gap-2 rounded-2xl border-2 border-border bg-card px-4 py-6 lg:flex">
-          <p className="mb-4 font-body text-xs font-bold uppercase tracking-wider text-primary">
-            Chaque Franc
-          </p>
-          {SIDEBAR_PREVIEW.map((item) => (
-            <div
-              key={item.label}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 font-body text-sm font-medium ${
-                item.active
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              <Icon i={item.icon} size={18} />
-              {item.label}
-            </div>
+      <div className="flex flex-col gap-4 bg-background p-4 lg:gap-6 lg:p-8">
+        <div className="rounded-xl bg-primary p-5 text-primary-foreground shadow-md lg:rounded-2xl lg:p-8 lg:shadow-lg">
+          <p className="mb-2 text-xs opacity-75 lg:mb-3 lg:text-sm">Reste ce mois-ci</p>
+          <p className="font-headings text-2xl font-bold lg:text-4xl">182 400 F</p>
+        </div>
+
+        <div className="flex flex-col gap-2 lg:gap-3">
+          {envelopes.map((e) => (
+            <HeroEnvelopeRow key={e.cat} e={e} />
           ))}
         </div>
 
-        <div className="flex flex-1 flex-col gap-4 lg:gap-6">
-          <div className="flex items-center justify-between">
-            <p className="font-headings text-sm font-bold text-foreground lg:text-lg">
-              {compact ? 'Nov 2026' : 'Novembre 2026'}
-            </p>
-            <Icon i="more-horizontal" size={16} className="text-muted-foreground lg:hidden" />
-            <Icon i="more-horizontal" size={20} className="hidden text-muted-foreground lg:block" />
-          </div>
-
-          <div className="rounded-xl bg-[linear-gradient(135deg,var(--color-primary)_0%,#2563eb_100%)] p-5 text-primary-foreground shadow-md lg:rounded-2xl lg:p-8 lg:shadow-lg">
-            <p className="mb-2 text-xs opacity-75 lg:mb-3 lg:text-sm">Solde disponible</p>
-            <p className="mb-3 font-headings text-2xl font-bold lg:mb-6 lg:text-4xl">26 550 F</p>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/20 lg:h-2">
-              <div className="h-full w-[47%] rounded-full bg-white" />
+        {!compact && (
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="flex items-center gap-1.5 font-body text-sm font-bold text-foreground">
+                <Icon i="target" size={14} className="text-primary" />
+                {HERO_GOAL.name}
+              </p>
+              <p className="font-body text-sm font-bold text-primary">{HERO_GOAL.pct}%</p>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${HERO_GOAL.pct}%` }}
+              />
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-2 lg:gap-4">
-            {ENVELOPE_PREVIEW.map((e) => (
-              <div
-                key={e.cat}
-                className={`rounded-lg border px-3 py-2.5 lg:rounded-2xl lg:border-2 lg:px-5 lg:py-4 ${
-                  e.warn ? 'border-orange-300 bg-orange-50' : 'border-border bg-card'
-                }`}
-              >
-                <div className="mb-2 flex items-center justify-between lg:mb-3">
-                  <p className="truncate font-body text-xs font-bold text-foreground lg:text-sm">
-                    {e.cat}
-                  </p>
-                  <p
-                    className={`font-body text-xs font-bold lg:text-sm ${
-                      e.warn ? 'text-orange-600' : 'text-primary'
-                    }`}
-                  >
-                    {e.pct}%
-                  </p>
-                </div>
-                <div className="h-1 w-full overflow-hidden rounded-full bg-muted lg:h-2">
-                  <div
-                    className={`h-full rounded-full ${e.warn ? 'bg-orange-400' : 'bg-primary'} ${
-                      e.pct >= 80
-                        ? 'w-[87%]'
-                        : e.pct >= 60
-                          ? 'w-[68%]'
-                          : e.pct >= 40
-                            ? 'w-[42%]'
-                            : 'w-[15%]'
-                    }`}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -198,23 +195,23 @@ export default function LandingPage() {
           </Link>
         </nav>
 
-        <section className="relative overflow-hidden px-4 pb-12 pt-16">
-          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white to-background" />
-          <div className="absolute -z-10 right-0 top-0 h-48 w-48 rounded-full bg-primary opacity-[0.08] blur-2xl" />
+        <section className="relative overflow-hidden bg-[linear-gradient(160deg,#4a3c28_0%,#2e2417_100%)] px-4 pb-12 pt-16">
+          <div className="absolute -z-10 -right-16 -top-16 h-64 w-64 rounded-full bg-[#faf7f2] opacity-[0.06] blur-3xl" />
 
-          <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-8">
             <div>
-              <h1 className="mb-5 font-headings text-[40px] font-bold leading-[1.2]">
-                Reprends le
-                <br />
-                <span className="text-primary">contrôle</span>
-                <br />
-                de ton argent.
+              <h1 className="mb-5 font-headings text-[36px] font-bold leading-[1.25] text-[#faf7f2]">
+                Sais où part <span className="text-secondary">chaque franc</span>, avant la fin du
+                mois.
               </h1>
-              <p className="font-body text-base leading-relaxed text-muted-foreground">
-                Tableau de bord pour étudiants africains. Planifie. Dépense intelligent. Épargne
-                vrai.
+              <p className="font-body text-base leading-relaxed text-[#faf7f2]/80">
+                Tu ranges ton argent en enveloppes dès qu&apos;il rentre. L&apos;app te dit ce
+                qu&apos;il reste dans chacune, en temps réel.
               </p>
+            </div>
+
+            <div className="pt-2">
+              <HeroProductPreview compact />
             </div>
 
             <div className="flex flex-col gap-3">
@@ -225,33 +222,28 @@ export default function LandingPage() {
                 Essayer gratuitement
                 <Icon i="arrow-right" size={18} />
               </Link>
-              <p className="text-center font-body text-xs text-muted-foreground">
-                Aucune carte bancaire requise
+              <p className="text-center font-body text-xs text-[#faf7f2]/60">
+                Sans carte bancaire · Actif en 5 minutes
               </p>
             </div>
 
-            <div className="flex flex-col items-center gap-4 pt-2">
-              <div className="flex -space-x-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <UserAvatar
-                    key={i}
-                    name={`Étudiant ${i}`}
-                    className="h-10 w-10 rounded-full border-2 border-white shadow-md"
-                  />
-                ))}
-              </div>
-              <div className="text-center">
-                <p className="font-body text-sm font-bold text-foreground">
-                  12 000+ utilisateurs actifs
-                </p>
-                <p className="font-body text-xs text-muted-foreground">
-                  Dakar • Accra • Douala • Abidjan
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <DashboardMockup compact />
+            <div className="flex flex-col gap-3">
+              {HERO_BADGES.map((b) => (
+                <div
+                  key={b.title}
+                  className="flex items-start gap-3 rounded-2xl border border-secondary/30 bg-secondary/10 p-4"
+                >
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-secondary/40 bg-secondary/20">
+                    <Icon i={b.icon} size={20} className="text-[#faf7f2]" />
+                  </div>
+                  <div>
+                    <h4 className="mb-1 font-headings text-sm font-bold text-[#faf7f2]">
+                      {b.title}
+                    </h4>
+                    <p className="font-body text-xs leading-relaxed text-[#faf7f2]/70">{b.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -449,63 +441,60 @@ export default function LandingPage() {
           </Link>
         </nav>
 
-        <section className="relative overflow-hidden px-20 pb-32 pt-40">
-          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white to-background" />
-          <div className="absolute -z-10 right-40 top-20 h-96 w-96 rounded-full bg-primary opacity-[0.08] blur-3xl" />
-          <div className="absolute -z-10 bottom-0 left-0 h-64 w-64 rounded-full bg-secondary opacity-5 blur-2xl" />
+        <section className="relative overflow-hidden bg-[linear-gradient(160deg,#4a3c28_0%,#2e2417_100%)] px-20 pb-32 pt-40">
+          <div className="absolute -z-10 -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-[#faf7f2] opacity-[0.06] blur-3xl" />
 
-          <div className="mx-auto flex max-w-5xl flex-col gap-16">
+          <div className="mx-auto grid max-w-7xl grid-cols-2 items-center gap-20">
             <div>
-              <h1 className="mb-8 font-headings text-[84px] font-bold leading-[1.05]">
-                Reprends le
-                <br />
-                <span className="text-primary">contrôle de ton</span>
-                <br />
-                argent.
+              <p className="mb-6 font-headings text-sm font-bold uppercase tracking-widest text-secondary">
+                Chaque Franc
+              </p>
+              <h1 className="mb-8 font-headings text-[64px] font-bold leading-[1.15] text-[#faf7f2]">
+                Sais où part <span className="text-secondary">chaque franc</span>, avant la fin du
+                mois.
               </h1>
-              <p className="max-w-2xl font-body text-2xl leading-relaxed text-muted-foreground">
-                Un tableau de bord conçu pour les étudiants africains. Planifie. Dépense
-                intelligent. Épargne vrai.
+              <p className="mb-10 max-w-xl font-body text-xl leading-relaxed text-[#faf7f2]/80">
+                Tu ranges ton argent en enveloppes dès qu&apos;il rentre. L&apos;app te dit ce
+                qu&apos;il reste dans chacune, en temps réel.
               </p>
-            </div>
 
-            <div className="flex items-center gap-6 pt-4">
-              <Link
-                href="/signup"
-                className="flex items-center gap-3 rounded-2xl bg-primary px-12 py-5 font-body text-lg font-bold text-primary-foreground shadow-lg transition-shadow hover:shadow-2xl"
-              >
-                Essayer gratuitement
-                <Icon i="arrow-right" size={20} />
-              </Link>
-              <p className="font-body text-sm text-muted-foreground">
-                Aucune carte bancaire requise
-              </p>
-            </div>
-
-            <div className="flex items-center gap-8 pt-8">
-              <div className="flex -space-x-4">
-                {[0, 1, 2, 3].map((i) => (
-                  <UserAvatar
-                    key={i}
-                    name={`Étudiant ${i}`}
-                    className="h-12 w-12 rounded-full border-4 border-white shadow-md"
-                  />
+              <div className="mb-10 flex flex-col gap-4">
+                {HERO_BADGES.map((b) => (
+                  <div
+                    key={b.title}
+                    className="flex items-start gap-4 rounded-2xl border border-secondary/30 bg-secondary/10 p-5"
+                  >
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-secondary/40 bg-secondary/20">
+                      <Icon i={b.icon} size={22} className="text-[#faf7f2]" />
+                    </div>
+                    <div>
+                      <h4 className="mb-1 font-headings text-base font-bold text-[#faf7f2]">
+                        {b.title}
+                      </h4>
+                      <p className="font-body text-sm leading-relaxed text-[#faf7f2]/70">
+                        {b.desc}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </div>
-              <div>
-                <p className="font-body text-base font-bold text-foreground">
-                  12 000+ utilisateurs actifs
-                </p>
-                <p className="font-body text-sm text-muted-foreground">
-                  Dakar • Accra • Douala • Abidjan
+
+              <div className="flex items-center gap-6">
+                <Link
+                  href="/signup"
+                  className="flex items-center gap-3 rounded-2xl bg-primary px-12 py-5 font-body text-lg font-bold text-primary-foreground shadow-lg transition-shadow hover:shadow-2xl"
+                >
+                  Essayer gratuitement
+                  <Icon i="arrow-right" size={20} />
+                </Link>
+                <p className="font-body text-sm text-[#faf7f2]/60">
+                  Sans carte bancaire · Actif en 5 minutes
                 </p>
               </div>
             </div>
 
-            <div className="relative pt-12">
-              <div className="transition-transform duration-300 hover:scale-105">
-                <DashboardMockup />
-              </div>
+            <div className="transition-transform duration-300 hover:scale-105">
+              <HeroProductPreview />
             </div>
           </div>
         </section>
