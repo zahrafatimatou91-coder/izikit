@@ -40,7 +40,11 @@ export default function NewTransactionPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background font-body">
       <div className="flex items-center gap-4 border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
+        <Link
+          href="/dashboard"
+          aria-label="Retour"
+          className="text-muted-foreground hover:text-foreground"
+        >
           <Icon i="arrow-left" size={20} />
         </Link>
         <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">

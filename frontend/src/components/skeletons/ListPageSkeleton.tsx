@@ -28,7 +28,7 @@ export function ListPageSkeleton({ rows = 5 }: ListPageSkeletonProps) {
           <Skeleton className="h-9 w-9 rounded-full" />
         </div>
 
-        <div className="flex-1 px-4 pb-24 pt-6 lg:px-8 lg:py-8">
+        <div className="flex-1 px-4 pb-32 pt-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex max-w-4xl flex-col gap-3">
             {Array.from({ length: rows }).map((_, i) => (
               <div

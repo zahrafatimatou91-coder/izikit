@@ -74,7 +74,7 @@ export function TransactionRow({
           aria-label="Options"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
         >
           <Icon i="more-vertical" size={16} />
         </button>

@@ -15,9 +15,9 @@ export type NavId =
   | 'settings'
   | 'notifications';
 
-/** Shared by DesktopSidebarNav and MobileDrawerNav — both render the same
- * destinations, just in a different shell (always-visible column vs.
- * hamburger-triggered slide-in). */
+/** Full destination list for the desktop sidebar (`DesktopSidebarNav`).
+ * Mobile doesn't render this list as-is anymore — `BottomNav` covers the
+ * top 4 as tabs and `MoreSheet` covers the rest (see its own ITEMS). */
 export const NAV_ITEMS: {
   id: NavId;
   href: string;

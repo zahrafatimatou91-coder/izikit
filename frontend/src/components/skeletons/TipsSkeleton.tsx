@@ -19,7 +19,7 @@ export function TipsSkeleton() {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col pb-24 lg:pb-0">
+      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
           <div className="flex items-center gap-3">
             <Skeleton className="h-6 w-6 lg:hidden" />

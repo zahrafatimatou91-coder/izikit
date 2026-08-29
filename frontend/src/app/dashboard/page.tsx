@@ -14,7 +14,6 @@ import { TransactionRow } from '@/components/transactions/TransactionRow';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
-import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
@@ -52,7 +51,6 @@ export default function DashboardPage() {
   const user = useUser();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -153,7 +151,6 @@ export default function DashboardPage() {
             daysLeft={data.daysLeft}
             budgetFrequency={data.budgetFrequency}
             avatarUrl={user.avatarUrl}
-            onMenuClick={() => setDrawerOpen(true)}
           />
         </div>
 
@@ -163,7 +160,7 @@ export default function DashboardPage() {
           <NotificationBell />
         </div>
 
-        <div className="flex-1 px-4 pb-24 pt-6 lg:overflow-y-auto lg:px-8 lg:py-8 lg:pb-8">
+        <div className="flex-1 px-4 pb-32 pt-6 lg:overflow-y-auto lg:px-8 lg:py-8 lg:pb-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-8">
             {/* Desktop greeting — mobile gets its own inside DashboardHeader */}
             <div className="hidden lg:block">
@@ -378,15 +375,6 @@ export default function DashboardPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
-
-      <MobileDrawerNav
-        active="dashboard"
-        userName={displayName}
-        userEmail={user.email}
-        avatarUrl={user.avatarUrl}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      />
 
       <ConfirmDialog
         open={deleteTarget !== null}

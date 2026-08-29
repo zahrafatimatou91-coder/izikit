@@ -12,7 +12,6 @@ interface DashboardHeaderProps {
   daysLeft: number;
   budgetFrequency?: string | null;
   avatarUrl?: string | null;
-  onMenuClick?: () => void;
 }
 
 /** Top bar: greeting, remaining balance for the period, spend progress bar. */
@@ -24,7 +23,6 @@ export function DashboardHeader({
   daysLeft,
   budgetFrequency = null,
   avatarUrl = null,
-  onMenuClick,
 }: DashboardHeaderProps) {
   // Income restocks the period's available budget — "remaining" isn't just
   // the original allowance draining down, a logged income bumps it back up.
@@ -36,21 +34,11 @@ export function DashboardHeader({
   return (
     <div className="bg-primary px-5 pb-8 pt-12">
       <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onMenuClick}
-            aria-label="Menu"
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-foreground/15"
-          >
-            <Icon i="menu" size={18} className="text-primary-foreground" />
-          </button>
-          <div>
-            <p className="font-body text-xs text-primary-foreground/70">{timeOfDayGreeting()},</p>
-            <p className="font-headings text-lg font-bold text-primary-foreground">
-              {firstName(name)} {timeOfDayEmoji()}
-            </p>
-          </div>
+        <div>
+          <p className="font-body text-xs text-primary-foreground/70">{timeOfDayGreeting()},</p>
+          <p className="font-headings text-lg font-bold text-primary-foreground">
+            {firstName(name)} {timeOfDayEmoji()}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button

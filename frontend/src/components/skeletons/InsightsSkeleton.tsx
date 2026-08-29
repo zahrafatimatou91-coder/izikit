@@ -1,9 +1,9 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 import { BottomNav } from '@/components/nav/BottomNav';
 
-/** /insights shell placeholder — mirrors the real page: range-selector
- * pills, 3 stat cards, the per-envelope breakdown list, and the goal
- * projections list. */
+/** /insights shell placeholder — mirrors the real page: the date-range
+ * trigger button, 3 stat cards, the per-envelope breakdown list, and the
+ * goal projections list. */
 export function InsightsSkeleton() {
   return (
     <div className="flex min-h-screen bg-background font-body">
@@ -18,7 +18,7 @@ export function InsightsSkeleton() {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col pb-24 lg:pb-0">
+      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
           <div className="flex items-center gap-3">
             <Skeleton className="h-6 w-6 lg:hidden" />
@@ -29,11 +29,7 @@ export function InsightsSkeleton() {
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex max-w-4xl flex-col gap-6 lg:gap-8">
-            <div className="flex gap-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-9 w-28 rounded-lg" />
-              ))}
-            </div>
+            <Skeleton className="h-9 w-40 max-w-full rounded-lg" />
 
             <div className="grid grid-cols-3 gap-4">
               {Array.from({ length: 3 }).map((_, i) => (

@@ -97,7 +97,7 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
         avatarUrl={user.avatarUrl}
       />
 
-      <div className="flex flex-1 flex-col pb-24 lg:pb-0">
+      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
         <div className="flex items-center gap-4 border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
           <button
             type="button"

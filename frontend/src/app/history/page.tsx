@@ -12,7 +12,6 @@ import { TransactionRow } from '@/components/transactions/TransactionRow';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
-import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import { formatRelativeDateTime } from '@/lib/format-date';
 
 interface TransactionItem {
@@ -60,7 +59,6 @@ export default function HistoryPage() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -125,27 +123,20 @@ export default function HistoryPage() {
         avatarUrl={user.avatarUrl}
       />
 
-      <div className="flex flex-1 flex-col pb-24 lg:pb-0">
+      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Menu"
-              className="text-foreground lg:hidden"
-            >
-              <Icon i="menu" size={22} />
-            </button>
-            <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
-              Historique des transactions
-            </h2>
-          </div>
-          <div className="flex items-center gap-3">
+          <h2 className="min-w-0 flex-1 truncate font-headings text-lg font-bold text-foreground lg:flex-none lg:text-xl">
+            <span className="lg:hidden">Historique</span>
+            <span className="hidden lg:inline">Historique des transactions</span>
+          </h2>
+          <div className="flex flex-shrink-0 items-center gap-3">
             <Link
               href="/transactions/new"
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-body text-sm font-bold text-primary-foreground"
+              aria-label="Ajouter une transaction"
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 font-body text-sm font-bold text-primary-foreground lg:gap-2 lg:px-4"
             >
               <Icon i="plus" size={16} />
+              <span className="lg:hidden">Ajouter</span>
               <span className="hidden lg:inline">Ajouter une transaction</span>
             </Link>
             <NotificationBell />
@@ -216,16 +207,6 @@ export default function HistoryPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
-
-      <MobileDrawerNav
-        active="history"
-        userName={displayName}
-        userEmail={user.email}
-        avatarUrl={user.avatarUrl}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      />
-
       <ConfirmDialog
         open={deleteTarget !== null}
         title={

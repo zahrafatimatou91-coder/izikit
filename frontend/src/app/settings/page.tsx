@@ -26,7 +26,6 @@ import { Icon } from '@/components/ui/Icon';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
-import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
 import { formatPrice } from '@/lib/utils';
 
@@ -59,16 +58,19 @@ function Toggle({
   checked,
   onChange,
   disabled,
+  label,
 }: {
   checked: boolean;
   onChange: () => void;
   disabled?: boolean;
+  label: string;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={onChange}
       disabled={disabled}
       className={`relative h-6 w-12 flex-shrink-0 rounded-full transition-colors disabled:opacity-50 ${
@@ -111,8 +113,6 @@ export default function SettingsPage() {
   const [logoutConfirming, setLogoutConfirming] = useState(false);
 
   // Mobile nav drawer
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
   // Delete account
   const [deleteConfirming, setDeleteConfirming] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -259,17 +259,9 @@ export default function SettingsPage() {
         avatarUrl={user.avatarUrl}
       />
 
-      <div className="flex flex-1 flex-col pb-24 lg:pb-0">
+      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Menu"
-              className="text-foreground lg:hidden"
-            >
-              <Icon i="menu" size={22} />
-            </button>
             <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
               Paramètres
             </h2>
@@ -347,6 +339,7 @@ export default function SettingsPage() {
                   checked={alertsEnabled}
                   onChange={toggleAlerts}
                   disabled={!prefsLoaded || prefsSubmitting}
+                  label="Alertes de dépassement"
                 />
               </div>
             </SectionCard>
@@ -565,16 +558,6 @@ export default function SettingsPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
-
-      <MobileDrawerNav
-        active="settings"
-        userName={displayName}
-        userEmail={user.email}
-        avatarUrl={user.avatarUrl}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      />
-
       <ConfirmDialog
         open={logoutConfirming}
         title="Se déconnecter ?"

@@ -27,7 +27,6 @@ import { Icon } from '@/components/ui/Icon';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
-import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SavingsGoalCard } from '@/components/savings/SavingsGoalCard';
 import { formatPrice } from '@/lib/utils';
@@ -69,7 +68,6 @@ export default function ProgressPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [breakdown, setBreakdown] = useState<DayBucket[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -119,17 +117,9 @@ export default function ProgressPage() {
         avatarUrl={user.avatarUrl}
       />
 
-      <div className="flex flex-1 flex-col pb-24 lg:pb-0">
+      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Menu"
-              className="text-foreground lg:hidden"
-            >
-              <Icon i="menu" size={22} />
-            </button>
             <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
               Ma Progression
             </h2>
@@ -289,16 +279,6 @@ export default function ProgressPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
-
-      <MobileDrawerNav
-        active="progress"
-        userName={displayName}
-        userEmail={user.email}
-        avatarUrl={user.avatarUrl}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      />
-
       <ConfirmDialog
         open={deleteTarget !== null}
         title={deleteTarget ? `Supprimer « ${deleteTarget.name} » ?` : 'Supprimer cet objectif ?'}

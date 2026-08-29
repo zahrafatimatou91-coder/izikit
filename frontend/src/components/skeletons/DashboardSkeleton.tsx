@@ -30,7 +30,7 @@ export function DashboardSkeleton() {
           <Skeleton className="h-9 w-9 rounded-full" />
         </div>
 
-        <div className="flex-1 px-4 pb-24 pt-6 lg:px-8 lg:py-8 lg:pb-8">
+        <div className="flex-1 px-4 pb-32 pt-6 lg:px-8 lg:py-8 lg:pb-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-8">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-6">
               <Skeleton className="h-40 rounded-lg lg:col-span-2" />

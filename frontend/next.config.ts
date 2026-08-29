@@ -26,6 +26,14 @@ const securityHeaders = [
 
 const config: NextConfig = {
   reactStrictMode: true,
+  // Next's own dev-mode indicator badge (route info / build errors) sits
+  // bottom-left by default — on a narrow mobile viewport that's exactly
+  // where BottomNav's first tab lives, which read as an app bug in
+  // testing (it isn't; this badge never ships to production). Moved out
+  // of the way instead of leaving it to collide with app UI during dev.
+  devIndicators: {
+    position: 'top-right',
+  },
   // Standalone output bundles a self-contained server.js + minimal node_modules
   // into .next/standalone — required by the Docker runtime image (frontend/Dockerfile).
   // Has no impact on `next dev` / `next start` workflows.

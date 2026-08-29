@@ -9,7 +9,6 @@ import { Icon } from '@/components/ui/Icon';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
-import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EnvelopeForm, type EnvelopeFormValues } from '@/components/envelopes/EnvelopeForm';
 import { envelopeSwatch, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
@@ -41,7 +40,6 @@ export default function EnvelopesPage() {
   const [limitError, setLimitError] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'none' | 'create' | string>('none');
   const [submitting, setSubmitting] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -151,17 +149,9 @@ export default function EnvelopesPage() {
         avatarUrl={user.avatarUrl}
       />
 
-      <div className="flex flex-1 flex-col pb-24 lg:pb-0">
+      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
         <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Menu"
-              className="text-foreground lg:hidden"
-            >
-              <Icon i="menu" size={22} />
-            </button>
             <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
               Mes enveloppes
             </h2>
@@ -250,7 +240,7 @@ export default function EnvelopesPage() {
                             type="button"
                             aria-label="Modifier"
                             onClick={() => openForm(e.id)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                           >
                             <Icon i="edit-2" size={16} />
                           </button>
@@ -258,7 +248,7 @@ export default function EnvelopesPage() {
                             type="button"
                             aria-label="Supprimer"
                             onClick={() => setDeleteTarget({ id: e.id, name: e.name })}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
                           >
                             <Icon i="trash-2" size={16} />
                           </button>
@@ -330,16 +320,6 @@ export default function EnvelopesPage() {
       <div className="fixed inset-x-0 bottom-0 lg:hidden">
         <BottomNav />
       </div>
-
-      <MobileDrawerNav
-        active="envelopes"
-        userName={displayName}
-        userEmail={user.email}
-        avatarUrl={user.avatarUrl}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      />
-
       <ConfirmDialog
         open={deleteTarget !== null}
         title={
