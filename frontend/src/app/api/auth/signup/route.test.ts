@@ -73,6 +73,27 @@ describe('POST /api/auth/signup', () => {
     expect(outboxArg?.payload?.to).toBe('new@example.com');
   });
 
+  it('seeds a 7-day Pro trial subscription for a new user (no order yet)', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({ id: 'u-trial' } as never);
+    prismaMock.verificationCode.create.mockResolvedValue({} as never);
+
+    const before = Date.now();
+    await POST(makeReq({ email: 'trial@example.com', password: 'a-strong-passphrase' }));
+    const after = Date.now();
+
+    expect(prismaMock.subscription.create).toHaveBeenCalledTimes(1);
+    const subArg = prismaMock.subscription.create.mock.calls[0]?.[0];
+    expect(subArg?.data?.userId).toBe('u-trial');
+    expect(subArg?.data?.plan).toBe('PRO');
+    expect(subArg?.data?.status).toBe('ACTIVE');
+    expect(subArg?.data?.lastOrderId).toBeNull();
+    const periodEnd = (subArg?.data?.currentPeriodEnd as Date).getTime();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    expect(periodEnd).toBeGreaterThanOrEqual(before + sevenDaysMs - 1000);
+    expect(periodEnd).toBeLessThanOrEqual(after + sevenDaysMs + 1000);
+  });
+
   it('returns identical 201 + dummy-bcrypts on existing email (enumeration-resist)', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ id: 'u-existing' } as never);
 
