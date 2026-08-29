@@ -10,12 +10,26 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { getEffectivePlan } from '@/lib/server/subscriptions/tier';
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: auth.user.sub },
+    });
+    if (getEffectivePlan(subscription) === 'FREE') {
+      return NextResponse.json(
+        {
+          error: 'TIPS_REQUIRES_PRO',
+          message: 'Les conseils personnalisés sont réservés à Pro — passe à Pro pour y accéder.',
+        },
+        { status: 403, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
 
     const [tips, envelopes] = await Promise.all([
       prisma.tip.findMany({ orderBy: { title: 'asc' } }),
