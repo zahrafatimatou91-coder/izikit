@@ -12,8 +12,11 @@ import { prisma } from '@/lib/server/prisma';
 import { withDbRetry } from '@/lib/server/db-retry';
 import {
   resolveInsightsPeriod,
+  resolveCustomInsightsPeriod,
+  parseDateOnly,
   isInsightsRange,
   type InsightsRange,
+  type InsightsPeriod,
 } from '@/lib/server/insights/period';
 import { projectGoalCompletion } from '@/lib/server/insights/projection';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -26,9 +29,31 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
 
-    const rangeParam = req.nextUrl.searchParams.get('range') ?? DEFAULT_RANGE;
-    const range = isInsightsRange(rangeParam) ? rangeParam : DEFAULT_RANGE;
-    const period = resolveInsightsPeriod(range);
+    // The calendar picker always resolves to concrete dates (presets
+    // included) and sends `from`/`to`; `range` is the fallback used only
+    // for the initial load before the user has touched the picker, and
+    // for any pre-existing bookmarked/shared links.
+    const fromParam = req.nextUrl.searchParams.get('from');
+    const toParam = req.nextUrl.searchParams.get('to');
+    let range: InsightsRange | 'custom';
+    let period: InsightsPeriod;
+    if (fromParam && toParam) {
+      const from = parseDateOnly(fromParam);
+      const to = parseDateOnly(toParam);
+      const custom = from && to ? resolveCustomInsightsPeriod(from, to) : null;
+      if (!custom) {
+        return NextResponse.json(
+          { error: 'VALIDATION_FAILED', message: 'Plage de dates invalide' },
+          { status: 400, headers: { 'x-request-id': ctx.requestId } },
+        );
+      }
+      range = 'custom';
+      period = custom;
+    } else {
+      const rangeParam = req.nextUrl.searchParams.get('range') ?? DEFAULT_RANGE;
+      range = isInsightsRange(rangeParam) ? rangeParam : DEFAULT_RANGE;
+      period = resolveInsightsPeriod(range);
+    }
 
     const [user, envelopes, currentTxns, previousTxns, goals] = await withDbRetry(() =>
       Promise.all([

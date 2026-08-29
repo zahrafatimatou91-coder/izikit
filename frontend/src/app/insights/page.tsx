@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
+import { startOfMonth, endOfMonth } from 'date-fns';
 import { useUser } from '@/contexts/AuthContext';
 import { InsightsSkeleton } from '@/components/skeletons/InsightsSkeleton';
 import { api, ApiError } from '@/lib/api';
@@ -18,16 +19,29 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { MobileDrawerNav } from '@/components/nav/MobileDrawerNav';
+import {
+  DateRangePicker,
+  matchPresetLabel,
+  type DateRangeValue,
+} from '@/components/insights/DateRangePicker';
 import { formatPrice } from '@/lib/utils';
 
-type Range = 'this_week' | 'this_month' | 'last_month' | 'last_3_months';
+/** "YYYY-MM-DD" from local date parts — deliberately NOT
+ * `.toISOString().slice(0, 10)`, which converts to UTC first and can
+ * shift the calendar day depending on the viewer's offset. Mirrors how
+ * the backend's `parseDateOnly` reconstructs the date (local, no TZ
+ * conversion), so a day picked here is the same day filtered server-side. */
+function toDateOnlyString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
-const RANGE_OPTIONS: { value: Range; label: string }[] = [
-  { value: 'this_week', label: 'Cette semaine' },
-  { value: 'this_month', label: 'Ce mois-ci' },
-  { value: 'last_month', label: 'Le mois dernier' },
-  { value: 'last_3_months', label: '3 derniers mois' },
-];
+function defaultRange(): DateRangeValue {
+  const today = new Date();
+  return { from: startOfMonth(today), to: endOfMonth(today) };
+}
 
 const MONTHS_FR_FULL = [
   'janvier',
@@ -71,7 +85,7 @@ interface GoalProjection {
 }
 
 interface InsightsData {
-  range: Range;
+  range: string;
   period: { label: string; start: string; end: string };
   totalBudget: number | null;
   totalSpent: number;
@@ -92,14 +106,16 @@ function delta(current: number, previous: number): number | null {
 
 export default function InsightsPage() {
   const user = useUser();
-  const [range, setRange] = useState<Range>('this_month');
+  const [range, setRange] = useState<DateRangeValue>(defaultRange);
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const load = useCallback(async (r: Range) => {
+  const load = useCallback(async (r: DateRangeValue) => {
     try {
-      const res = await api<InsightsData>(`/api/insights?range=${r}`);
+      const from = toDateOnlyString(r.from);
+      const to = toDateOnlyString(r.to);
+      const res = await api<InsightsData>(`/api/insights?from=${from}&to=${to}`);
       setData(res);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.');
@@ -114,6 +130,13 @@ export default function InsightsPage() {
   if (data === null && !error) return <InsightsSkeleton />;
 
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
+
+  // Prefer the friendly preset name ("Ce mois-ci") over the backend's
+  // literal date-range label — that label is now always a raw range
+  // (every request sends explicit from/to), so without this every empty
+  // state would read "sur 1 août 2026 – 31 août 2026" instead of the
+  // familiar wording.
+  const periodLabel = matchPresetLabel(range) ?? data?.period.label ?? '';
 
   const spentDelta = data ? delta(data.totalSpent, data.previousSpent) : null;
   const incomeDelta = data ? delta(data.totalIncome, data.previousIncome) : null;
@@ -156,30 +179,14 @@ export default function InsightsPage() {
               </p>
             )}
 
-            {/* Date-range selector — presets rather than a free calendar
-                picker, matching the app's existing budget-period / savings-
-                pace convention. */}
-            <div className="flex flex-wrap gap-2">
-              {RANGE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setRange(opt.value)}
-                  className={`rounded-lg border px-4 py-2 font-body text-sm font-medium ${
-                    range === opt.value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-input text-muted-foreground'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div>
+              <DateRangePicker value={range} fallbackLabel={periodLabel} onChange={setRange} />
             </div>
 
             {data && !hasActivity && (
               <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
                 <p className="font-body text-sm text-muted-foreground">
-                  Aucune transaction sur {data.period.label.toLowerCase()}.
+                  Aucune transaction sur {periodLabel.toLowerCase()}.
                 </p>
               </div>
             )}
