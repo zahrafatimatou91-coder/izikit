@@ -21,3 +21,6 @@ next-env.d.ts
 amp
 node-compile-cache/
 
+
+# Brainstorming visual-companion scratch (superpowers skill)
+.superpowers/
