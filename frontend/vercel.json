@@ -6,6 +6,8 @@
     { "path": "/api/cron/order-expiration", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/webhook-log-purge", "schedule": "0 0 * * *" },
     { "path": "/api/cron/email-job-purge", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/savings-goal-reminders", "schedule": "0 8 * * *" }
+    { "path": "/api/cron/savings-goal-reminders", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/inactivity-nudges", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/inactivity-nudges", "schedule": "0 20 * * *" }
   ]
 }

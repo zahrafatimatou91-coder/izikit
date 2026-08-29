@@ -144,3 +144,39 @@ export function savingsGoalPaceMissedNotification(
     dedupeKey: `savings-goal-pace-missed:${goal.id}:${periodStartIso}`,
   };
 }
+
+export type InactivitySlot = 'midday' | 'evening';
+
+// Two distinct copies rather than one reused string — a midday nudge and
+// an end-of-day nudge read differently ("still time" vs "last chance"),
+// same way Duolingo's reminder copy varies by time of day.
+const INACTIVITY_COPY: Record<InactivitySlot, { title: string; body: string }> = {
+  midday: {
+    title: 'Ta journée financière attend 🔥',
+    body: "Tu n'as encore rien enregistré aujourd'hui sur Chaque Franc. 10 secondes suffisent pour noter une dépense !",
+  },
+  evening: {
+    title: 'Dernière ligne droite 🌙',
+    body: "La journée se termine et rien n'est encore enregistré. Note tes dépenses maintenant, pas demain — tu oublieras !",
+  },
+};
+
+/** Fired from the inactivity-nudges cron (twice daily) when a user has
+ * logged neither a Transaction nor a SavingsEntry since local midnight.
+ * `dateIso` (the day being checked, not the fire time) + `slot` scope the
+ * dedupeKey so each slot fires at most once per calendar day. */
+export function inactivityNudgeNotification(
+  userId: string,
+  slot: InactivitySlot,
+  dateIso: string,
+): CreateNotificationInput {
+  const copy = INACTIVITY_COPY[slot];
+  return {
+    userId,
+    type: 'INACTIVITY_NUDGE',
+    title: copy.title,
+    body: copy.body,
+    data: { slot },
+    dedupeKey: `inactivity-nudge:${userId}:${dateIso}:${slot}`,
+  };
+}

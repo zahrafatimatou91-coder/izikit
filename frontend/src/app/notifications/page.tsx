@@ -72,6 +72,12 @@ const TYPE_STYLE: Record<
     iconWrap: 'bg-accent',
     iconColor: 'text-accent-foreground',
   },
+  INACTIVITY_NUDGE: {
+    icon: 'flame',
+    wrap: 'bg-primary/10 border-primary/20',
+    iconWrap: 'bg-primary',
+    iconColor: 'text-primary-foreground',
+  },
 };
 const DEFAULT_STYLE = {
   icon: 'bell' as IconName,

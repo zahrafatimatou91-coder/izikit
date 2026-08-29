@@ -121,7 +121,7 @@ Les fichiers uploadés renvoient un `secure_url` Cloudinary servi directement pa
 |---|---|---|
 | POST | `/api/webhooks/bictorys` | HMAC provider + replay window 60s |
 
-### Handlers cron — 7 routes (toutes `Authorization: Bearer ${CRON_SECRET}`)
+### Handlers cron — 8 routes, 9 déclenchements (toutes `Authorization: Bearer ${CRON_SECRET}`)
 | Path | Schedule (`vercel.json`) |
 |---|---|
 | `/api/cron/outbox-drain` | toutes les minutes |
@@ -131,6 +131,7 @@ Les fichiers uploadés renvoient un `secure_url` Cloudinary servi directement pa
 | `/api/cron/webhook-log-purge` | quotidien |
 | `/api/cron/email-job-purge` | quotidien |
 | `/api/cron/savings-goal-reminders` | quotidien (8h UTC) |
+| `/api/cron/inactivity-nudges` | 2×/jour (13h + 20h UTC) |
 
 ### Admin (`/api/admin/*`) — 12 routes
 | Méthode | Path | Auth |
