@@ -175,17 +175,13 @@ export default function SettingsPage() {
         avatarUrl={user.avatarUrl}
       />
 
-      <div className="flex flex-1 flex-col pb-32 lg:pb-0">
-        <div className="flex items-center justify-between border-b border-border bg-card px-5 py-5 lg:px-8 lg:py-6">
-          <div className="flex items-center gap-3">
-            <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">
-              Paramètres
-            </h2>
-          </div>
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-clip pb-28 lg:pb-0">
+        <div className="flex items-center justify-between border-b border-border bg-card px-4 py-5 lg:px-8 lg:py-6">
+          <h2 className="font-headings text-lg font-bold text-foreground lg:text-xl">Paramètres</h2>
         </div>
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
-          <div className="mx-auto flex max-w-4xl flex-col gap-8">
+          <div className="mx-auto flex max-w-4xl flex-col gap-6 lg:gap-8">
             {/* Apparence */}
             <SectionCard title="Apparence">
               <div className="flex flex-col gap-3 px-5 py-4 lg:px-6">
@@ -265,6 +261,19 @@ export default function SettingsPage() {
                   {hasPassword ? 'Changer le mot de passe' : 'Définir un mot de passe'}
                 </p>
                 <form onSubmit={onSubmitPassword} className="flex flex-col gap-3">
+                  {/* Hidden identifier so browsers / password managers can
+                      associate the credential with an account — silences the
+                      "password forms should have a username field" a11y warning. */}
+                  <input
+                    type="text"
+                    name="username"
+                    autoComplete="username"
+                    value={user.email}
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                  />
                   {hasPassword && (
                     <input
                       type="password"
@@ -273,7 +282,7 @@ export default function SettingsPage() {
                       placeholder="Mot de passe actuel"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
+                      className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
                     />
                   )}
                   <input
@@ -283,7 +292,7 @@ export default function SettingsPage() {
                     placeholder="Nouveau mot de passe"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
                   />
                   <input
                     type="password"
@@ -292,7 +301,7 @@ export default function SettingsPage() {
                     placeholder="Confirmer le nouveau mot de passe"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
                   />
                   {pwError && (
                     <p role="alert" className="font-body text-sm text-accent">
@@ -321,7 +330,7 @@ export default function SettingsPage() {
 
             <SectionCard title="Session">
               <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
-                <div>
+                <div className="min-w-0">
                   <p className="font-body text-sm font-medium text-foreground">Se déconnecter</p>
                   <p className="font-body text-xs text-muted-foreground">
                     Termine ta session sur cet appareil.
@@ -340,10 +349,10 @@ export default function SettingsPage() {
 
             {/* Zone dangereuse */}
             <SectionCard title="Zone dangereuse">
-              <div className="p-6">
+              <div className="p-5 lg:p-6">
                 {!deleteConfirming ? (
                   <div className="flex items-center justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-body text-sm font-medium text-foreground">
                         Supprimer le compte
                       </p>
@@ -356,11 +365,21 @@ export default function SettingsPage() {
                       onClick={() => setDeleteConfirming(true)}
                       className="flex-shrink-0 rounded-lg border border-accent px-4 py-2 font-body text-sm font-bold text-accent"
                     >
-                      Supprimer le compte
+                      Supprimer
                     </button>
                   </div>
                 ) : (
                   <form onSubmit={onDeleteAccount} className="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      name="username"
+                      autoComplete="username"
+                      value={user.email}
+                      readOnly
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                    />
                     <div className="flex items-start gap-2 rounded-lg bg-accent/10 p-3">
                       <Icon
                         i="alert-triangle"
@@ -379,7 +398,7 @@ export default function SettingsPage() {
                         placeholder="Confirme avec ton mot de passe"
                         value={deletePassword}
                         onChange={(e) => setDeletePassword(e.target.value)}
-                        className="rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
                       />
                     ) : (
                       <input
@@ -388,7 +407,7 @@ export default function SettingsPage() {
                         placeholder={`Tape ton email (${user.email}) pour confirmer`}
                         value={deleteEmailConfirm}
                         onChange={(e) => setDeleteEmailConfirm(e.target.value)}
-                        className="rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
                       />
                     )}
                     {deleteError && (

@@ -3,11 +3,12 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { uploadFile } from '@/lib/upload-file';
+import { validateImageFile, ALLOWED_IMAGE_TYPES } from '@/lib/validate-image';
 import { useToast } from '@/contexts/ToastContext';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
-const ACCEPT = 'image/jpeg,image/png,image/webp';
+const ACCEPT = ALLOWED_IMAGE_TYPES.join(',');
 
 function uploadErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -27,7 +28,7 @@ interface AvatarFieldProps {
   onChanged: () => Promise<void>;
 }
 
-/** "Compte" row: avatar preview + change (file upload) / remove. */
+/** "Compte" row: avatar preview + add/change (file upload) / remove. */
 export function AvatarField({ name, avatarUrl, onChanged }: AvatarFieldProps) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,6 +38,15 @@ export function AvatarField({ name, avatarUrl, onChanged }: AvatarFieldProps) {
     const file = e.target.files?.[0];
     e.target.value = ''; // let the same file be re-picked later
     if (!file) return;
+
+    // Pre-flight: reject oversized / wrong-type files before spending an
+    // upload. The server re-checks (and magic-byte sniffs) regardless.
+    const invalid = validateImageFile(file);
+    if (invalid) {
+      toast(invalid, 'error');
+      return;
+    }
+
     setBusy('upload');
     try {
       const url = await uploadFile(file);
@@ -63,16 +73,32 @@ export function AvatarField({ name, avatarUrl, onChanged }: AvatarFieldProps) {
     }
   }
 
+  const changeLabel = avatarUrl ? 'Changer la photo' : 'Ajouter une photo';
+
   return (
-    <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
-      <div className="flex min-w-0 items-center gap-3">
-        <UserAvatar name={name} avatarUrl={avatarUrl} className="h-14 w-14 rounded-lg" />
+    <div className="flex flex-col items-center gap-4 px-5 py-4 text-center sm:flex-row sm:justify-between sm:gap-3 sm:text-left lg:px-6">
+      <div className="flex min-w-0 flex-col items-center gap-2 sm:flex-row sm:gap-3">
+        <UserAvatar
+          name={name}
+          avatarUrl={avatarUrl}
+          className="h-16 w-16 flex-shrink-0 rounded-lg sm:h-14 sm:w-14"
+        />
         <div className="min-w-0">
           <p className="font-body text-sm font-medium text-foreground">Photo de profil</p>
           <p className="font-body text-xs text-muted-foreground">JPEG, PNG ou WebP — 10 Mo max.</p>
         </div>
       </div>
-      <div className="flex flex-shrink-0 items-center gap-3">
+
+      <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-shrink-0 sm:flex-row sm:gap-3">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy !== null}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50 sm:w-auto"
+        >
+          <Icon i="camera" size={15} />
+          {busy === 'upload' ? 'Envoi…' : changeLabel}
+        </button>
         {avatarUrl && (
           <button
             type="button"
@@ -83,16 +109,8 @@ export function AvatarField({ name, avatarUrl, onChanged }: AvatarFieldProps) {
             {busy === 'remove' ? '…' : 'Retirer'}
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={busy !== null}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
-        >
-          <Icon i="camera" size={15} />
-          {busy === 'upload' ? 'Envoi…' : 'Changer'}
-        </button>
       </div>
+
       <input ref={inputRef} type="file" accept={ACCEPT} onChange={onFile} className="hidden" />
     </div>
   );

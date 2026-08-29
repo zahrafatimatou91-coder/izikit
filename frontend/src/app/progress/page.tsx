@@ -203,11 +203,16 @@ export default function ProgressPage() {
                       <div key={b.date} className="rounded-lg bg-input p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Icon
-                              i={b.total > 0 ? 'check-circle' : 'circle'}
-                              size={20}
-                              className={b.total > 0 ? 'text-primary' : 'text-muted'}
-                            />
+                            {b.total > 0 ? (
+                              <Icon i="check-circle" size={20} className="text-primary" />
+                            ) : (
+                              <span
+                                aria-hidden
+                                className="flex h-5 w-5 items-center justify-center"
+                              >
+                                <span className="h-2.5 w-2.5 rounded-full border-2 border-muted-foreground/40" />
+                              </span>
+                            )}
                             <span
                               className={`font-body ${b.total > 0 ? 'text-foreground' : 'text-muted-foreground'}`}
                             >
