@@ -180,3 +180,80 @@ export function inactivityNudgeNotification(
     dedupeKey: `inactivity-nudge:${userId}:${dateIso}:${slot}`,
   };
 }
+
+/** Fired from the subscription-expiration cron when a TRIAL Pro period
+ * (`lastOrderId === null`) is within `SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS`
+ * of lapsing. Uses the account's real envelope/goal counts rather than
+ * generic copy — a concrete, personalized loss converts better than a vague
+ * one, and stays honest: nothing is actually deleted (see
+ * subscriptionExpiredNotification), so this says "rester actif", never
+ * "garder tes données". `currentPeriodEnd` scopes the dedupeKey so the same
+ * trial period is reminded at most once even if the cron catches the
+ * window on more than one of its daily runs. */
+export function subscriptionTrialEndingNotification(
+  userId: string,
+  info: { currentPeriodEnd: Date; envelopeCount: number; goalCount: number },
+): CreateNotificationInput {
+  const dateLabel = info.currentPeriodEnd.toLocaleDateString('fr-FR');
+  const pieces: string[] = [];
+  if (info.envelopeCount > 0) {
+    pieces.push(`${info.envelopeCount} enveloppe${info.envelopeCount > 1 ? 's' : ''}`);
+  }
+  if (info.goalCount > 0) {
+    pieces.push(`${info.goalCount} objectif${info.goalCount > 1 ? 's' : ''} d'épargne`);
+  }
+  const countsLine = pieces.length > 0 ? ` Tu as ${pieces.join(' et ')} actifs :` : '';
+  return {
+    userId,
+    type: 'SUBSCRIPTION_TRIAL_ENDING',
+    title: 'Ton essai Pro se termine bientôt',
+    body: `Ton essai Pro se termine le ${dateLabel}.${countsLine} passe à Pro pour qu'ils restent actifs.`,
+    data: { currentPeriodEnd: info.currentPeriodEnd.toISOString() },
+    dedupeKey: `subscription-trial-ending:${userId}:${info.currentPeriodEnd.toISOString()}`,
+  };
+}
+
+/** Fired from the subscription-expiration cron for a PAID subscription
+ * (`lastOrderId !== null`) within `SUBSCRIPTION_RENEWAL_REMINDER_DAYS` of
+ * its manual "pass" expiring — there is no auto-recurring billing, so this
+ * is the only nudge to renew before losing Pro. `currentPeriodEnd` scopes
+ * the dedupeKey (see subscriptionTrialEndingNotification above). */
+export function subscriptionRenewalReminderNotification(
+  userId: string,
+  info: { currentPeriodEnd: Date },
+): CreateNotificationInput {
+  const dateLabel = info.currentPeriodEnd.toLocaleDateString('fr-FR');
+  return {
+    userId,
+    type: 'SUBSCRIPTION_RENEWAL_REMINDER',
+    title: 'Ton abonnement Pro arrive à échéance',
+    body: `Ton abonnement Pro se termine le ${dateLabel}. Renouvelle pour rester Pro sans interruption.`,
+    data: { currentPeriodEnd: info.currentPeriodEnd.toISOString() },
+    dedupeKey: `subscription-renewal-reminder:${userId}:${info.currentPeriodEnd.toISOString()}`,
+  };
+}
+
+/** Fired from the subscription-expiration cron right after a Pro period
+ * (trial or paid) lapses without renewal and the account is flipped back to
+ * Free. Nothing was deleted — the surplus enveloppes/objectifs were
+ * archived, not removed (see subscriptions/archive.ts) — so the copy never
+ * implies a data loss. Same mechanism/template for a non-converted trial
+ * and a non-renewed paid subscription, only the wording differs
+ * (`wasTrial`). `currentPeriodEnd` scopes the dedupeKey to the period that
+ * just lapsed, so a later resubscribe-then-lapse-again cycle gets its own
+ * notification. */
+export function subscriptionExpiredNotification(
+  userId: string,
+  info: { wasTrial: boolean; currentPeriodEnd: Date },
+): CreateNotificationInput {
+  return {
+    userId,
+    type: 'SUBSCRIPTION_EXPIRED',
+    title: info.wasTrial ? 'Ton essai Pro est terminé' : 'Ton abonnement Pro a expiré',
+    body: info.wasTrial
+      ? "Tu es repassé sur le plan Free. Rien n'est perdu : passe à Pro quand tu veux pour tout réactiver."
+      : "Tu es repassé sur le plan Free faute de renouvellement. Rien n'est perdu : repasse à Pro quand tu veux pour tout réactiver.",
+    data: { wasTrial: info.wasTrial },
+    dedupeKey: `subscription-expired:${userId}:${info.currentPeriodEnd.toISOString()}`,
+  };
+}
