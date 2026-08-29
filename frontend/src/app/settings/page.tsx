@@ -21,6 +21,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth, useUser } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -243,6 +244,19 @@ export default function SettingsPage() {
               <Row label="Devise" value="Franc CFA (FCFA)" />
               <Row label="Langue" value="Français" />
               <NotificationPrefs />
+            </SectionCard>
+
+            {/* Abonnement */}
+            <SectionCard title="Abonnement">
+              <Row
+                label="Plan Free / Pro"
+                value="Passe à Pro, gère ton essai ou ton abonnement"
+                action={
+                  <Link href="/subscription" className="font-body text-sm font-medium text-primary">
+                    Voir
+                  </Link>
+                }
+              />
             </SectionCard>
 
             {/* Budget */}

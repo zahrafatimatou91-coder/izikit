@@ -95,3 +95,19 @@ export function parseSubscriptionOrderMetadata(
   if (m.period !== 'monthly' && m.period !== 'annual') return null;
   return { purpose: 'subscription', period: m.period };
 }
+
+/** Expected price in FCFA for each paid period — the server's own source of
+ * truth. `POST /api/orders` accepts any client-supplied `amount` (it's a
+ * generic checkout, not subscription-specific), so the webhook (see
+ * app/api/webhooks/bictorys/route.ts) checks the paid amount against this
+ * table before activating/extending Pro — otherwise a client could request
+ * an arbitrarily low `amount` for a subscription-purpose order and still
+ * get a full period of Pro. Keep in sync with the display-only
+ * `SUBSCRIPTION_PRICES` in `src/lib/subscription-plans.ts` (a client-safe
+ * file that can't import this server-only module) — a drift there would at
+ * worst show the wrong price, never accept the wrong one, since this table
+ * is what the server actually enforces. */
+export const SUBSCRIPTION_PRICE_FCFA: Record<'monthly' | 'annual', number> = {
+  monthly: 1500,
+  annual: 13500,
+};

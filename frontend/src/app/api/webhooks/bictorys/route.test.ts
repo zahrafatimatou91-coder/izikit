@@ -211,6 +211,26 @@ describe('POST /api/webhooks/bictorys', () => {
     expect(envelopeUpdateMany).not.toHaveBeenCalled();
   });
 
+  it('onPaid refuses to activate Pro when the amount does not match the expected price', async () => {
+    findUnique.mockResolvedValueOnce(null);
+    orderFindFirst.mockResolvedValueOnce({
+      id: 'o4',
+      userId: 'u1',
+      customerEmail: 'a@b.com',
+      amount: 1, // way below the real monthly price
+      currency: 'XOF',
+      metadata: { purpose: 'subscription', period: 'monthly' },
+    });
+    outboxCreate.mockResolvedValue({ id: 'ob4' });
+
+    const { POST } = await import('./route');
+    const { req } = bictorysFixtureRequest({ status: 'succeeded' });
+    await POST(req);
+
+    expect(subscriptionUpsert).not.toHaveBeenCalled();
+    expect(envelopeUpdateMany).not.toHaveBeenCalled();
+  });
+
   it('exports runtime=nodejs and dynamic=force-dynamic (WH-01)', async () => {
     const mod = (await import('./route')) as { runtime?: string; dynamic?: string };
     expect(mod.runtime).toBe('nodejs');
