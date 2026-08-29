@@ -20,6 +20,7 @@ export const runtime = 'nodejs';
 
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
@@ -88,9 +89,25 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   });
 }
 
-const PatchBody = z.object({
-  name: z.string().trim().min(1).max(80),
-});
+// avatarUrl is only ever set from a URL our own POST /api/upload just
+// returned (a Cloudinary secure_url) — restrict the host so this endpoint
+// can't be used to point an <img src> at an arbitrary origin.
+const CLOUDINARY_HOST = /^https:\/\/res\.cloudinary\.com\//;
+
+const PatchBody = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    avatarUrl: z
+      .string()
+      .url()
+      .max(2048)
+      .regex(CLOUDINARY_HOST, 'avatarUrl must be hosted on Cloudinary')
+      .nullable()
+      .optional(),
+  })
+  .refine((patch) => patch.name !== undefined || patch.avatarUrl !== undefined, {
+    message: 'Provide at least one field to update',
+  });
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
@@ -113,14 +130,18 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const data: Prisma.UserUpdateInput = {};
+    if (parsed.data.name !== undefined) data.name = parsed.data.name;
+    if (parsed.data.avatarUrl !== undefined) data.avatarUrl = parsed.data.avatarUrl;
+
     const updated = await prisma.user.update({
       where: { id: auth.user.sub },
-      data: { name: parsed.data.name },
-      select: { name: true },
+      data,
+      select: { name: true, avatarUrl: true },
     });
 
     return NextResponse.json(
-      { name: updated.name },
+      { name: updated.name, avatarUrl: updated.avatarUrl },
       { status: 200, headers: { 'x-request-id': ctx.requestId } },
     );
   });

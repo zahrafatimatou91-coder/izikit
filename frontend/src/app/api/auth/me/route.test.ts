@@ -16,7 +16,7 @@ vi.mock('@/lib/server/auth', async () => {
 });
 
 import { verifyToken } from '@/lib/server/auth';
-import { GET } from './route';
+import { GET, PATCH } from './route';
 import { NextRequest } from 'next/server';
 
 function makeReq(opts: { tokenCookie?: string; bearer?: string } = {}): NextRequest {
@@ -91,5 +91,96 @@ describe('GET /api/auth/me', () => {
 
     const res = await GET(makeReq({ bearer: 'orphan-jwt' }));
     expect(res.status).toBe(401);
+  });
+});
+
+describe('PATCH /api/auth/me', () => {
+  const CLOUD_URL = 'https://res.cloudinary.com/demo/image/upload/v1/u1/abc.jpg';
+
+  function makePatchReq(
+    body: unknown,
+    opts: { bearer?: string; csrf?: boolean } = {},
+  ): NextRequest {
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    if (opts.bearer) headers.authorization = `Bearer ${opts.bearer}`;
+    if (opts.csrf ?? true) {
+      headers['x-csrf-token'] = 'csrf-tok';
+      headers['cookie'] = 'app-csrf=csrf-tok';
+    }
+    return new NextRequest('https://test/api/auth/me', {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(body),
+    });
+  }
+
+  function authOk(): void {
+    vi.mocked(verifyToken).mockResolvedValue({ sub: 'u1', email: 'a@b.com', tokenVersion: 0 });
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'a@b.com',
+      tokenVersion: 0,
+    } as never);
+  }
+
+  it('sets avatarUrl from a Cloudinary URL', async () => {
+    authOk();
+    prismaMock.user.update.mockResolvedValue({ name: 'Awa', avatarUrl: CLOUD_URL } as never);
+
+    const res = await PATCH(makePatchReq({ avatarUrl: CLOUD_URL }, { bearer: 't' }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ avatarUrl: CLOUD_URL });
+    expect(prismaMock.user.update.mock.calls[0]?.[0]?.data).toEqual({ avatarUrl: CLOUD_URL });
+  });
+
+  it('clears avatarUrl when passed null', async () => {
+    authOk();
+    prismaMock.user.update.mockResolvedValue({ name: 'Awa', avatarUrl: null } as never);
+
+    const res = await PATCH(makePatchReq({ avatarUrl: null }, { bearer: 't' }));
+
+    expect(res.status).toBe(200);
+    expect(prismaMock.user.update.mock.calls[0]?.[0]?.data).toEqual({ avatarUrl: null });
+  });
+
+  it('rejects an avatarUrl not hosted on Cloudinary', async () => {
+    authOk();
+
+    const res = await PATCH(
+      makePatchReq({ name: 'Awa', avatarUrl: 'https://evil.example.com/x.jpg' }, { bearer: 't' }),
+    );
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('VALIDATION_FAILED');
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects an empty patch', async () => {
+    authOk();
+
+    const res = await PATCH(makePatchReq({}, { bearer: 't' }));
+
+    expect(res.status).toBe(400);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('still updates name on its own', async () => {
+    authOk();
+    prismaMock.user.update.mockResolvedValue({ name: 'Nouveau', avatarUrl: null } as never);
+
+    const res = await PATCH(makePatchReq({ name: 'Nouveau' }, { bearer: 't' }));
+
+    expect(res.status).toBe(200);
+    expect(prismaMock.user.update.mock.calls[0]?.[0]?.data).toEqual({ name: 'Nouveau' });
+  });
+
+  it('missing CSRF header → 403', async () => {
+    authOk();
+
+    const res = await PATCH(makePatchReq({ name: 'X' }, { bearer: 't', csrf: false }));
+
+    expect(res.status).toBe(403);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 });

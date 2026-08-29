@@ -9,10 +9,12 @@ vi.mock('@/lib/server/redis', () => ({ redis: null }));
 
 const findMany = vi.fn();
 const aggregate = vi.fn();
+const notifPrefsFindMany = vi.fn();
 vi.mock('@/lib/server/prisma', () => ({
   prisma: {
     savingsGoal: { findMany: (...args: unknown[]) => findMany(...args) },
     savingsEntry: { aggregate: (...args: unknown[]) => aggregate(...args) },
+    notificationPreferences: { findMany: (...args: unknown[]) => notifPrefsFindMany(...args) },
   },
 }));
 
@@ -25,6 +27,8 @@ beforeEach(() => {
   vi.stubEnv('CRON_SECRET', 'test-secret');
   findMany.mockReset();
   aggregate.mockReset();
+  notifPrefsFindMany.mockReset();
+  notifPrefsFindMany.mockResolvedValue([]);
   createNotificationMock.mockReset();
   createNotificationMock.mockResolvedValue({ id: 'notif-1' });
 });
@@ -75,6 +79,37 @@ describe('POST /api/cron/savings-goal-reminders', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, checked: 1, reminded: 1 });
     expect(createNotificationMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not remind when the user disabled SAVINGS_GOAL_PACE_MISSED (checked before the entries query)', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 28, 9, 0, 0));
+
+    findMany.mockResolvedValueOnce([
+      {
+        id: 'goal-off',
+        userId: 'user-1',
+        name: 'silence',
+        period: 'daily',
+        paceAmount: 500,
+        targetAmount: 5000,
+        currentAmount: 1000,
+      },
+    ]);
+    notifPrefsFindMany.mockResolvedValueOnce([
+      { userId: 'user-1', prefs: { SAVINGS_GOAL_PACE_MISSED: { inApp: false } } },
+    ]);
+
+    const { POST } = await import('./route');
+    const res = await POST(makeReq());
+
+    expect(await res.json()).toEqual({ ok: true, checked: 1, reminded: 0 });
+    expect(aggregate).not.toHaveBeenCalled();
+    expect(createNotificationMock).not.toHaveBeenCalled();
+    expect(notifPrefsFindMany.mock.calls[0]?.[0]).toEqual({
+      where: { userId: { in: ['user-1'] } },
+      select: { userId: true, prefs: true },
+    });
   });
 
   it('does not remind a goal that met its pace', async () => {

@@ -14,9 +14,12 @@
 //   feature exists for either.
 // - "Modifié il y a 3 mois" dropped — no passwordChangedAt is tracked.
 // - "Supprimer le compte" is real, not decorative — see DELETE /api/account.
+//
+// Section bodies with their own local state + API calls live in
+// components/settings/* so this file stays a thin composition.
 'use client';
 
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth, useUser } from '@/contexts/AuthContext';
@@ -27,64 +30,11 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
-import { formatPrice } from '@/lib/utils';
-
-const ENVELOPE_THRESHOLD_PREF = 'ENVELOPE_THRESHOLD';
-
-function SectionCard({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div>
-      <h3 className="mb-4 font-headings text-lg font-bold text-foreground">{title}</h3>
-      <div className="divide-y divide-border rounded-lg border border-border bg-card">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, value, action }: { label: string; value: string; action?: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
-      <div className="min-w-0">
-        <p className="font-body text-sm font-medium text-foreground">{label}</p>
-        <p className="truncate font-body text-xs text-muted-foreground">{value}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  disabled,
-  label,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  disabled?: boolean;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      disabled={disabled}
-      className={`relative h-6 w-12 flex-shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-        checked ? 'bg-primary' : 'bg-muted'
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-transform ${
-          checked ? 'translate-x-6' : 'translate-x-0.5'
-        }`}
-      />
-    </button>
-  );
-}
+import { SectionCard, Row } from '@/components/settings/primitives';
+import { AvatarField } from '@/components/settings/AvatarField';
+import { NotificationPrefs } from '@/components/settings/NotificationPrefs';
+import { BudgetEditor } from '@/components/settings/BudgetEditor';
+import { GoogleAccountRow } from '@/components/settings/GoogleAccountRow';
 
 export default function SettingsPage() {
   const user = useUser();
@@ -97,11 +47,6 @@ export default function SettingsPage() {
   const [nameValue, setNameValue] = useState('');
   const [nameSubmitting, setNameSubmitting] = useState(false);
 
-  // Notification preference
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [prefsLoaded, setPrefsLoaded] = useState(false);
-  const [prefsSubmitting, setPrefsSubmitting] = useState(false);
-
   // Password form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -112,7 +57,6 @@ export default function SettingsPage() {
   // Logout
   const [logoutConfirming, setLogoutConfirming] = useState(false);
 
-  // Mobile nav drawer
   // Delete account
   const [deleteConfirming, setDeleteConfirming] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -120,22 +64,11 @@ export default function SettingsPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-    setNameValue(user.name ?? '');
-    api<{ prefs: Record<string, { email?: boolean; inApp?: boolean }> }>('/api/notifications/prefs')
-      .then((res) => {
-        const pref = res.prefs[ENVELOPE_THRESHOLD_PREF];
-        setAlertsEnabled(pref?.inApp !== false);
-        setPrefsLoaded(true);
-      })
-      .catch(() => setPrefsLoaded(true));
-  }, [user]);
-
   if (!user) return <ListPageSkeleton rows={6} />;
 
   const hasPassword = user.hasPassword;
   const googleLinked = user.linkedProviders.includes('google');
+  const canUnlinkGoogle = hasPassword || user.linkedProviders.some((p) => p !== 'google');
   const displayName = user.name ?? user.email.split('@')[0] ?? user.email;
 
   async function saveName() {
@@ -150,23 +83,6 @@ export default function SettingsPage() {
       toast(err instanceof ApiError ? err.message : 'Erreur réseau. Réessaie.', 'error');
     } finally {
       setNameSubmitting(false);
-    }
-  }
-
-  async function toggleAlerts() {
-    const next = !alertsEnabled;
-    setAlertsEnabled(next);
-    setPrefsSubmitting(true);
-    try {
-      await api('/api/notifications/prefs', {
-        method: 'PATCH',
-        body: { prefs: { [ENVELOPE_THRESHOLD_PREF]: { inApp: next } } },
-      });
-    } catch {
-      setAlertsEnabled(!next);
-      toast('Erreur réseau. Réessaie.', 'error');
-    } finally {
-      setPrefsSubmitting(false);
     }
   }
 
@@ -282,6 +198,7 @@ export default function SettingsPage() {
 
             {/* Compte */}
             <SectionCard title="Compte">
+              <AvatarField name={displayName} avatarUrl={user.avatarUrl} onChanged={refresh} />
               <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
                 <div className="min-w-0 flex-1">
                   <p className="font-body text-sm font-medium text-foreground">Nom complet</p>
@@ -312,7 +229,10 @@ export default function SettingsPage() {
                 {!nameEditing && (
                   <button
                     type="button"
-                    onClick={() => setNameEditing(true)}
+                    onClick={() => {
+                      setNameValue(user.name ?? '');
+                      setNameEditing(true);
+                    }}
                     className="font-body text-sm font-medium text-primary"
                   >
                     Modifier
@@ -326,48 +246,15 @@ export default function SettingsPage() {
             <SectionCard title="Préférences">
               <Row label="Devise" value="Franc CFA (FCFA)" />
               <Row label="Langue" value="Français" />
-              <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
-                <div className="min-w-0">
-                  <p className="font-body text-sm font-medium text-foreground">
-                    Alertes de dépassement
-                  </p>
-                  <p className="font-body text-xs text-muted-foreground">
-                    Notifie quand une enveloppe dépasse 50% de sa limite.
-                  </p>
-                </div>
-                <Toggle
-                  checked={alertsEnabled}
-                  onChange={toggleAlerts}
-                  disabled={!prefsLoaded || prefsSubmitting}
-                  label="Alertes de dépassement"
-                />
-              </div>
+              <NotificationPrefs />
             </SectionCard>
 
             {/* Budget */}
             <SectionCard title="Budget">
-              <Row
-                label="Budget"
-                value={
-                  user.totalBudget != null
-                    ? `${formatPrice(user.totalBudget)} FCFA / ${
-                        user.budgetFrequency === 'weekly'
-                          ? 'semaine'
-                          : user.budgetFrequency === 'daily'
-                            ? 'jour'
-                            : 'mois'
-                      }`
-                    : 'Non défini'
-                }
-                action={
-                  <button
-                    type="button"
-                    onClick={() => router.push('/onboarding')}
-                    className="font-body text-sm font-medium text-primary"
-                  >
-                    Modifier
-                  </button>
-                }
+              <BudgetEditor
+                totalBudget={user.totalBudget}
+                budgetFrequency={user.budgetFrequency}
+                onSaved={refresh}
               />
             </SectionCard>
 
@@ -425,28 +312,11 @@ export default function SettingsPage() {
                   </button>
                 </form>
               </div>
-              <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
-                <div className="min-w-0">
-                  <p className="font-body text-sm font-medium text-foreground">Google</p>
-                  <p className="font-body text-xs text-muted-foreground">
-                    {googleLinked
-                      ? 'Tu peux te connecter via Google.'
-                      : 'Lie ton compte Google pour te connecter en un clic.'}
-                  </p>
-                </div>
-                {googleLinked ? (
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-body text-xs font-medium text-primary">
-                    Lié
-                  </span>
-                ) : (
-                  <a
-                    href="/api/auth/oauth/google/start?next=/settings"
-                    className="rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    Lier Google
-                  </a>
-                )}
-              </div>
+              <GoogleAccountRow
+                linked={googleLinked}
+                canUnlink={canUnlinkGoogle}
+                onChanged={refresh}
+              />
             </SectionCard>
 
             <SectionCard title="Session">

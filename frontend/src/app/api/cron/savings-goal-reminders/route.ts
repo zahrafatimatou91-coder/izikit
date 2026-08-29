@@ -19,6 +19,7 @@ import { redis } from '@/lib/server/redis';
 import { createLogger } from '@/lib/server/logger';
 import { createNotification } from '@/lib/server/notifications';
 import { savingsGoalPaceMissedNotification } from '@/lib/server/notifications/templates';
+import { isChannelEnabled, type NotificationPrefs } from '@/lib/server/notifications/prefs-merge';
 import {
   previousPacePeriod,
   isPaceCheckDay,
@@ -58,8 +59,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
       checked = goals.length;
 
+      // Per-user opt-out (Settings → "Objectifs en retard"). Missing row /
+      // missing channel ⇒ enabled (D-10 opt-out), same as inactivity-nudges.
+      const userIds = [...new Set(goals.map((g) => g.userId))];
+      const prefsRows = userIds.length
+        ? await prisma.notificationPreferences.findMany({
+            where: { userId: { in: userIds } },
+            select: { userId: true, prefs: true },
+          })
+        : [];
+      const prefsByUser = new Map(
+        prefsRows.map((row) => [row.userId, row.prefs as NotificationPrefs | null]),
+      );
+
       for (const goal of goals) {
         if (goal.currentAmount >= goal.targetAmount) continue; // already completed
+        if (!isChannelEnabled(prefsByUser.get(goal.userId), 'SAVINGS_GOAL_PACE_MISSED', 'inApp')) {
+          continue;
+        }
         const pace = goal.period as SavingsGoalPace;
         const { start, end } = previousPacePeriod(pace, now);
         const saved = await prisma.savingsEntry.aggregate({
