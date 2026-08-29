@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface GoogleAccountRowProps {
   linked: boolean;
@@ -14,6 +15,7 @@ interface GoogleAccountRowProps {
 /** "Sécurité" row: link Google, or unlink it (blocked when it's the only way in). */
 export function GoogleAccountRow({ linked, canUnlink, onChanged }: GoogleAccountRowProps) {
   const { toast } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
 
   async function unlink() {
@@ -22,6 +24,7 @@ export function GoogleAccountRow({ linked, canUnlink, onChanged }: GoogleAccount
       await api('/api/auth/oauth/google', { method: 'DELETE' });
       await onChanged();
       toast('Compte Google délié.', 'success');
+      setConfirmOpen(false);
     } catch (err) {
       const msg =
         err instanceof ApiError && err.code === 'LAST_LOGIN_METHOD'
@@ -30,6 +33,7 @@ export function GoogleAccountRow({ linked, canUnlink, onChanged }: GoogleAccount
             ? err.message
             : 'Erreur réseau. Réessaie.';
       toast(msg, 'error');
+      setConfirmOpen(false);
     } finally {
       setUnlinking(false);
     }
@@ -57,17 +61,27 @@ export function GoogleAccountRow({ linked, canUnlink, onChanged }: GoogleAccount
       ) : canUnlink ? (
         <button
           type="button"
-          onClick={unlink}
-          disabled={unlinking}
-          className="flex-shrink-0 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+          onClick={() => setConfirmOpen(true)}
+          className="flex-shrink-0 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted"
         >
-          {unlinking ? 'Déliaison…' : 'Délier'}
+          Délier
         </button>
       ) : (
         <span className="flex-shrink-0 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-body text-xs font-medium text-primary">
           Lié
         </span>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Délier ton compte Google ?"
+        description="Tu ne pourras plus te connecter en un clic via Google. Ton mot de passe (ou une autre méthode) reste actif."
+        confirmLabel={unlinking ? 'Déliaison…' : 'Délier'}
+        destructive
+        confirming={unlinking}
+        onConfirm={unlink}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
