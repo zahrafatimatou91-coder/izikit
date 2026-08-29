@@ -113,7 +113,40 @@ Tendances (— | ✓), Conseils personnalisés (— | ✓), Notifications (dépa
 uniquement | toutes).
 
 **Facturation** : toggle Mensuel (1 500 FCFA/mois) / Annuel (13 500 FCFA/an,
-badge "3 mois offerts") → bouton "Passer à Pro".
+badge "3 mois offerts") → bouton "Passer à Pro". L'annuel est présenté comme
+l'option par défaut/pré-sélectionnée avec un badge "Le plus populaire", et son
+prix est aussi affiché en équivalent journalier ("~37 FCFA/jour") en plus du
+prix annuel total — technique de présentation standard qui rend le
+prix plus abordable à lire sans changer le prix réel.
+
+### Essai Pro gratuit de 7 jours
+
+Pour convertir, un utilisateur doit avoir goûté aux fonctionnalités Pro
+(objectifs d'épargne, tendances) avant de décider — sans ça, il achète à
+l'aveugle. À la création de compte, on crée directement une `Subscription`
+avec `plan: PRO`, `status: ACTIVE`, `currentPeriodEnd: maintenant + 7 jours`,
+`lastOrderId: null`. L'utilisateur est donc Pro dès le départ, sans jamais
+voir les limites Free avant la fin de son essai.
+
+- **Distinction essai / abonnement payé** : pas de nouveau champ nécessaire —
+  un compte est "en essai" tant que `plan = PRO` et `lastOrderId = null`.
+  Dès qu'un vrai paiement est effectué, `lastOrderId` est renseigné et
+  l'essai devient un abonnement payé.
+- **Copywriting du bandeau de statut pendant l'essai** : "Tu profites de 7
+  jours d'essai Pro, jusqu'au [date]" (pas "Tu es Pro jusqu'au [date]", qui
+  laisserait croire à un abonnement payé).
+- **Rappel de fin d'essai** : nouvelle notification à `currentPeriodEnd - 2
+  jours` ("Ton essai Pro se termine bientôt — passe à Pro pour tout garder"),
+  distincte du rappel de renouvellement payé (copy différente : on invite à
+  *démarrer* un abonnement, pas à le *renouveler*).
+- **Fin d'essai non converti** : géré par le même cron
+  `subscription-expiration` déjà prévu ci-dessus (`currentPeriodEnd < now`
+  déclenche le retour en Free + archivage du surplus) — aucune logique
+  supplémentaire nécessaire, l'essai suit exactement le même mécanisme
+  d'expiration qu'un abonnement payé qui n'est pas renouvelé.
+- **Un seul essai par compte** : l'essai est accordé une seule fois, à la
+  création du compte — jamais redéclenché par un autre flux (vérification
+  d'email, onboarding, etc.).
 
 **FAQ courte** :
 - *Puis-je annuler quand je veux ?* → Oui, tu restes Pro jusqu'à la fin de la
@@ -140,9 +173,15 @@ identifié dans le suivi Banani `.planning/banani/STATUS.md`).
   émet une notification via l'outbox. Tourne quotidiennement ; un second
   passage (ou une requête dédiée dans le même cron) déclenche le rappel à
   `currentPeriodEnd - 3 jours`.
-- Deux nouveaux templates de notification à ajouter dans
+- Trois nouveaux templates de notification à ajouter dans
   `notifications/templates.ts` (avec `dedupeKey`) : rappel de renouvellement
-  (3 jours avant `currentPeriodEnd`) et confirmation d'expiration.
+  (3 jours avant `currentPeriodEnd` sur un abonnement payé), rappel de fin
+  d'essai (2 jours avant, copy distincte), et confirmation d'expiration.
+- La création de la `Subscription` d'essai doit se brancher là où le compte
+  `User` est réellement créé — non vérifié dans cette conception (le flux
+  signup → verify-email de `auth.ts` n'a pas été relu ici) ; à confirmer à
+  l'implémentation si le `User` existe déjà au moment du signup ou seulement
+  après vérification de l'email.
 - Un helper de vérification de palier (dans l'esprit des HOF `requireAuth`
   existants) doit gater : création d'enveloppe au-delà de 2, création
   d'objectif d'épargne, accès aux routes Tendances/Conseils, et filtrer
@@ -264,6 +303,11 @@ verte). Concrètement :
 
 ## Hors scope (explicitement reporté)
 
+- **Parrainage** (inviter un ami → les deux gagnent des jours de Pro) — le
+  vrai levier de croissance sans budget marketing pour un public étudiant qui
+  se recommande entre camarades, mais demande des codes de parrainage, du
+  tracking et une protection anti-fraude minimale. Bonne idée de v2, pas
+  nécessaire pour lancer.
 - Refonte complète de toutes les sections de la landing page au même niveau
   de détail que le hero — seul le hero a été conçu en profondeur ; le reste
   suit la règle d'icônes ci-dessus mécaniquement.
