@@ -33,35 +33,50 @@ export function Row({
   );
 }
 
-/** Accessible on/off switch. */
-export function Toggle({
+/**
+ * Full-width row that toggles a boolean setting. The whole row is the hit
+ * target (title + description included) — not just the switch — so it's
+ * comfortable to tap on a phone. The switch on the right is the visual
+ * affordance; `role="switch"` + `aria-checked` live on the row button.
+ */
+export function SwitchRow({
+  label,
+  description,
   checked,
   onChange,
   disabled,
-  label,
 }: {
+  label: string;
+  description: string;
   checked: boolean;
   onChange: () => void;
   disabled?: boolean;
-  label: string;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
-      aria-label={label}
       onClick={onChange}
       disabled={disabled}
-      className={`relative h-6 w-12 flex-shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-        checked ? 'bg-primary' : 'bg-muted'
-      }`}
+      className="group flex w-full items-center justify-between gap-4 px-5 py-4 text-left outline-none transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50 lg:px-6"
     >
+      <span className="min-w-0">
+        <span className="block font-body text-sm font-medium text-foreground">{label}</span>
+        <span className="block font-body text-xs text-muted-foreground">{description}</span>
+      </span>
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-transform ${
-          checked ? 'translate-x-6' : 'translate-x-0.5'
+        aria-hidden="true"
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full px-0.5 transition-colors duration-200 group-focus-visible:ring-2 group-focus-visible:ring-primary/50 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-card ${
+          checked ? 'bg-primary' : 'bg-muted-foreground/35'
         }`}
-      />
+      >
+        <span
+          className={`h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 ${
+            checked ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </span>
     </button>
   );
 }

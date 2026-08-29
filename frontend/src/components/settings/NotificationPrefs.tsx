@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
-import { Toggle } from './primitives';
+import { SwitchRow } from './primitives';
 
 type ChannelPrefs = { email?: boolean; inApp?: boolean };
 type Prefs = Record<string, ChannelPrefs>;
@@ -40,7 +40,7 @@ export function NotificationPrefs() {
   const { toast } = useToast();
   const [prefs, setPrefs] = useState<Prefs>({});
   const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
 
   useEffect(() => {
     api<{ prefs: Prefs }>('/api/notifications/prefs')
@@ -54,7 +54,7 @@ export function NotificationPrefs() {
   async function toggle(type: string) {
     const next = !isEnabled(prefs, type);
     setPrefs((p) => ({ ...p, [type]: { ...p[type], inApp: next } }));
-    setSaving(true);
+    setPending(type);
     try {
       await api('/api/notifications/prefs', {
         method: 'PATCH',
@@ -64,25 +64,21 @@ export function NotificationPrefs() {
       setPrefs((p) => ({ ...p, [type]: { ...p[type], inApp: !next } }));
       toast('Erreur réseau. Réessaie.', 'error');
     } finally {
-      setSaving(false);
+      setPending(null);
     }
   }
 
   return (
     <>
       {TOGGLES.map((t) => (
-        <div key={t.type} className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6">
-          <div className="min-w-0">
-            <p className="font-body text-sm font-medium text-foreground">{t.label}</p>
-            <p className="font-body text-xs text-muted-foreground">{t.desc}</p>
-          </div>
-          <Toggle
-            checked={isEnabled(prefs, t.type)}
-            onChange={() => toggle(t.type)}
-            disabled={!loaded || saving}
-            label={t.label}
-          />
-        </div>
+        <SwitchRow
+          key={t.type}
+          label={t.label}
+          description={t.desc}
+          checked={isEnabled(prefs, t.type)}
+          onChange={() => toggle(t.type)}
+          disabled={!loaded || pending === t.type}
+        />
       ))}
     </>
   );
