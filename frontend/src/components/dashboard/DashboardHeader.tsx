@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
+import { dailyTagline, firstName, timeOfDayGreeting } from '@/lib/greeting';
 
 interface DashboardHeaderProps {
   name: string;
@@ -45,8 +46,10 @@ export function DashboardHeader({
             <Icon i="menu" size={18} className="text-primary-foreground" />
           </button>
           <div>
-            <p className="font-body text-xs text-primary-foreground/70">Bonjour,</p>
-            <p className="font-headings text-lg font-bold text-primary-foreground">{name} 👋</p>
+            <p className="font-body text-xs text-primary-foreground/70">{timeOfDayGreeting()},</p>
+            <p className="font-headings text-lg font-bold text-primary-foreground">
+              {firstName(name)} 👋
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -60,6 +63,8 @@ export function DashboardHeader({
           <UserAvatar name={name} avatarUrl={avatarUrl} className="h-9 w-9 rounded-lg" />
         </div>
       </div>
+
+      <p className="mb-6 font-body text-sm text-primary-foreground/80">{dailyTagline()}</p>
 
       <div className="mb-1">
         <p className="mb-1 font-body text-xs text-primary-foreground/70">
