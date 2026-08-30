@@ -1,7 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { Icon } from '@/components/ui/Icon';
 import { formatPrice } from '@/lib/utils';
+import { useRipple } from '@/hooks/useRipple';
 
 interface TipCardProps {
   id: string;
@@ -14,6 +17,7 @@ interface TipCardProps {
 /** Grid card for /tips — the summary text is a one-line excerpt of the
  * tip's body (first paragraph), not a separate field. */
 export function TipCard({ id, title, excerpt, icon, estimatedSavingsFcfa }: TipCardProps) {
+  const ripple = useRipple();
   return (
     <div className="flex flex-col rounded-lg border border-border bg-card p-6">
       <div className="mb-4 flex items-center gap-3">
@@ -31,7 +35,8 @@ export function TipCard({ id, title, excerpt, icon, estimatedSavingsFcfa }: TipC
       )}
       <Link
         href={`/tips/${id}`}
-        className="w-full rounded-lg border border-border bg-input px-4 py-2 text-center font-body text-sm font-medium text-primary"
+        onPointerDown={ripple}
+        className="relative w-full overflow-hidden rounded-lg border border-border bg-input px-4 py-2 text-center font-body text-sm font-medium text-primary"
       >
         En savoir plus
       </Link>

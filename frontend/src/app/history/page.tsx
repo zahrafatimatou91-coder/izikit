@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatRelativeDateTime } from '@/lib/format-date';
+import { useRipple } from '@/hooks/useRipple';
 
 interface TransactionItem {
   id: string;
@@ -54,6 +55,7 @@ function groupByMonth(items: TransactionItem[]): { label: string; items: Transac
 
 export default function HistoryPage() {
   const user = useUser();
+  const ripple = useRipple();
   const [items, setItems] = useState<TransactionItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -133,7 +135,8 @@ export default function HistoryPage() {
             <Link
               href="/transactions/new"
               aria-label="Ajouter une transaction"
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 font-body text-sm font-bold text-primary-foreground lg:gap-2 lg:px-4"
+              onPointerDown={ripple}
+              className="relative flex items-center gap-1.5 overflow-hidden rounded-lg bg-primary px-3 py-2 font-body text-sm font-bold text-primary-foreground lg:gap-2 lg:px-4"
             >
               <Icon i="plus" size={16} />
               <span className="lg:hidden">Ajouter</span>
@@ -194,8 +197,9 @@ export default function HistoryPage() {
               <button
                 type="button"
                 onClick={loadMore}
+                onPointerDown={ripple}
                 disabled={loadingMore}
-                className="mx-auto rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground disabled:opacity-50"
+                className="relative mx-auto overflow-hidden rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground disabled:opacity-50"
               >
                 {loadingMore ? 'Chargement…' : 'Charger plus'}
               </button>

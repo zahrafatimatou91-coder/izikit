@@ -23,6 +23,7 @@ import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatPrice } from '@/lib/utils';
+import { useRipple } from '@/hooks/useRipple';
 
 interface TipDetail {
   id: string;
@@ -37,6 +38,7 @@ export default function TipDetailPage({ params }: { params: Promise<{ id: string
   const { id } = use(params);
   const user = useUser();
   const router = useRouter();
+  const ripple = useRipple();
   const [tip, setTip] = useState<TipDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,13 +133,15 @@ export default function TipDetailPage({ params }: { params: Promise<{ id: string
               <button
                 type="button"
                 onClick={() => router.push(`/tips/${id}/apply`)}
-                className="flex-1 rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
+                onPointerDown={ripple}
+                className="relative flex-1 overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
               >
                 Appliquer ce conseil
               </button>
               <Link
                 href="/tips"
-                className="flex-1 rounded-lg border border-border bg-input px-6 py-3 text-center font-body text-sm font-medium text-foreground"
+                onPointerDown={ripple}
+                className="relative flex-1 overflow-hidden rounded-lg border border-border bg-input px-6 py-3 text-center font-body text-sm font-medium text-foreground"
               >
                 Revenir aux conseils
               </Link>

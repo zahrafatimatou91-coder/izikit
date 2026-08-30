@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
+import { useRipple } from '@/hooks/useRipple';
 
 interface MoreSheetItem {
   href: string;
@@ -31,6 +32,7 @@ interface MoreSheetProps {
  * one nav system, not two. */
 export function MoreSheet({ open, onClose }: MoreSheetProps) {
   const pathname = usePathname();
+  const ripple = useRipple();
 
   useEffect(() => {
     if (!open) return;
@@ -64,7 +66,8 @@ export function MoreSheet({ open, onClose }: MoreSheetProps) {
             key={item.href}
             href={item.href}
             onClick={onClose}
-            className={`flex min-h-12 items-center gap-3 rounded-lg px-4 font-body text-sm font-medium ${
+            onPointerDown={ripple}
+            className={`relative flex min-h-12 items-center gap-3 overflow-hidden rounded-lg px-4 font-body text-sm font-medium ${
               pathname === item.href
                 ? 'bg-primary text-primary-foreground'
                 : 'text-foreground hover:bg-muted'

@@ -26,6 +26,8 @@ import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatPrice } from '@/lib/utils';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 
 interface GoalResult {
   id: string;
@@ -54,6 +56,7 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   const user = useUser();
   const router = useRouter();
+  const ripple = useRipple();
   const [goal, setGoal] = useState<GoalResult | null>(null);
   const [tip, setTip] = useState<TipDetail | null>(null);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
@@ -158,7 +161,7 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
                 </div>
                 <div className="text-right">
                   <p className="mb-1 font-headings text-3xl font-bold text-primary">
-                    {formatPrice(goal.currentAmount)} F
+                    <AnimatedNumber value={goal.currentAmount} format={formatPrice} /> F
                   </p>
                   <p className="font-body text-xs text-muted-foreground">
                     sur {formatPrice(goal.targetAmount)} FCFA
@@ -168,11 +171,13 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
               <div className="mb-4">
                 <div className="mb-2 flex items-center justify-between">
                   <p className="font-body text-xs font-medium text-muted-foreground">Progression</p>
-                  <p className="font-body text-xs font-bold text-foreground">{pct}%</p>
+                  <p className="font-body text-xs font-bold text-foreground">
+                    <AnimatedNumber value={pct} />%
+                  </p>
                 </div>
                 <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-primary transition-all"
+                    className="transition-bar h-full rounded-full bg-primary"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -229,14 +234,16 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
               <button
                 type="button"
                 onClick={() => router.push('/tips')}
-                className="flex-1 rounded-lg border border-primary bg-transparent px-6 py-3 font-body text-sm font-medium text-primary"
+                onPointerDown={ripple}
+                className="relative flex-1 overflow-hidden rounded-lg border border-primary bg-transparent px-6 py-3 font-body text-sm font-medium text-primary"
               >
                 Revenir aux conseils
               </button>
               <button
                 type="button"
                 onClick={() => router.push(`/savings/${goal.id}/add`)}
-                className="flex-1 rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
+                onPointerDown={ripple}
+                className="relative flex-1 overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
               >
                 Ajouter une économie
               </button>

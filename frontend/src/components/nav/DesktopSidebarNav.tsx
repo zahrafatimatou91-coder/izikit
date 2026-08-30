@@ -1,6 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { useRipple } from '@/hooks/useRipple';
 import { NAV_ITEMS, type NavId } from './nav-items';
 
 export type { NavId };
@@ -23,6 +26,7 @@ export function DesktopSidebarNav({
   userEmail,
   avatarUrl = null,
 }: DesktopSidebarNavProps) {
+  const ripple = useRipple();
   return (
     // Outer element only reserves the w-64 column in the page's flex row —
     // it carries no visuals. The real sidebar is `fixed` inside it, pinned
@@ -45,7 +49,8 @@ export function DesktopSidebarNav({
             <Link
               key={item.id}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm font-medium ${
+              onPointerDown={ripple}
+              className={`relative flex items-center gap-3 overflow-hidden rounded-lg px-4 py-3 font-body text-sm font-medium ${
                 active === item.id
                   ? 'bg-primary text-primary-foreground'
                   : 'text-foreground hover:bg-muted'

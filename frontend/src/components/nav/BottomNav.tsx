@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { MoreSheet } from './MoreSheet';
+import { useRipple } from '@/hooks/useRipple';
 import type { IconName } from 'lucide-react/dynamic';
 
 interface NavItem {
@@ -40,6 +41,7 @@ const RIGHT_ITEMS: NavItem[] = [
 export function BottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const ripple = useRipple();
 
   function renderItem(item: NavItem) {
     if (item.more) {
@@ -48,10 +50,11 @@ export function BottomNav() {
           key={item.id}
           type="button"
           onClick={() => setMoreOpen(true)}
+          onPointerDown={ripple}
           aria-label="Plus d'options"
           aria-haspopup="dialog"
           aria-expanded={moreOpen}
-          className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1 ${
+          className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 overflow-hidden rounded-lg px-1 py-1 ${
             moreOpen ? 'text-primary' : 'text-muted-foreground'
           }`}
         >
@@ -64,7 +67,8 @@ export function BottomNav() {
       <Link
         key={item.id}
         href={item.href}
-        className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1 ${
+        onPointerDown={ripple}
+        className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 overflow-hidden rounded-lg px-1 py-1 ${
           pathname === item.href ? 'text-primary' : 'text-muted-foreground'
         }`}
       >
@@ -90,7 +94,8 @@ export function BottomNav() {
         <Link
           href="/transactions/new"
           aria-label="Ajouter"
-          className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm"
+          onPointerDown={ripple}
+          className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-hidden rounded-xl bg-primary text-primary-foreground shadow-sm"
         >
           <Icon i="plus" size={22} />
         </Link>

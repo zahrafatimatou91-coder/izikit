@@ -24,6 +24,7 @@ import {
   type DateRangeValue,
 } from '@/components/insights/DateRangePicker';
 import { formatPrice } from '@/lib/utils';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 /** "YYYY-MM-DD" from local date parts — deliberately NOT
  * `.toISOString().slice(0, 10)`, which converts to UTC first and can
@@ -185,7 +186,7 @@ export default function InsightsPage() {
                   <div className="rounded-lg border border-border bg-card p-6">
                     <p className="mb-1 font-body text-xs text-muted-foreground">Dépensé</p>
                     <p className="font-headings text-xl font-bold text-foreground lg:text-2xl">
-                      {formatPrice(data.totalSpent)} F
+                      <AnimatedNumber value={data.totalSpent} format={formatPrice} /> F
                     </p>
                     {spentDelta !== null && (
                       <p
@@ -199,7 +200,7 @@ export default function InsightsPage() {
                   <div className="rounded-lg border border-border bg-card p-6">
                     <p className="mb-1 font-body text-xs text-muted-foreground">Revenu</p>
                     <p className="font-headings text-xl font-bold text-foreground lg:text-2xl">
-                      {formatPrice(data.totalIncome)} F
+                      <AnimatedNumber value={data.totalIncome} format={formatPrice} /> F
                     </p>
                     {incomeDelta !== null && (
                       <p
@@ -213,7 +214,7 @@ export default function InsightsPage() {
                   <div className="rounded-lg border border-border bg-card p-6">
                     <p className="mb-1 font-body text-xs text-muted-foreground">Épargné</p>
                     <p className="font-headings text-xl font-bold text-primary lg:text-2xl">
-                      {formatPrice(data.savedInPeriod)} F
+                      <AnimatedNumber value={data.savedInPeriod} format={formatPrice} /> F
                     </p>
                   </div>
                 </div>
@@ -247,12 +248,12 @@ export default function InsightsPage() {
                                 )}
                               </div>
                               <span className="font-body text-sm font-medium text-foreground">
-                                {formatPrice(e.spent)} F
+                                <AnimatedNumber value={e.spent} format={formatPrice} /> F
                               </span>
                             </div>
                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                               <div
-                                className="h-full rounded-full bg-primary"
+                                className="transition-bar h-full rounded-full bg-primary"
                                 style={{ width: `${Math.min(e.pctOfLimit, 100)}%` }}
                               />
                             </div>
@@ -298,12 +299,12 @@ export default function InsightsPage() {
                             </span>
                           </div>
                           <span className="font-body text-xs font-bold text-foreground">
-                            {pct}%
+                            <AnimatedNumber value={pct} />%
                           </span>
                         </div>
                         <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                           <div
-                            className={`h-full rounded-full ${g.completed ? 'bg-secondary' : 'bg-primary'}`}
+                            className={`transition-bar h-full rounded-full ${g.completed ? 'bg-secondary' : 'bg-primary'}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>

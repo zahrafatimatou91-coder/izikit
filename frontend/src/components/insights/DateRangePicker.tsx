@@ -17,6 +17,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Calendar } from '@/components/ui/Calendar';
+import { useRipple } from '@/hooks/useRipple';
 
 export interface DateRangeValue {
   from: Date;
@@ -99,6 +100,7 @@ interface DateRangePickerProps {
 export function DateRangePicker({ value, fallbackLabel, onChange }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>(value);
+  const ripple = useRipple();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -139,7 +141,8 @@ export function DateRangePicker({ value, fallbackLabel, onChange }: DateRangePic
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-lg border border-border bg-input px-4 py-2 font-body text-sm text-foreground"
+        onPointerDown={ripple}
+        className="relative flex items-center gap-2 overflow-hidden rounded-lg border border-border bg-input px-4 py-2 font-body text-sm text-foreground"
       >
         <Icon i="calendar" size={16} className="text-muted-foreground" />
         {displayLabel}

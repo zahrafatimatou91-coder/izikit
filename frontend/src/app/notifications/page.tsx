@@ -24,6 +24,7 @@ import { Icon } from '@/components/ui/Icon';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatRelativeDateTime } from '@/lib/format-date';
+import { useRipple } from '@/hooks/useRipple';
 
 interface NotificationItem {
   id: string;
@@ -88,6 +89,7 @@ const DEFAULT_STYLE = {
 export default function NotificationsPage() {
   const user = useUser();
   const router = useRouter();
+  const ripple = useRipple();
   const [filter, setFilter] = useState<FilterId>('all');
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -191,7 +193,8 @@ export default function NotificationsPage() {
                   key={f.id}
                   type="button"
                   onClick={() => setFilter(f.id)}
-                  className={`flex-shrink-0 rounded-full px-3 py-1.5 font-body text-xs font-medium ${
+                  onPointerDown={ripple}
+                  className={`relative flex-shrink-0 overflow-hidden rounded-full px-3 py-1.5 font-body text-xs font-medium ${
                     filter === f.id
                       ? 'bg-primary text-primary-foreground'
                       : 'border border-border text-muted-foreground'
@@ -217,7 +220,8 @@ export default function NotificationsPage() {
                     key={n.id}
                     type="button"
                     onClick={() => unread && markRead([n.id])}
-                    className={`flex gap-4 rounded-lg border p-4 text-left ${style.wrap} ${unread ? '' : 'opacity-70'}`}
+                    onPointerDown={ripple}
+                    className={`relative flex gap-4 overflow-hidden rounded-lg border p-4 text-left ${style.wrap} ${unread ? '' : 'opacity-70'}`}
                   >
                     <div
                       className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${style.iconWrap}`}
@@ -248,8 +252,9 @@ export default function NotificationsPage() {
               <button
                 type="button"
                 onClick={loadMore}
+                onPointerDown={ripple}
                 disabled={loadingMore}
-                className="mx-auto rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground disabled:opacity-50"
+                className="relative mx-auto overflow-hidden rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground disabled:opacity-50"
               >
                 {loadingMore ? 'Chargement…' : 'Charger plus'}
               </button>

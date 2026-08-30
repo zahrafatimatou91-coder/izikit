@@ -22,6 +22,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { TipCard } from '@/components/tips/TipCard';
+import { useRipple } from '@/hooks/useRipple';
 
 interface TipRow {
   id: string;
@@ -34,6 +35,7 @@ interface TipRow {
 
 export default function TipsPage() {
   const user = useUser();
+  const ripple = useRipple();
   const [tips, setTips] = useState<TipRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -114,7 +116,8 @@ export default function TipsPage() {
               </div>
               <Link
                 href="/dashboard"
-                className="rounded-lg border border-primary bg-card px-6 py-2 font-body text-sm font-medium text-primary"
+                onPointerDown={ripple}
+                className="relative overflow-hidden rounded-lg border border-primary bg-card px-6 py-2 font-body text-sm font-medium text-primary"
               >
                 Revenir au tableau
               </Link>
