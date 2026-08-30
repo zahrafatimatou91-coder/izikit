@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { FEATURE_ROWS, SUBSCRIPTION_PRICES } from '@/lib/subscription-plans';
+import { formatPrice } from '@/lib/utils';
 
 const PAYMENT_METHODS = ['Wave', 'Orange Money', 'Free Money', 'Carte bancaire'];
 
@@ -176,6 +178,70 @@ function HeroProductPreview({ compact = false }: { compact?: boolean }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+interface PricingCardProps {
+  plan: string;
+  price: string;
+  priceNote?: string;
+  ctaLabel: string;
+  highlight?: boolean;
+}
+
+function PricingCard({ plan, price, priceNote, ctaLabel, highlight = false }: PricingCardProps) {
+  return (
+    <div
+      className={`flex flex-1 flex-col gap-6 rounded-2xl border-2 p-6 lg:rounded-3xl lg:p-10 ${
+        highlight ? 'border-secondary bg-secondary/10' : 'border-border bg-card'
+      }`}
+    >
+      <div>
+        {highlight && (
+          <span className="mb-3 inline-block rounded-full bg-secondary px-3 py-1 font-body text-xs font-bold text-secondary-foreground">
+            Recommandé
+          </span>
+        )}
+        <h3 className="font-headings text-xl font-bold text-foreground lg:text-2xl">{plan}</h3>
+        <p className="mt-2 font-headings text-3xl font-bold text-foreground lg:text-4xl">{price}</p>
+        {priceNote && <p className="mt-1 font-body text-xs text-muted-foreground">{priceNote}</p>}
+      </div>
+
+      <ul className="flex flex-1 flex-col gap-3">
+        {FEATURE_ROWS.map((row) => {
+          const value = highlight ? row.pro : row.free;
+          const included = value !== '—';
+          return (
+            <li key={row.label} className="flex items-start gap-2 font-body text-sm">
+              {included ? (
+                <Icon i="check-circle" size={16} className="mt-0.5 flex-shrink-0 text-primary" />
+              ) : (
+                <span className="mt-0.5 w-4 flex-shrink-0 text-center text-muted-foreground">
+                  –
+                </span>
+              )}
+              <span className="text-foreground">
+                {row.label}
+                {included && value !== '✓' && (
+                  <span className="text-muted-foreground"> — {value}</span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <Link
+        href="/signup"
+        className={`w-full rounded-xl px-6 py-3.5 text-center font-body text-sm font-bold lg:py-4 ${
+          highlight
+            ? 'bg-primary text-primary-foreground'
+            : 'border-2 border-border text-foreground'
+        }`}
+      >
+        {ctaLabel}
+      </Link>
     </div>
   );
 }
@@ -366,6 +432,38 @@ export default function LandingPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="tarifs" className="bg-background px-4 py-12">
+          <div className="flex flex-col gap-10">
+            <div className="text-center">
+              <p className="mb-2 font-body text-xs font-bold uppercase tracking-widest text-primary">
+                Tarifs
+              </p>
+              <h2 className="mb-3 font-headings text-3xl font-bold leading-tight text-foreground">
+                Gratuit pour commencer.
+              </h2>
+              <p className="font-body text-sm text-muted-foreground">
+                Passe à Pro quand tu es prêt·e à aller plus loin.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-6">
+              <PricingCard
+                plan="Free"
+                price="0 F"
+                priceNote="Pour toujours"
+                ctaLabel="Créer un compte gratuit"
+              />
+              <PricingCard
+                plan="Pro"
+                price={`${formatPrice(SUBSCRIPTION_PRICES.monthly)} F`}
+                priceNote={`/mois — ou ${formatPrice(SUBSCRIPTION_PRICES.annual)} F/an`}
+                ctaLabel="Commencer — 7 jours Pro offerts"
+                highlight
+              />
             </div>
           </div>
         </section>
@@ -632,7 +730,39 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="tarifs" className="relative overflow-hidden bg-primary px-20 py-40">
+        <section id="tarifs" className="bg-background px-20 py-32">
+          <div className="mx-auto flex max-w-5xl flex-col gap-20">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="mb-4 font-body text-xs font-bold uppercase tracking-widest text-primary">
+                Tarifs
+              </p>
+              <h2 className="mb-6 font-headings text-5xl font-bold leading-tight text-foreground">
+                Gratuit pour commencer.
+              </h2>
+              <p className="font-body text-lg text-muted-foreground">
+                Passe à Pro quand tu es prêt·e à aller plus loin — sans engagement.
+              </p>
+            </div>
+
+            <div className="flex gap-10">
+              <PricingCard
+                plan="Free"
+                price="0 F"
+                priceNote="Pour toujours"
+                ctaLabel="Créer un compte gratuit"
+              />
+              <PricingCard
+                plan="Pro"
+                price={`${formatPrice(SUBSCRIPTION_PRICES.monthly)} F`}
+                priceNote={`/mois — ou ${formatPrice(SUBSCRIPTION_PRICES.annual)} F/an`}
+                ctaLabel="Commencer — 7 jours Pro offerts"
+                highlight
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="relative overflow-hidden bg-primary px-20 py-40">
           <div className="absolute -z-10 right-20 top-20 h-96 w-96 rounded-full bg-primary-foreground opacity-10 blur-3xl" />
           <div className="absolute -bottom-40 -left-40 -z-10 h-80 w-80 rounded-full bg-primary-foreground opacity-5 blur-3xl" />
 
