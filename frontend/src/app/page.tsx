@@ -284,8 +284,8 @@ export default function LandingPage() {
                   key={f.title}
                   className="flex gap-4 rounded-2xl border border-border bg-card p-5"
                 >
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary">
-                    <Icon i={f.icon} size={22} className="text-primary-foreground" />
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-secondary/30 bg-secondary/15">
+                    <Icon i={f.icon} size={22} className="text-secondary-foreground" />
                   </div>
                   <div className="flex-1">
                     <h4 className="mb-1 font-headings text-base font-bold text-foreground">
@@ -539,8 +539,8 @@ export default function LandingPage() {
                   key={f.title}
                   className="rounded-3xl border-2 border-border bg-card p-12 transition-all hover:border-primary hover:shadow-lg"
                 >
-                  <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-secondary">
-                    <Icon i={f.icon} size={32} className="text-primary-foreground" />
+                  <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl border border-secondary/30 bg-secondary/15">
+                    <Icon i={f.icon} size={32} className="text-secondary-foreground" />
                   </div>
                   <h3 className="mb-4 font-headings text-2xl font-bold text-foreground">
                     {f.title}
