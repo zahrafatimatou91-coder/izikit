@@ -23,6 +23,8 @@ import { useUser } from '@/contexts/AuthContext';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatPrice } from '@/lib/utils';
@@ -49,6 +51,7 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
   const { goalId } = use(params);
   const user = useUser();
   const router = useRouter();
+  const ripple = useRipple();
   const [goal, setGoal] = useState<GoalDetail | null>(null);
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +145,7 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
                 </div>
                 <div className="text-right">
                   <p className="font-body text-sm font-bold text-primary">
-                    {formatPrice(goal.currentAmount)} F
+                    <AnimatedNumber value={goal.currentAmount} format={formatPrice} /> F
                   </p>
                   <p className="font-body text-xs text-muted-foreground">
                     sur {formatPrice(goal.targetAmount)} F
@@ -150,10 +153,13 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
                 </div>
               </div>
               <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                <div
+                  className="transition-bar h-full rounded-full bg-primary"
+                  style={{ width: `${pct}%` }}
+                />
               </div>
               <p className="mt-3 font-body text-xs text-muted-foreground">
-                {pct}% de ton objectif atteint !
+                <AnimatedNumber value={pct} />% de ton objectif atteint !
               </p>
 
               {lastEntry && (
@@ -247,7 +253,8 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
             <button
               type="button"
               onClick={() => router.push('/progress')}
-              className="w-full rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
+              onPointerDown={ripple}
+              className="relative w-full overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
             >
               Retour à ma progression
             </button>

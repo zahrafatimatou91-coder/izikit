@@ -1,6 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { Icon } from '@/components/ui/Icon';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { formatPrice } from '@/lib/utils';
 import { paceLabel } from '@/lib/savings-pace-label';
 
@@ -33,6 +37,7 @@ export function SavingsGoalCard({
   const pct =
     targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0;
   const pace = paceLabel(period, paceAmount);
+  const ripple = useRipple();
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -49,7 +54,7 @@ export function SavingsGoalCard({
         <div className="flex items-start gap-2">
           <div className="text-right">
             <p className="font-headings text-lg font-bold text-primary">
-              {formatPrice(currentAmount)}
+              <AnimatedNumber value={currentAmount} format={formatPrice} />
             </p>
             <p className="font-body text-xs text-muted-foreground">
               sur {formatPrice(targetAmount)}
@@ -60,7 +65,8 @@ export function SavingsGoalCard({
               type="button"
               aria-label="Supprimer l'objectif"
               onClick={onDelete}
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+              onPointerDown={ripple}
+              className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg text-muted-foreground hover:bg-muted"
             >
               <Icon i="trash-2" size={16} />
             </button>
@@ -72,18 +78,21 @@ export function SavingsGoalCard({
         <p className="font-body text-xs font-medium text-muted-foreground">
           {completed ? 'Objectif atteint 🎉' : 'Progression'}
         </p>
-        <p className="font-body text-xs font-bold text-foreground">{pct}%</p>
+        <p className="font-body text-xs font-bold text-foreground">
+          <AnimatedNumber value={pct} />%
+        </p>
       </div>
       <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
         <div
-          className={`h-full rounded-full ${completed ? 'bg-secondary' : 'bg-primary'}`}
+          className={`transition-bar h-full rounded-full ${completed ? 'bg-secondary' : 'bg-primary'}`}
           style={{ width: `${pct}%` }}
         />
       </div>
 
       <Link
         href={`/savings/${id}/add`}
-        className="mt-4 flex w-full items-center justify-center rounded-lg border border-primary px-4 py-2.5 font-body text-sm font-medium text-primary"
+        onPointerDown={ripple}
+        className="relative mt-4 flex w-full items-center justify-center overflow-hidden rounded-lg border border-primary px-4 py-2.5 font-body text-sm font-medium text-primary"
       >
         Ajouter une économie
       </Link>

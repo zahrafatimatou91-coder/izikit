@@ -1,5 +1,6 @@
 import type { IconName } from 'lucide-react/dynamic';
 import { Icon } from '@/components/ui/Icon';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { envelopeSwatch, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 
@@ -28,20 +29,20 @@ export function EnvelopeCard({ name, icon, spent, total, color }: EnvelopeCardPr
           <span className="font-body text-sm font-medium text-foreground">{name}</span>
         </div>
         <span className={`font-body text-xs ${danger ? 'text-accent' : 'text-muted-foreground'}`}>
-          {pct}%
+          <AnimatedNumber value={pct} />%
         </span>
       </div>
 
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div
-          className={`h-full rounded-full ${danger ? 'bg-accent' : swatch.bg}`}
+          className={`transition-bar h-full rounded-full ${danger ? 'bg-accent' : swatch.bg}`}
           style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>
 
       <div className="flex items-baseline justify-between">
         <span className="font-headings text-xl font-bold text-foreground">
-          {formatPrice(remaining)}
+          <AnimatedNumber value={remaining} format={formatPrice} />
           <span className="ml-1 font-body text-xs font-normal text-muted-foreground">FCFA</span>
         </span>
         <span className="font-body text-xs text-muted-foreground">sur {formatPrice(total)}</span>

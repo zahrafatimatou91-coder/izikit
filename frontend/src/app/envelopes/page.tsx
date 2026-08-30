@@ -6,6 +6,8 @@ import { useUser } from '@/contexts/AuthContext';
 import { EnvelopesSkeleton } from '@/components/skeletons/EnvelopesSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
@@ -26,6 +28,7 @@ interface EnvelopeRow {
 
 export default function EnvelopesPage() {
   const user = useUser();
+  const ripple = useRipple();
   const [envelopes, setEnvelopes] = useState<EnvelopeRow[] | null>(null);
   const [summary, setSummary] = useState<{
     totalBudget: number | null;
@@ -179,7 +182,7 @@ export default function EnvelopesPage() {
                 <div>
                   <p className="mb-1 font-body text-sm text-muted-foreground">Budget total</p>
                   <p className="font-headings text-2xl font-bold text-foreground lg:text-3xl">
-                    {formatPrice(summary.totalBudget ?? 0)}{' '}
+                    <AnimatedNumber value={summary.totalBudget ?? 0} format={formatPrice} />{' '}
                     <span className="font-body text-base font-normal text-muted-foreground">
                       FCFA
                     </span>
@@ -188,14 +191,14 @@ export default function EnvelopesPage() {
                 <div className="sm:text-right">
                   <p className="mb-1 font-body text-sm text-muted-foreground">Dépensé ce mois</p>
                   <p className="font-headings text-2xl font-bold text-muted-foreground lg:text-3xl">
-                    {formatPrice(summary.spent)}{' '}
+                    <AnimatedNumber value={summary.spent} format={formatPrice} />{' '}
                     <span className="font-body text-base font-normal">FCFA</span>
                   </p>
                 </div>
                 <div className="sm:text-right">
                   <p className="mb-1 font-body text-sm text-muted-foreground">Restant</p>
                   <p className="font-headings text-2xl font-bold text-primary lg:text-3xl">
-                    {formatPrice(remaining)}{' '}
+                    <AnimatedNumber value={remaining} format={formatPrice} />{' '}
                     <span className="font-body text-base font-normal text-muted-foreground">
                       FCFA
                     </span>
@@ -247,7 +250,8 @@ export default function EnvelopesPage() {
                             type="button"
                             aria-label="Modifier"
                             onClick={() => openForm(e.id)}
-                            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                            onPointerDown={ripple}
+                            className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg text-muted-foreground hover:bg-muted"
                           >
                             <Icon i="edit-2" size={16} />
                           </button>
@@ -255,7 +259,8 @@ export default function EnvelopesPage() {
                             type="button"
                             aria-label="Supprimer"
                             onClick={() => setDeleteTarget({ id: e.id, name: e.name })}
-                            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                            onPointerDown={ripple}
+                            className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg text-muted-foreground hover:bg-muted"
                           >
                             <Icon i="trash-2" size={16} />
                           </button>
@@ -266,12 +271,12 @@ export default function EnvelopesPage() {
                           <div className="mb-2 flex justify-between">
                             <span className="font-body text-sm text-foreground">Dépensé</span>
                             <span className="font-body text-sm font-medium text-foreground">
-                              {formatPrice(e.spent)} F
+                              <AnimatedNumber value={e.spent} format={formatPrice} /> F
                             </span>
                           </div>
                           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                             <div
-                              className={`h-full rounded-full ${envelopeSwatch(e.color).bg}`}
+                              className={`transition-bar h-full rounded-full ${envelopeSwatch(e.color).bg}`}
                               style={{
                                 width: `${e.monthlyLimit > 0 ? Math.min(Math.round((e.spent / e.monthlyLimit) * 100), 100) : 0}%`,
                               }}
@@ -314,7 +319,8 @@ export default function EnvelopesPage() {
               <button
                 type="button"
                 onClick={() => openForm('create')}
-                className="flex w-fit items-center gap-2 rounded-lg bg-primary px-6 py-3 font-body text-sm font-medium text-primary-foreground"
+                onPointerDown={ripple}
+                className="relative flex w-fit items-center gap-2 overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-medium text-primary-foreground"
               >
                 <Icon i="plus" size={18} />
                 Ajouter une enveloppe

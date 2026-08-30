@@ -5,6 +5,7 @@ import type { IconName } from 'lucide-react/dynamic';
 import { api } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { envelopeSwatch } from '@/lib/envelope-colors';
+import { useRipple } from '@/hooks/useRipple';
 
 interface EnvelopeOption {
   id: string;
@@ -42,6 +43,7 @@ export function TransactionForm({
   submitting,
   onSubmit,
 }: TransactionFormProps) {
+  const ripple = useRipple();
   const [kind, setKind] = useState<Kind>(initial && initial.amount > 0 ? 'income' : 'expense');
   const [amount, setAmount] = useState(initial ? Math.abs(initial.amount) : 0);
   const [label, setLabel] = useState(initial?.label ?? '');
@@ -71,7 +73,8 @@ export function TransactionForm({
         <button
           type="button"
           onClick={() => setKind('expense')}
-          className={`flex-1 rounded-md py-2.5 font-body text-sm font-bold ${
+          onPointerDown={ripple}
+          className={`relative flex-1 overflow-hidden rounded-md py-2.5 font-body text-sm font-bold ${
             kind === 'expense' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
           }`}
         >
@@ -80,7 +83,8 @@ export function TransactionForm({
         <button
           type="button"
           onClick={() => setKind('income')}
-          className={`flex-1 rounded-md py-2.5 font-body text-sm font-bold ${
+          onPointerDown={ripple}
+          className={`relative flex-1 overflow-hidden rounded-md py-2.5 font-body text-sm font-bold ${
             kind === 'income' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground'
           }`}
         >
@@ -135,7 +139,8 @@ export function TransactionForm({
             <button
               type="button"
               onClick={() => setEnvelopeId(null)}
-              className={`rounded-lg border px-3 py-2 font-body text-xs font-medium ${
+              onPointerDown={ripple}
+              className={`relative overflow-hidden rounded-lg border px-3 py-2 font-body text-xs font-medium ${
                 envelopeId === null
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border text-muted-foreground'
@@ -148,7 +153,8 @@ export function TransactionForm({
                 key={env.id}
                 type="button"
                 onClick={() => setEnvelopeId(env.id)}
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 font-body text-xs font-medium ${
+                onPointerDown={ripple}
+                className={`relative flex items-center gap-2 overflow-hidden rounded-lg border px-3 py-2 font-body text-xs font-medium ${
                   envelopeId === env.id
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-muted-foreground'
@@ -173,8 +179,9 @@ export function TransactionForm({
       <button
         type="button"
         onClick={handleSubmit}
+        onPointerDown={ripple}
         disabled={submitting || amount <= 0 || !label.trim()}
-        className="rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+        className="relative overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
       >
         {submitting ? 'Enregistrement…' : submitLabel}
       </button>

@@ -15,6 +15,8 @@ import { useUser } from '@/contexts/AuthContext';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatPrice } from '@/lib/utils';
@@ -37,6 +39,7 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
   const { goalId } = use(params);
   const user = useUser();
   const router = useRouter();
+  const ripple = useRipple();
   const [goal, setGoal] = useState<GoalDetail | null>(null);
   const [amount, setAmount] = useState(0);
   const [note, setNote] = useState('');
@@ -128,7 +131,7 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                   </div>
                   <div className="text-right">
                     <p className="font-body text-sm font-bold text-primary">
-                      {formatPrice(goal.currentAmount)} F
+                      <AnimatedNumber value={goal.currentAmount} format={formatPrice} /> F
                     </p>
                     <p className="font-body text-xs text-muted-foreground">
                       sur {formatPrice(goal.targetAmount)} F
@@ -136,7 +139,10 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                   </div>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                  <div
+                    className="transition-bar h-full rounded-full bg-primary"
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
               </div>
             )}
@@ -157,7 +163,8 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                         key={q}
                         type="button"
                         onClick={() => setAmount(q)}
-                        className={`rounded-lg border px-4 py-3 font-body text-sm font-medium ${
+                        onPointerDown={ripple}
+                        className={`relative overflow-hidden rounded-lg border px-4 py-3 font-body text-sm font-medium ${
                           amount === q
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border bg-input text-foreground'
@@ -230,14 +237,16 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                   <button
                     type="button"
                     onClick={() => router.push('/progress')}
-                    className="flex-1 rounded-lg border border-primary bg-transparent px-6 py-3 font-body text-sm font-medium text-primary"
+                    onPointerDown={ripple}
+                    className="relative flex-1 overflow-hidden rounded-lg border border-primary bg-transparent px-6 py-3 font-body text-sm font-medium text-primary"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={submitting || amount <= 0}
-                    className="flex-1 rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+                    onPointerDown={ripple}
+                    className="relative flex-1 overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
                   >
                     {submitting ? 'Enregistrement…' : "Enregistrer l'économie"}
                   </button>

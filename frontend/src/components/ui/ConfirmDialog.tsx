@@ -1,5 +1,7 @@
 'use client';
 
+import { useRipple } from '@/hooks/useRipple';
+
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -32,6 +34,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const ripple = useRipple();
   if (!open) return null;
 
   return (
@@ -55,16 +58,18 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
+            onPointerDown={ripple}
             disabled={confirming}
-            className="flex-1 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground disabled:opacity-50"
+            className="relative flex-1 overflow-hidden rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground disabled:opacity-50"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
+            onPointerDown={ripple}
             disabled={confirming}
-            className={`flex-1 rounded-lg px-4 py-2 font-body text-sm font-bold disabled:opacity-50 ${
+            className={`relative flex-1 overflow-hidden rounded-lg px-4 py-2 font-body text-sm font-bold disabled:opacity-50 ${
               destructive
                 ? 'bg-accent text-accent-foreground'
                 : 'bg-primary text-primary-foreground'

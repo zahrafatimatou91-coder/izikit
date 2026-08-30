@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
 import { IconPicker, stripAccents, type IconChoice } from '@/components/ui/IconPicker';
 import { ENVELOPE_SWATCHES, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
+import { useRipple } from '@/hooks/useRipple';
 
 // Broad catalog spanning common budget-envelope categories — student
 // living costs, recurring bills, one-off spending. Same search-first
@@ -99,6 +100,7 @@ export function EnvelopeForm({
   onSubmit,
   onCancel,
 }: EnvelopeFormProps) {
+  const ripple = useRipple();
   const [name, setName] = useState(initial?.name ?? '');
   const [icon, setIcon] = useState<IconName>(initial?.icon ?? 'wallet');
   // Editing an existing envelope already has a deliberately chosen icon —
@@ -202,14 +204,16 @@ export function EnvelopeForm({
             type="button"
             disabled={submitting || !name.trim() || monthlyLimit <= 0}
             onClick={() => onSubmit({ name: name.trim(), icon, color, monthlyLimit })}
-            className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+            onPointerDown={ripple}
+            className="relative flex items-center gap-2 overflow-hidden rounded-lg bg-primary px-6 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {submitting ? 'Enregistrement…' : submitLabel}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground"
+            onPointerDown={ripple}
+            className="relative overflow-hidden rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground"
           >
             Annuler
           </button>

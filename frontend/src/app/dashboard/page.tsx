@@ -6,6 +6,8 @@ import type { IconName } from 'lucide-react/dynamic';
 import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -50,6 +52,7 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const user = useUser();
+  const ripple = useRipple();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
@@ -109,7 +112,8 @@ export default function DashboardPage() {
         </p>
         <Link
           href="/onboarding"
-          className="rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
+          onPointerDown={ripple}
+          className="relative overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
         >
           Configurer mon budget
         </Link>
@@ -195,14 +199,14 @@ export default function DashboardPage() {
                   Reste {budgetPeriodLabel(data.budgetFrequency)}
                 </p>
                 <p className="mb-1 font-headings text-5xl font-bold leading-none">
-                  {formatPrice(remaining)}
+                  <AnimatedNumber value={remaining} format={formatPrice} />
                   <span className="ml-3 font-body text-2xl font-normal opacity-80">FCFA</span>
                 </p>
                 <p className="mb-2 font-body text-sm opacity-70">
-                  sur {formatPrice(available)} FCFA au total
+                  sur <AnimatedNumber value={available} format={formatPrice} /> FCFA au total
                 </p>
                 <p className="mb-6 font-body text-xs opacity-60">
-                  Soit {formatPrice(perDay)} FCFA / jour
+                  Soit <AnimatedNumber value={perDay} format={formatPrice} /> FCFA / jour
                 </p>
                 <div className="mb-6 space-y-2">
                   <div className="flex justify-between text-sm opacity-70">
@@ -211,12 +215,14 @@ export default function DashboardPage() {
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-primary-foreground/20">
                     <div
-                      className="h-full rounded-full bg-secondary"
+                      className="transition-bar h-full rounded-full bg-secondary"
                       style={{ width: `${Math.min(pctUsed, 100)}%` }}
                     />
                   </div>
                 </div>
-                <p className="text-xs opacity-70">{pctUsed}% du budget utilisé</p>
+                <p className="text-xs opacity-70">
+                  <AnimatedNumber value={pctUsed} />% du budget utilisé
+                </p>
               </div>
 
               <div className="flex flex-col gap-6">
@@ -248,7 +254,8 @@ export default function DashboardPage() {
 
                 <Link
                   href="/envelopes"
-                  className="flex flex-1 flex-col justify-center rounded-lg border border-dashed border-border bg-card p-6 text-center hover:border-primary"
+                  onPointerDown={ripple}
+                  className="relative flex flex-1 flex-col justify-center overflow-hidden rounded-lg border border-dashed border-border bg-card p-6 text-center hover:border-primary"
                 >
                   <Icon i="plus-circle" size={20} className="mx-auto mb-2 text-primary" />
                   <p className="font-body text-xs font-medium text-primary">Gérer mes enveloppes</p>
@@ -258,7 +265,8 @@ export default function DashboardPage() {
 
             <Link
               href="/insights"
-              className="flex items-center justify-between rounded-lg border border-border bg-card p-4 hover:border-primary lg:p-5"
+              onPointerDown={ripple}
+              className="relative flex items-center justify-between overflow-hidden rounded-lg border border-border bg-card p-4 hover:border-primary lg:p-5"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-secondary/20">

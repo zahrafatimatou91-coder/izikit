@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { IconName } from 'lucide-react/dynamic';
 import { IconPicker, stripAccents, type IconChoice } from '@/components/ui/IconPicker';
 import { pacePeriodNoun } from '@/lib/savings-pace-label';
+import { useRipple } from '@/hooks/useRipple';
 
 // Broad catalog spanning most "what's this for" categories — search filters
 // this down instead of forcing a fixed 8-16 icon shortlist (closer to a
@@ -114,6 +115,7 @@ export function SavingsGoalForm({
   onSubmit,
   onCancel,
 }: SavingsGoalFormProps) {
+  const ripple = useRipple();
   const [name, setName] = useState('');
   const [icon, setIcon] = useState<IconName>('piggy-bank');
   const [iconTouched, setIconTouched] = useState(false);
@@ -176,7 +178,8 @@ export function SavingsGoalForm({
                 key={p.value}
                 type="button"
                 onClick={() => setPeriod(p.value)}
-                className={`flex-1 rounded-lg border px-3 py-2.5 font-body text-sm font-medium ${
+                onPointerDown={ripple}
+                className={`relative flex-1 overflow-hidden rounded-lg border px-3 py-2.5 font-body text-sm font-medium ${
                   period === p.value
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border bg-input text-muted-foreground'
@@ -231,14 +234,16 @@ export function SavingsGoalForm({
             type="button"
             disabled={submitting || !name.trim() || targetAmount <= 0 || paceAmount <= 0}
             onClick={() => onSubmit({ name: name.trim(), icon, targetAmount, period, paceAmount })}
-            className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+            onPointerDown={ripple}
+            className="relative flex items-center gap-2 overflow-hidden rounded-lg bg-primary px-6 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {submitting ? 'Création…' : submitLabel}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground"
+            onPointerDown={ripple}
+            className="relative overflow-hidden rounded-lg border border-border px-6 py-2.5 font-body text-sm font-medium text-foreground"
           >
             Annuler
           </button>

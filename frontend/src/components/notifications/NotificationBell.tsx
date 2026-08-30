@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { useRipple } from '@/hooks/useRipple';
 
 /** Bell icon button shared by every authenticated page header — was a dead
  * decorative button on 5 pages (dashboard, envelopes, history, progress,
@@ -11,6 +12,7 @@ import { Icon } from '@/components/ui/Icon';
  * /notifications. */
 export function NotificationBell() {
   const router = useRouter();
+  const ripple = useRipple();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -31,8 +33,9 @@ export function NotificationBell() {
     <button
       type="button"
       onClick={() => router.push('/notifications')}
+      onPointerDown={ripple}
       aria-label={count > 0 ? `Notifications (${count} non lues)` : 'Notifications'}
-      className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-border"
+      className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-muted text-muted-foreground hover:bg-border"
     >
       <Icon i="bell" size={20} />
       {count > 0 && (

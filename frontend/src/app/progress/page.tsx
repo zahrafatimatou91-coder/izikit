@@ -29,6 +29,8 @@ import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SavingsGoalCard } from '@/components/savings/SavingsGoalCard';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { formatPrice } from '@/lib/utils';
 
 interface Goal {
@@ -64,6 +66,7 @@ const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi',
 
 export default function ProgressPage() {
   const user = useUser();
+  const ripple = useRipple();
   const [goals, setGoals] = useState<Goal[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [breakdown, setBreakdown] = useState<DayBucket[]>([]);
@@ -140,7 +143,7 @@ export default function ProgressPage() {
                 <div className="rounded-lg border border-border bg-card p-6 text-center">
                   <p className="mb-2 font-body text-sm text-muted-foreground">Objectifs actifs</p>
                   <p className="font-headings text-3xl font-bold text-primary">
-                    {summary.activeGoals}
+                    <AnimatedNumber value={summary.activeGoals} />
                   </p>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6 text-center">
@@ -148,13 +151,13 @@ export default function ProgressPage() {
                     Économisé cette semaine
                   </p>
                   <p className="font-headings text-3xl font-bold text-foreground">
-                    {formatPrice(summary.savedThisWeek)} F
+                    <AnimatedNumber value={summary.savedThisWeek} format={formatPrice} /> F
                   </p>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-6 text-center">
                   <p className="mb-2 font-body text-sm text-muted-foreground">Jours actifs</p>
                   <p className="font-headings text-3xl font-bold text-foreground">
-                    {summary.activeDays}
+                    <AnimatedNumber value={summary.activeDays} />
                   </p>
                 </div>
               </div>
@@ -265,13 +268,15 @@ export default function ProgressPage() {
             <div className="flex gap-4">
               <Link
                 href="/dashboard"
-                className="flex-1 rounded-lg border border-primary bg-transparent px-6 py-3 text-center font-body text-sm font-medium text-primary"
+                onPointerDown={ripple}
+                className="relative flex-1 overflow-hidden rounded-lg border border-primary bg-transparent px-6 py-3 text-center font-body text-sm font-medium text-primary"
               >
                 Retour
               </Link>
               <Link
                 href="/savings/new"
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-white"
+                onPointerDown={ripple}
+                className="relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-white"
               >
                 <Icon i="plus" size={18} />
                 Créer un objectif

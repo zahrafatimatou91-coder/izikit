@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { IconName } from 'lucide-react/dynamic';
 import { Icon } from '@/components/ui/Icon';
 import { formatPrice } from '@/lib/utils';
+import { useRipple } from '@/hooks/useRipple';
 
 interface TransactionRowProps {
   id: string;
@@ -33,6 +34,7 @@ export function TransactionRow({
   onDeleteRequested,
 }: TransactionRowProps) {
   const isPositive = amount > 0;
+  const ripple = useRipple();
   const [menuOpen, setMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +76,8 @@ export function TransactionRow({
           aria-label="Options"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+          onPointerDown={ripple}
+          className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg text-muted-foreground hover:bg-muted"
         >
           <Icon i="more-vertical" size={16} />
         </button>

@@ -1,5 +1,6 @@
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
 import { dailyTagline, firstName, timeOfDayEmoji, timeOfDayGreeting } from '@/lib/greeting';
@@ -64,13 +65,13 @@ export function DashboardHeader({
           Reste {budgetPeriodLabel(budgetFrequency)}
         </p>
         <p className="mb-2 font-headings text-4xl font-bold leading-none text-primary-foreground">
-          {formatPrice(remaining)}
+          <AnimatedNumber value={remaining} format={formatPrice} />
           <span className="ml-2 font-body text-lg font-normal text-primary-foreground/80">
             FCFA
           </span>
         </p>
         <p className="font-body text-xs text-primary-foreground/60">
-          Soit {formatPrice(perDay)} F / jour
+          Soit <AnimatedNumber value={perDay} format={formatPrice} /> F / jour
         </p>
       </div>
 
@@ -85,7 +86,7 @@ export function DashboardHeader({
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-primary-foreground/20">
           <div
-            className="h-full rounded-full bg-secondary"
+            className="transition-bar h-full rounded-full bg-secondary"
             style={{ width: `${Math.min(pct, 100)}%` }}
           />
         </div>
