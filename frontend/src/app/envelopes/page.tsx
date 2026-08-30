@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EnvelopeForm, type EnvelopeFormValues } from '@/components/envelopes/EnvelopeForm';
 import { envelopeSwatch, type EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
+import { computeBudgetSummary } from '@/lib/budget-summary';
 
 interface EnvelopeRow {
   id: string;
@@ -138,7 +139,13 @@ export default function EnvelopesPage() {
     }
   }
 
-  const remaining = summary ? (summary.totalBudget ?? 0) + summary.income - summary.spent : 0;
+  const remaining = summary
+    ? computeBudgetSummary({
+        totalBudget: summary.totalBudget ?? 0,
+        income: summary.income,
+        spent: summary.spent,
+      }).remaining
+    : 0;
 
   return (
     <div className="flex min-h-screen bg-background font-body">

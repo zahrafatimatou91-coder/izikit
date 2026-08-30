@@ -3,6 +3,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
 import { dailyTagline, firstName, timeOfDayEmoji, timeOfDayGreeting } from '@/lib/greeting';
+import { computeBudgetSummary } from '@/lib/budget-summary';
 
 interface DashboardHeaderProps {
   name: string;
@@ -24,12 +25,16 @@ export function DashboardHeader({
   budgetFrequency = null,
   avatarUrl = null,
 }: DashboardHeaderProps) {
-  // Income restocks the period's available budget — "remaining" isn't just
-  // the original allowance draining down, a logged income bumps it back up.
-  const available = totalBudget + income;
-  const remaining = available - spent;
-  const pct = available > 0 ? Math.round((spent / available) * 100) : 0;
-  const perDay = daysLeft > 0 ? Math.round(remaining / daysLeft) : remaining;
+  const {
+    remaining,
+    perDay,
+    pctUsed: pct,
+  } = computeBudgetSummary({
+    totalBudget,
+    income,
+    spent,
+    daysLeft,
+  });
 
   return (
     <div className="bg-primary px-5 pb-8 pt-12">

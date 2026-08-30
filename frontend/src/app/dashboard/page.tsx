@@ -17,6 +17,7 @@ import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
+import { computeBudgetSummary } from '@/lib/budget-summary';
 import { formatRelativeDateTime } from '@/lib/format-date';
 import { dailyTagline, firstName, timeOfDayEmoji, timeOfDayGreeting } from '@/lib/greeting';
 
@@ -124,12 +125,12 @@ export default function DashboardPage() {
     .filter((e) => e.pct >= 85)
     .sort((a, b) => b.pct - a.pct)[0];
 
-  // Income restocks the period's available budget — "remaining" isn't just
-  // the original allowance draining down, a logged income bumps it back up.
-  const available = data.totalBudget + data.income;
-  const remaining = available - data.spent;
-  const perDay = data.daysLeft > 0 ? Math.round(remaining / data.daysLeft) : 0;
-  const pctUsed = available > 0 ? Math.round((data.spent / available) * 100) : 0;
+  const { available, remaining, perDay, pctUsed } = computeBudgetSummary({
+    totalBudget: data.totalBudget,
+    income: data.income,
+    spent: data.spent,
+    daysLeft: data.daysLeft,
+  });
 
   return (
     <div className="flex min-h-screen bg-background font-body">
