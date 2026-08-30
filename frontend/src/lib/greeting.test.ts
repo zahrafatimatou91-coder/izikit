@@ -23,13 +23,14 @@ describe('firstName', () => {
 });
 
 describe('timeOfDayGreeting', () => {
-  it('says Bonjour in the morning (5h-11h59)', () => {
+  it('says Bonjour in the morning through midday (5h-12h59)', () => {
     expect(timeOfDayGreeting(at(5))).toBe('Bonjour');
     expect(timeOfDayGreeting(at(11))).toBe('Bonjour');
+    expect(timeOfDayGreeting(at(12))).toBe('Bonjour');
   });
 
-  it('says Bon après-midi in the afternoon (12h-17h59)', () => {
-    expect(timeOfDayGreeting(at(12))).toBe('Bon après-midi');
+  it('says Bon après-midi after lunch (13h-17h59)', () => {
+    expect(timeOfDayGreeting(at(13))).toBe('Bon après-midi');
     expect(timeOfDayGreeting(at(17))).toBe('Bon après-midi');
   });
 

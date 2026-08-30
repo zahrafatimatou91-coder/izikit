@@ -198,7 +198,7 @@ export default function DashboardPage() {
                   <span className="ml-3 font-body text-2xl font-normal opacity-80">FCFA</span>
                 </p>
                 <p className="mb-2 font-body text-sm opacity-70">
-                  sur {formatPrice(data.totalBudget)} FCFA au total
+                  sur {formatPrice(available)} FCFA au total
                 </p>
                 <p className="mb-6 font-body text-xs opacity-60">
                   Soit {formatPrice(perDay)} FCFA / jour

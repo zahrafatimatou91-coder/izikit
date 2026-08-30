@@ -19,8 +19,11 @@ function isNightOwlHour(hour: number): boolean {
  * good evening — they want the app to notice. */
 export function timeOfDayGreeting(date: Date = new Date()): string {
   const hour = date.getHours();
-  if (hour >= 5 && hour < 12) return 'Bonjour';
-  if (hour >= 12 && hour < 18) return 'Bon après-midi';
+  // "Bon après-midi" only kicks in after 13h — pile à midi (12h-12h59), on
+  // dit encore "Bonjour" : dans l'usage courant, "l'après-midi" commence
+  // après le déjeuner, pas à la seconde où midi sonne.
+  if (hour >= 5 && hour < 13) return 'Bonjour';
+  if (hour >= 13 && hour < 18) return 'Bon après-midi';
   if (hour >= 18 && hour < 23) return 'Bonsoir';
   return 'Encore debout à cette heure';
 }
