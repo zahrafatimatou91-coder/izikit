@@ -1,6 +1,6 @@
 # Banani implementation status — Chaque Franc
 
-Last updated: 2026-08-24 (Phase 5)
+Last updated: 2026-08-30 (Phase 6 — complete)
 
 Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetched: 18 screens + 4 shared components)
 
@@ -464,10 +464,34 @@ re-verification of this batch)_
   `--shadow-database-url` to any `prisma migrate diff` invocation — it
   must be a disposable, genuinely empty database.
 
-## Pending — grouped by phase (see roadmap for rationale/order)
+## Done (2026-08-29/30) — Phase 6, Subscription / monetization
 
-### Phase 6 — Subscription / monetization
-- [ ] `new_screen1` "Abonnement Desktop" → `/subscription` — plan: `subscription.md` (reuses `Order` + Bictorys `PaymentProvider`)
+- **Plan 1 — tiers/gating**: `Subscription` effective-plan computation
+  (`lib/server/subscriptions/tier.ts`), `FREE_MAX_ENVELOPES`/
+  `FREE_MAX_SAVINGS_GOALS`/history-floor gates wired into the relevant
+  routes.
+- **Plan 2 — trial + checkout + webhook + cron**: every new signup seeds a
+  7-day Pro trial (`Subscription.lastOrderId === null` distinguishes trial
+  from paid); checkout reuses `POST /api/orders` generically
+  (`metadata: {purpose:'subscription', period}`, no dedicated route); the
+  webhook activates/extends Pro on `PAID` (price-verified server-side,
+  `SUBSCRIPTION_PRICE_FCFA`); `subscription-expiration` cron (daily)
+  archives over-limit envelopes/goals on lapse and sends the trial-ending/
+  renewal-reminder/expired notifications.
+- **Plan 3 — `new_screen1` "Abonnement Desktop" → `/subscription`**: status
+  banner, Free/Pro comparison table, billing-period picker, checkout via
+  `pay-redirect`, FAQ. Reached from Paramètres and from `/orders/[id]/
+  {success,failed}`'s subscription-purpose CTA (fixed 2026-08-30 — these
+  pages predated `/subscription` and still pointed at `/dashboard`).
+  Plan: `subscription.md`.
+- **Plan 4 — landing page redesign** (no Banani source, our own spec —
+  see `docs/superpowers/specs/2026-08-29-monetization-subscription-
+  design.md`): corrected payment-methods list, new dark gold/ivory hero
+  with a real product preview (replacing the flawed blue-gradient mockup),
+  gold-tinted feature-icon badges, genuine Tarifs section sharing the
+  Free/Pro comparison data with `/subscription`.
+
+Phase 6 is now fully shipped — no pending Banani screens remain.
 
 ## Open design questions
 - 4 architectural decisions locked 2026-08-23 (transactions=manual entry, envelopes=customizable,
