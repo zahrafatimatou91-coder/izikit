@@ -6,8 +6,10 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { useRipple } from '@/hooks/useRipple';
 
 export default function ForgotPasswordPage() {
+  const ripple = useRipple();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +83,8 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+          onPointerDown={ripple}
+          className="relative w-full overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {submitting ? 'Envoi…' : 'Envoyer le code'}
         </button>

@@ -11,12 +11,14 @@ import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { Icon } from '@/components/ui/Icon';
+import { useRipple } from '@/hooks/useRipple';
 
 // Top-level navigation (not fetch) — same-origin Next.js API route.
 const googleSignInHref = '/api/auth/oauth/google/start?next=/onboarding';
 
 export default function SignupPage() {
   const router = useRouter();
+  const ripple = useRipple();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
@@ -105,7 +107,8 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={submitting || !agreed}
-          className="w-full rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+          onPointerDown={ripple}
+          className="relative w-full overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {submitting ? 'Création…' : 'Créer mon compte'}
         </button>
@@ -118,7 +121,8 @@ export default function SignupPage() {
 
         <a
           href={googleSignInHref}
-          className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5"
+          onPointerDown={ripple}
+          className="relative flex items-center justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card px-4 py-2.5"
         >
           <GoogleIcon />
           <span className="font-body text-sm font-medium text-foreground">

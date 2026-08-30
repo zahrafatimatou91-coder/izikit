@@ -18,6 +18,7 @@ import { api, ApiError } from '@/lib/api';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { Icon } from '@/components/ui/Icon';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
+import { useRipple } from '@/hooks/useRipple';
 
 function resetErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -38,6 +39,7 @@ function resetErrorMessage(err: unknown): string {
 function ResetPasswordForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const ripple = useRipple();
   const [step, setStep] = useState<'verify' | 'reset'>('verify');
   const [email, setEmail] = useState(params.get('email') ?? '');
   const [code, setCode] = useState(params.get('code') ?? '');
@@ -149,7 +151,8 @@ function ResetPasswordForm() {
           <button
             type="submit"
             disabled={verifying}
-            className="w-full rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+            onPointerDown={ripple}
+            className="relative w-full overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {verifying ? 'Vérification…' : 'Vérifier le code'}
           </button>
@@ -203,7 +206,8 @@ function ResetPasswordForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+          onPointerDown={ripple}
+          className="relative w-full overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {submitting ? 'Réinitialisation…' : 'Réinitialiser le mot de passe'}
         </button>

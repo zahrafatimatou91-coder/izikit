@@ -17,6 +17,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
+import { useRipple } from '@/hooks/useRipple';
 
 const ERROR_MESSAGES: Record<string, string> = {
   GOOGLE_EMAIL_NOT_VERIFIED:
@@ -31,6 +32,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 function AuthErrorBody() {
   const params = useSearchParams();
+  const ripple = useRipple();
   const code = params.get('code') ?? params.get('error') ?? '';
   const normalized = code.toUpperCase();
   const message =
@@ -45,7 +47,8 @@ function AuthErrorBody() {
       <div className="flex flex-col gap-2">
         <Link
           href="/login"
-          className="rounded-lg bg-primary px-5 py-2.5 text-center font-body text-sm font-bold text-primary-foreground"
+          onPointerDown={ripple}
+          className="relative overflow-hidden rounded-lg bg-primary px-5 py-2.5 text-center font-body text-sm font-bold text-primary-foreground"
         >
           Retour à la connexion
         </Link>

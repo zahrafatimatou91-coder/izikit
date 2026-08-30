@@ -12,6 +12,8 @@ import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 
 const BUDGET_SUGGESTIONS = [
@@ -36,6 +38,7 @@ const STEPS = [
 export default function OnboardingPage() {
   const user = useUser();
   const router = useRouter();
+  const ripple = useRipple();
   const [amount, setAmount] = useState(40000);
   const [frequency, setFrequency] = useState<(typeof FREQUENCIES)[number]['id']>('monthly');
   const [submitting, setSubmitting] = useState(false);
@@ -92,7 +95,8 @@ export default function OnboardingPage() {
           <button
             type="button"
             onClick={() => router.push('/dashboard')}
-            className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-8 py-3 font-body text-sm font-bold text-primary-foreground"
+            onPointerDown={ripple}
+            className="relative mt-2 flex items-center gap-2 overflow-hidden rounded-lg bg-primary px-8 py-3 font-body text-sm font-bold text-primary-foreground"
           >
             Aller au tableau de bord
             <Icon i="arrow-right" size={16} />
@@ -192,7 +196,8 @@ export default function OnboardingPage() {
                     key={s.amount}
                     type="button"
                     onClick={() => setAmount(s.amount)}
-                    className={`rounded-lg border p-4 text-left ${
+                    onPointerDown={ripple}
+                    className={`relative overflow-hidden rounded-lg border p-4 text-left ${
                       amount === s.amount ? 'border-primary bg-primary/5' : 'border-border bg-card'
                     }`}
                   >
@@ -243,7 +248,8 @@ export default function OnboardingPage() {
                     key={f.id}
                     type="button"
                     onClick={() => setFrequency(f.id)}
-                    className={`flex flex-col gap-2 rounded-lg border p-4 text-left ${
+                    onPointerDown={ripple}
+                    className={`relative flex flex-col gap-2 overflow-hidden rounded-lg border p-4 text-left ${
                       frequency === f.id ? 'border-primary bg-primary/5' : 'border-border bg-card'
                     }`}
                   >
@@ -275,8 +281,11 @@ export default function OnboardingPage() {
                 <p className="mb-1 font-body text-sm font-bold text-foreground">Bon à savoir</p>
                 <p className="font-body text-xs leading-relaxed text-muted-foreground">
                   Avec {amount.toLocaleString('fr-FR')} FCFA/mois, tu disposes de ~
-                  {perDay.toLocaleString('fr-FR')} F/jour. Chaque Franc va t&apos;aider à optimiser
-                  chaque centime.
+                  <AnimatedNumber
+                    value={perDay}
+                    format={(n) => Math.round(n).toLocaleString('fr-FR')}
+                  />{' '}
+                  F/jour. Chaque Franc va t&apos;aider à optimiser chaque centime.
                 </p>
               </div>
             </div>
@@ -291,8 +300,9 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={onSubmit}
+                onPointerDown={ripple}
                 disabled={submitting || amount <= 0}
-                className="flex items-center gap-2 rounded-lg bg-primary px-8 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+                className="relative flex items-center gap-2 overflow-hidden rounded-lg bg-primary px-8 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
                 {submitting ? 'Enregistrement…' : 'Continuer'}
                 <Icon i="arrow-right" size={16} />

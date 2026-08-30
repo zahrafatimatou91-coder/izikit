@@ -10,6 +10,7 @@ import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { Icon } from '@/components/ui/Icon';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
+import { useRipple } from '@/hooks/useRipple';
 
 // Same-origin Next.js API route — top-level navigation, not a fetch.
 const googleSignInHref = '/api/auth/oauth/google/start?next=/dashboard';
@@ -27,6 +28,7 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const { refresh } = useAuth();
+  const ripple = useRipple();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +115,8 @@ function LoginForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+          onPointerDown={ripple}
+          className="relative w-full overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {submitting ? 'Connexion…' : 'Se connecter'}
         </button>
@@ -126,7 +129,8 @@ function LoginForm() {
 
         <a
           href={googleSignInHref}
-          className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5"
+          onPointerDown={ripple}
+          className="relative flex items-center justify-center gap-2 overflow-hidden rounded-lg border border-border bg-card px-4 py-2.5"
         >
           <GoogleIcon />
           <span className="font-body text-sm font-medium text-foreground">

@@ -1,6 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { useRipple } from '@/hooks/useRipple';
 import { FEATURE_ROWS, SUBSCRIPTION_PRICES } from '@/lib/subscription-plans';
 import { formatPrice } from '@/lib/utils';
 
@@ -191,6 +194,7 @@ interface PricingCardProps {
 }
 
 function PricingCard({ plan, price, priceNote, ctaLabel, highlight = false }: PricingCardProps) {
+  const ripple = useRipple();
   return (
     <div
       className={`flex flex-1 flex-col gap-6 rounded-2xl border-2 p-6 lg:rounded-3xl lg:p-10 ${
@@ -234,7 +238,8 @@ function PricingCard({ plan, price, priceNote, ctaLabel, highlight = false }: Pr
 
       <Link
         href="/signup"
-        className={`w-full rounded-xl px-6 py-3.5 text-center font-body text-sm font-bold lg:py-4 ${
+        onPointerDown={ripple}
+        className={`relative w-full overflow-hidden rounded-xl px-6 py-3.5 text-center font-body text-sm font-bold lg:py-4 ${
           highlight
             ? 'bg-primary text-primary-foreground'
             : 'border-2 border-border text-foreground'
@@ -247,6 +252,7 @@ function PricingCard({ plan, price, priceNote, ctaLabel, highlight = false }: Pr
 }
 
 export default function LandingPage() {
+  const ripple = useRipple();
   return (
     <div className="flex flex-col bg-background font-body">
       {/* ══════ MOBILE (< lg) ══════ */}
@@ -255,7 +261,8 @@ export default function LandingPage() {
           <h1 className="font-headings text-lg font-bold text-primary">Chaque Franc</h1>
           <Link
             href="/signup"
-            className="rounded-lg bg-primary px-4 py-2 font-body text-xs font-bold text-primary-foreground"
+            onPointerDown={ripple}
+            className="relative overflow-hidden rounded-lg bg-primary px-4 py-2 font-body text-xs font-bold text-primary-foreground"
           >
             Commencer
           </Link>
@@ -283,7 +290,8 @@ export default function LandingPage() {
             <div className="flex flex-col gap-3">
               <Link
                 href="/signup"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 font-body text-sm font-bold text-primary-foreground shadow-lg"
+                onPointerDown={ripple}
+                className="relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary px-6 py-4 font-body text-sm font-bold text-primary-foreground shadow-lg"
               >
                 Essayer gratuitement
                 <Icon i="arrow-right" size={18} />
@@ -483,7 +491,8 @@ export default function LandingPage() {
             </p>
             <Link
               href="/signup"
-              className="w-full rounded-xl bg-white px-10 py-4 font-body text-base font-bold text-primary shadow-lg"
+              onPointerDown={ripple}
+              className="relative w-full overflow-hidden rounded-xl bg-white px-10 py-4 font-body text-base font-bold text-primary shadow-lg"
             >
               Essayer gratuitement
             </Link>
@@ -533,7 +542,8 @@ export default function LandingPage() {
           </div>
           <Link
             href="/signup"
-            className="rounded-xl bg-primary px-7 py-3 font-body text-sm font-bold text-primary-foreground"
+            onPointerDown={ripple}
+            className="relative overflow-hidden rounded-xl bg-primary px-7 py-3 font-body text-sm font-bold text-primary-foreground"
           >
             Commencer
           </Link>
@@ -580,7 +590,8 @@ export default function LandingPage() {
               <div className="flex items-center gap-6">
                 <Link
                   href="/signup"
-                  className="flex items-center gap-3 rounded-2xl bg-primary px-12 py-5 font-body text-lg font-bold text-primary-foreground shadow-lg transition-shadow hover:shadow-2xl"
+                  onPointerDown={ripple}
+                  className="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-primary px-12 py-5 font-body text-lg font-bold text-primary-foreground shadow-lg transition-shadow hover:shadow-2xl"
                 >
                   Essayer gratuitement
                   <Icon i="arrow-right" size={20} />
@@ -778,7 +789,8 @@ export default function LandingPage() {
             </p>
             <Link
               href="/signup"
-              className="rounded-2xl bg-white px-16 py-6 font-body text-lg font-bold text-primary shadow-2xl transition-transform hover:scale-105"
+              onPointerDown={ripple}
+              className="relative overflow-hidden rounded-2xl bg-white px-16 py-6 font-body text-lg font-bold text-primary shadow-2xl transition-transform hover:scale-105"
             >
               Essayer gratuitement
             </Link>

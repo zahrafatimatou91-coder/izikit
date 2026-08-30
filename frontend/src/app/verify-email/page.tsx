@@ -8,11 +8,13 @@ import { api, ApiError, storeCsrfToken } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
+import { useRipple } from '@/hooks/useRipple';
 
 function VerifyEmailForm() {
   const router = useRouter();
   const params = useSearchParams();
   const { refresh } = useAuth();
+  const ripple = useRipple();
   const [email, setEmail] = useState(params.get('email') ?? '');
   const [code, setCode] = useState(params.get('code') ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +121,8 @@ function VerifyEmailForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+          onPointerDown={ripple}
+          className="relative w-full overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {submitting ? 'Vérification…' : 'Vérifier mon e-mail'}
         </button>
