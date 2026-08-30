@@ -31,6 +31,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
+import { PasswordField } from '@/components/auth/PasswordField';
 import { SectionCard, Row } from '@/components/settings/primitives';
 import { AvatarField } from '@/components/settings/AvatarField';
 import { NotificationPrefs } from '@/components/settings/NotificationPrefs';
@@ -289,33 +290,29 @@ export default function SettingsPage() {
                     className="sr-only"
                   />
                   {hasPassword && (
-                    <input
-                      type="password"
-                      required
+                    <PasswordField
+                      id="settings-current-password"
+                      value={currentPassword}
+                      onChange={setCurrentPassword}
                       autoComplete="current-password"
                       placeholder="Mot de passe actuel"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
                     />
                   )}
-                  <input
-                    type="password"
-                    required
-                    autoComplete="new-password"
-                    placeholder="Nouveau mot de passe"
+                  <PasswordField
+                    id="settings-new-password"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
-                  />
-                  <input
-                    type="password"
-                    required
+                    onChange={setNewPassword}
                     autoComplete="new-password"
-                    placeholder="Confirmer le nouveau mot de passe"
+                    minLength={10}
+                    placeholder="Nouveau mot de passe"
+                  />
+                  <PasswordField
+                    id="settings-confirm-password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
+                    onChange={setConfirmPassword}
+                    autoComplete="new-password"
+                    minLength={10}
+                    placeholder="Confirmer le nouveau mot de passe"
                   />
                   {pwError && (
                     <p role="alert" className="font-body text-sm text-accent">
@@ -406,13 +403,12 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     {hasPassword ? (
-                      <input
-                        type="password"
-                        required
-                        placeholder="Confirme avec ton mot de passe"
+                      <PasswordField
+                        id="settings-delete-password"
                         value={deletePassword}
-                        onChange={(e) => setDeletePassword(e.target.value)}
-                        className="w-full rounded-md border border-border bg-input px-3 py-2 font-body text-sm text-foreground"
+                        onChange={setDeletePassword}
+                        autoComplete="current-password"
+                        placeholder="Confirme avec ton mot de passe"
                       />
                     ) : (
                       <input
