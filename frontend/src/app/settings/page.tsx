@@ -37,12 +37,14 @@ import { AvatarField } from '@/components/settings/AvatarField';
 import { NotificationPrefs } from '@/components/settings/NotificationPrefs';
 import { BudgetEditor } from '@/components/settings/BudgetEditor';
 import { GoogleAccountRow } from '@/components/settings/GoogleAccountRow';
+import { useRipple } from '@/hooks/useRipple';
 
 export default function SettingsPage() {
   const user = useUser();
   const router = useRouter();
   const { refresh, logout, loggingOut } = useAuth();
   const { toast } = useToast();
+  const ripple = useRipple();
 
   // Nom complet
   const [nameEditing, setNameEditing] = useState(false);
@@ -322,7 +324,8 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={pwSubmitting}
-                    className="self-start rounded-lg bg-primary px-5 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+                    onPointerDown={ripple}
+                    className="relative self-start overflow-hidden rounded-lg bg-primary px-5 py-2.5 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
                   >
                     {pwSubmitting
                       ? 'Enregistrement…'
@@ -350,8 +353,9 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setLogoutConfirming(true)}
+                  onPointerDown={ripple}
                   disabled={loggingOut}
-                  className="flex-shrink-0 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+                  className="relative flex-shrink-0 overflow-hidden rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
                 >
                   {loggingOut ? 'Déconnexion…' : 'Se déconnecter'}
                 </button>
@@ -374,7 +378,8 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setDeleteConfirming(true)}
-                      className="flex-shrink-0 rounded-lg border border-accent px-4 py-2 font-body text-sm font-bold text-accent"
+                      onPointerDown={ripple}
+                      className="relative flex-shrink-0 overflow-hidden rounded-lg border border-accent px-4 py-2 font-body text-sm font-bold text-accent"
                     >
                       Supprimer
                     </button>
@@ -434,14 +439,16 @@ export default function SettingsPage() {
                           setDeletePassword('');
                           setDeleteEmailConfirm('');
                         }}
-                        className="flex-1 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground"
+                        onPointerDown={ripple}
+                        className="relative flex-1 overflow-hidden rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground"
                       >
                         Annuler
                       </button>
                       <button
                         type="submit"
                         disabled={deleteSubmitting}
-                        className="flex-1 rounded-lg bg-accent px-4 py-2 font-body text-sm font-bold text-accent-foreground disabled:opacity-50"
+                        onPointerDown={ripple}
+                        className="relative flex-1 overflow-hidden rounded-lg bg-accent px-4 py-2 font-body text-sm font-bold text-accent-foreground disabled:opacity-50"
                       >
                         {deleteSubmitting ? 'Suppression…' : 'Confirmer la suppression'}
                       </button>

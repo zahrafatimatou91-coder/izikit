@@ -17,6 +17,8 @@ import { useUser } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRipple } from '@/hooks/useRipple';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
@@ -71,6 +73,7 @@ export default function SubscriptionPage() {
   const user = useUser();
   const router = useRouter();
   const { toast } = useToast();
+  const ripple = useRipple();
 
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -255,7 +258,8 @@ export default function SubscriptionPage() {
                 <button
                   type="button"
                   onClick={() => setPeriod('monthly')}
-                  className={`rounded-lg border px-4 py-3 text-center font-body text-sm font-bold ${
+                  onPointerDown={ripple}
+                  className={`relative overflow-hidden rounded-lg border px-4 py-3 text-center font-body text-sm font-bold ${
                     period === 'monthly'
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border text-foreground'
@@ -269,7 +273,8 @@ export default function SubscriptionPage() {
                 <button
                   type="button"
                   onClick={() => setPeriod('annual')}
-                  className={`relative rounded-lg border px-4 py-3 text-center font-body text-sm font-bold ${
+                  onPointerDown={ripple}
+                  className={`relative overflow-hidden rounded-lg border px-4 py-3 text-center font-body text-sm font-bold ${
                     period === 'annual'
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border text-foreground'
@@ -293,14 +298,18 @@ export default function SubscriptionPage() {
               <button
                 type="button"
                 onClick={handleCheckout}
+                onPointerDown={ripple}
                 disabled={checkoutLoading}
-                className="w-full rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+                className="relative w-full overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
-                {checkoutLoading
-                  ? 'Redirection en cours…'
-                  : isProNow
-                    ? `Prolonger mon abonnement — ${formatPrice(SUBSCRIPTION_PRICES[period])} F`
-                    : `Passer à Pro — ${formatPrice(SUBSCRIPTION_PRICES[period])} F`}
+                {checkoutLoading ? (
+                  'Redirection en cours…'
+                ) : (
+                  <>
+                    {isProNow ? 'Prolonger mon abonnement — ' : 'Passer à Pro — '}
+                    <AnimatedNumber value={SUBSCRIPTION_PRICES[period]} format={formatPrice} /> F
+                  </>
+                )}
               </button>
             </div>
 

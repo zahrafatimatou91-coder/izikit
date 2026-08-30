@@ -5,6 +5,7 @@ import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
 import { Icon } from '@/components/ui/Icon';
 import { formatPrice } from '@/lib/utils';
+import { useRipple } from '@/hooks/useRipple';
 
 type Frequency = 'monthly' | 'weekly' | 'daily';
 
@@ -31,6 +32,7 @@ interface BudgetEditorProps {
 /** "Budget" section: inline amount + frequency edit (was a jump to /onboarding). */
 export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEditorProps) {
   const { toast } = useToast();
+  const ripple = useRipple();
   const [editing, setEditing] = useState(false);
   // Held as a digits-only string so the field can be cleared while typing;
   // parsed back to an integer (FCFA has no decimals) on save.
@@ -127,8 +129,9 @@ export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEd
             key={f.id}
             type="button"
             onClick={() => setFrequency(f.id)}
+            onPointerDown={ripple}
             aria-pressed={frequency === f.id}
-            className={`rounded-lg border px-4 py-2 font-body text-sm font-medium ${
+            className={`relative overflow-hidden rounded-lg border px-4 py-2 font-body text-sm font-medium ${
               frequency === f.id
                 ? 'border-primary bg-primary/5 text-primary'
                 : 'border-border text-foreground'
@@ -153,15 +156,17 @@ export function BudgetEditor({ totalBudget, budgetFrequency, onSaved }: BudgetEd
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground"
+          onPointerDown={ripple}
+          className="relative overflow-hidden rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground"
         >
           Annuler
         </button>
         <button
           type="button"
           onClick={save}
+          onPointerDown={ripple}
           disabled={saving || amount <= 0}
-          className="rounded-lg bg-primary px-5 py-2 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+          className="relative overflow-hidden rounded-lg bg-primary px-5 py-2 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {saving ? 'Enregistrement…' : 'Enregistrer'}
         </button>

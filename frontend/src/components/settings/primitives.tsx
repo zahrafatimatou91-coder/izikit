@@ -1,4 +1,7 @@
+'use client';
+
 import type { ReactNode } from 'react';
+import { useRipple } from '@/hooks/useRipple';
 
 /** Titled card wrapping a stack of rows, divided by hairlines. */
 export function SectionCard({ title, children }: { title: string; children: ReactNode }) {
@@ -52,14 +55,16 @@ export function SwitchRow({
   onChange: () => void;
   disabled?: boolean;
 }) {
+  const ripple = useRipple();
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       onClick={onChange}
+      onPointerDown={ripple}
       disabled={disabled}
-      className="group flex w-full items-center justify-between gap-4 px-5 py-4 text-left outline-none transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50 lg:px-6"
+      className="group relative flex w-full items-center justify-between gap-4 overflow-hidden px-5 py-4 text-left outline-none transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50 lg:px-6"
     >
       <span className="min-w-0">
         <span className="block font-body text-sm font-medium text-foreground">{label}</span>

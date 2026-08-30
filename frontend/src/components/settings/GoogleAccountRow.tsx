@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useRipple } from '@/hooks/useRipple';
 
 interface GoogleAccountRowProps {
   linked: boolean;
@@ -15,6 +16,7 @@ interface GoogleAccountRowProps {
 /** "Sécurité" row: link Google, or unlink it (blocked when it's the only way in). */
 export function GoogleAccountRow({ linked, canUnlink, onChanged }: GoogleAccountRowProps) {
   const { toast } = useToast();
+  const ripple = useRipple();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
 
@@ -54,7 +56,8 @@ export function GoogleAccountRow({ linked, canUnlink, onChanged }: GoogleAccount
       {!linked ? (
         <a
           href="/api/auth/oauth/google/start?next=/settings"
-          className="flex-shrink-0 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted"
+          onPointerDown={ripple}
+          className="relative flex-shrink-0 overflow-hidden rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted"
         >
           Lier Google
         </a>
@@ -62,7 +65,8 @@ export function GoogleAccountRow({ linked, canUnlink, onChanged }: GoogleAccount
         <button
           type="button"
           onClick={() => setConfirmOpen(true)}
-          className="flex-shrink-0 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted"
+          onPointerDown={ripple}
+          className="relative flex-shrink-0 overflow-hidden rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted"
         >
           Délier
         </button>

@@ -2,6 +2,7 @@
 
 import { useTheme, type Theme } from '@/contexts/ThemeContext';
 import { Icon } from './Icon';
+import { useRipple } from '@/hooks/useRipple';
 
 const OPTIONS: { value: Theme; label: string; icon: 'sun' | 'monitor' | 'moon' }[] = [
   { value: 'light', label: 'Clair', icon: 'sun' },
@@ -11,6 +12,7 @@ const OPTIONS: { value: Theme; label: string; icon: 'sun' | 'monitor' | 'moon' }
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const ripple = useRipple();
 
   return (
     <div className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-border bg-input p-1">
@@ -19,8 +21,9 @@ export function ThemeToggle() {
           key={opt.value}
           type="button"
           onClick={() => setTheme(opt.value)}
+          onPointerDown={ripple}
           aria-pressed={theme === opt.value}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-body text-xs font-medium transition-colors ${
+          className={`relative flex items-center gap-1.5 overflow-hidden rounded-md px-3 py-1.5 font-body text-xs font-medium transition-colors ${
             theme === opt.value
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground'

@@ -7,6 +7,7 @@ import { validateImageFile, ALLOWED_IMAGE_TYPES } from '@/lib/validate-image';
 import { useToast } from '@/contexts/ToastContext';
 import { Icon } from '@/components/ui/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { useRipple } from '@/hooks/useRipple';
 
 const ACCEPT = ALLOWED_IMAGE_TYPES.join(',');
 
@@ -31,6 +32,7 @@ interface AvatarFieldProps {
 /** "Compte" row: avatar preview + add/change (file upload) / remove. */
 export function AvatarField({ name, avatarUrl, onChanged }: AvatarFieldProps) {
   const { toast } = useToast();
+  const ripple = useRipple();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<null | 'upload' | 'remove'>(null);
 
@@ -93,8 +95,9 @@ export function AvatarField({ name, avatarUrl, onChanged }: AvatarFieldProps) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
+          onPointerDown={ripple}
           disabled={busy !== null}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50 sm:w-auto"
+          className="relative flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-lg border border-border px-4 py-2 font-body text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50 sm:w-auto"
         >
           <Icon i="camera" size={15} />
           {busy === 'upload' ? 'Envoi…' : changeLabel}
