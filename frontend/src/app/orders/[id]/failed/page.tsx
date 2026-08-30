@@ -3,8 +3,6 @@
 // needed here: Bictorys only redirects to this URL once the payment
 // attempt has actually failed.
 //
-// TODO(Plan 3 — /subscription page): once /subscription exists, point the
-// subscription-purpose "Réessayer" CTA there instead of /dashboard.
 'use client';
 
 import { use, useEffect, useState } from 'react';
@@ -53,7 +51,7 @@ export default function OrderFailedPage({ params }: { params: Promise<{ id: stri
       </div>
       <div className="flex w-full flex-col gap-2">
         <Link
-          href="/dashboard"
+          href={isSubscription ? '/subscription' : '/dashboard'}
           className="rounded-lg bg-primary px-6 py-3 text-center font-body text-sm font-bold text-primary-foreground"
         >
           {isSubscription ? 'Réessayer' : "Retour à l'accueil"}

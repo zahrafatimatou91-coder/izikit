@@ -9,8 +9,6 @@
 // this polls GET /api/orders/[id] for a short window rather than trusting
 // a single fetch.
 //
-// TODO(Plan 3 — /subscription page): once /subscription exists, point the
-// subscription-purpose CTA there instead of /dashboard.
 'use client';
 
 import { use, useEffect, useState } from 'react';
@@ -113,10 +111,10 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ id: str
         </p>
       </div>
       <Link
-        href="/dashboard"
+        href={isSubscription ? '/subscription' : '/dashboard'}
         className="rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
       >
-        {isSubscription ? 'Voir mon tableau de bord' : "Retour à l'accueil"}
+        {isSubscription ? 'Voir mon abonnement' : "Retour à l'accueil"}
       </Link>
     </main>
   );
