@@ -11,6 +11,7 @@ import { useUser } from '@/contexts/AuthContext';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { useRipple } from '@/hooks/useRipple';
 
 interface OrderStatus {
   id: string;
@@ -23,6 +24,7 @@ interface OrderStatus {
 export default function OrderFailedPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const user = useUser();
+  const ripple = useRipple();
   const [order, setOrder] = useState<OrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +54,8 @@ export default function OrderFailedPage({ params }: { params: Promise<{ id: stri
       <div className="flex w-full flex-col gap-2">
         <Link
           href={isSubscription ? '/subscription' : '/dashboard'}
-          className="rounded-lg bg-primary px-6 py-3 text-center font-body text-sm font-bold text-primary-foreground"
+          onPointerDown={ripple}
+          className="relative overflow-hidden rounded-lg bg-primary px-6 py-3 text-center font-body text-sm font-bold text-primary-foreground"
         >
           {isSubscription ? 'Réessayer' : "Retour à l'accueil"}
         </Link>

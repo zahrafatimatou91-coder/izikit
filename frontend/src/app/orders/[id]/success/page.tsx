@@ -18,6 +18,7 @@ import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { formatPrice } from '@/lib/utils';
+import { useRipple } from '@/hooks/useRipple';
 
 interface OrderStatus {
   id: string;
@@ -36,6 +37,7 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ id: str
   const [order, setOrder] = useState<OrderStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [polls, setPolls] = useState(0);
+  const ripple = useRipple();
 
   useEffect(() => {
     if (!user) return;
@@ -112,7 +114,8 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ id: str
       </div>
       <Link
         href={isSubscription ? '/subscription' : '/dashboard'}
-        className="rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
+        onPointerDown={ripple}
+        className="relative overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground"
       >
         {isSubscription ? 'Voir mon abonnement' : "Retour à l'accueil"}
       </Link>
