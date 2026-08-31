@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useRipple } from '@/hooks/useRipple';
@@ -110,11 +111,7 @@ export default function OnboardingPage() {
     <div className="flex min-h-screen flex-col bg-background font-body lg:flex-row">
       <div className="hidden w-72 flex-col border-r border-border bg-card px-8 py-10 lg:flex">
         <div className="mb-12">
-          <h1 className="font-headings text-2xl font-bold leading-tight text-primary">
-            Chaque
-            <br />
-            Franc
-          </h1>
+          <BrandLogo size="md" />
         </div>
 
         <div className="mb-auto flex flex-col gap-2">

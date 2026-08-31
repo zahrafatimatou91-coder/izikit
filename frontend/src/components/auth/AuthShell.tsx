@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 interface AuthShellProps {
   activeTab: 'signup' | 'login';
@@ -19,11 +20,7 @@ export function AuthShell({ activeTab, children }: AuthShellProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,white_1px,transparent_1px),radial-gradient(circle_at_80%_20%,white_1px,transparent_1px)] bg-[length:48px_48px] opacity-10" />
 
         <div className="relative z-10">
-          <h1 className="font-headings text-3xl font-bold leading-tight text-primary-foreground">
-            Chaque
-            <br />
-            Franc
-          </h1>
+          <BrandLogo variant="onColor" size="lg" />
         </div>
 
         <div className="relative z-10 flex flex-col gap-8">

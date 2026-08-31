@@ -51,6 +51,8 @@
 
   --font-body: var(--font-dm-sans);
   --font-headings: var(--font-space-grotesk);
+  --font-brand: var(--font-montserrat);
+  --font-brand-serif: var(--font-playfair);
 
   --text-xs: 11px;
   --text-sm: 13px;

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useRipple } from '@/hooks/useRipple';
 import { FEATURE_ROWS, SUBSCRIPTION_PRICES } from '@/lib/subscription-plans';
@@ -258,7 +259,7 @@ export default function LandingPage() {
       {/* ══════ MOBILE (< lg) ══════ */}
       <div className="flex flex-col lg:hidden">
         <nav className="flex items-center justify-between border-b border-border bg-background px-4 py-4">
-          <h1 className="font-headings text-lg font-bold text-primary">Chaque Franc</h1>
+          <BrandLogo size="sm" />
           <Link
             href="/signup"
             onPointerDown={ripple}
@@ -504,8 +505,8 @@ export default function LandingPage() {
 
         <footer className="border-t border-border bg-background px-4 py-10">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div>
-              <h3 className="mb-1 font-headings text-lg font-bold text-primary">Chaque Franc</h3>
+            <div className="flex flex-col items-center gap-1">
+              <BrandLogo size="sm" />
               <p className="font-body text-xs text-muted-foreground">
                 Fintech pour étudiants africains.
               </p>
@@ -528,7 +529,7 @@ export default function LandingPage() {
       {/* ══════ DESKTOP (>= lg) ══════ */}
       <div className="hidden lg:flex lg:flex-col">
         <nav className="flex items-center justify-between border-b border-border bg-background px-20 py-6">
-          <h1 className="font-headings text-2xl font-bold text-primary">Chaque Franc</h1>
+          <BrandLogo size="md" />
           <div className="flex items-center gap-10">
             <a href="#fonctionnalites" className="font-body text-sm font-medium text-foreground">
               Fonctionnalités
@@ -802,8 +803,8 @@ export default function LandingPage() {
 
         <footer className="border-t-2 border-border bg-background px-20 py-12">
           <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <div>
-              <h3 className="mb-2 font-headings text-2xl font-bold text-primary">Chaque Franc</h3>
+            <div className="flex flex-col items-start gap-2">
+              <BrandLogo size="md" />
               <p className="font-body text-base text-muted-foreground">
                 Fintech pour les étudiants africains.
               </p>

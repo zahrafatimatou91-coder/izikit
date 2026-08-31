@@ -1,5 +1,5 @@
-import type { Metadata } from 'next';
-import { DM_Sans, Space_Grotesk } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { DM_Sans, Space_Grotesk, Montserrat, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -24,9 +24,32 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
+// Brand-only faces — used exclusively by the <BrandLogo> wordmark
+// ("Chaque" in Montserrat, "Franc" in Playfair Display), not the app body.
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-montserrat',
+  display: 'swap',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: 'Chaque Franc',
   description: 'Budget par enveloppes pour étudiants — planifie, dépense intelligemment, épargne.',
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#faf7f2' },
+    { media: '(prefers-color-scheme: dark)', color: '#16130d' },
+  ],
 };
 
 export default function RootLayout({
@@ -37,7 +60,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${dmSans.variable} ${spaceGrotesk.variable}`}
+      className={`${dmSans.variable} ${spaceGrotesk.variable} ${montserrat.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
       <head>

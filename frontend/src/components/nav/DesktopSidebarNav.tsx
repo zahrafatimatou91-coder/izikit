@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useRipple } from '@/hooks/useRipple';
 import { NAV_ITEMS, type NavId } from './nav-items';
@@ -37,11 +38,7 @@ export function DesktopSidebarNav({
     <div className="hidden w-64 flex-shrink-0 lg:block">
       <div className="fixed inset-y-0 left-0 hidden h-screen w-64 flex-col overflow-y-auto border-r border-border bg-card px-6 py-8 lg:flex">
         <div className="mb-12">
-          <h1 className="font-headings text-2xl font-bold text-primary">
-            Chaque
-            <br />
-            Franc
-          </h1>
+          <BrandLogo size="md" />
         </div>
 
         <nav className="mb-auto flex flex-col gap-2">
