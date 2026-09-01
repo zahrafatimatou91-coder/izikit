@@ -7,35 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import type { IconName } from 'lucide-react/dynamic';
 import { useRipple } from '@/hooks/useRipple';
 import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
-import { TRIAL_BANNER_URGENT_DAYS, RENEWAL_BANNER_URGENT_DAYS } from '@/lib/subscription-plans';
-
-// This banner is the ONLY surface for "your trial ends soon" / "renew before
-// you lapse" — the equivalent one-off notifications were retired (see
-// lib/server/subscriptions/expire.ts). A persistent, self-clearing banner
-// beats a ping that gets buried: it reflects live state (gone the moment you
-// renew), sits where people already look, and carries its own CTA.
-
-interface SubscriptionStatus {
-  plan: 'FREE' | 'PRO';
-  status: string;
-  currentPeriodEnd: string | null;
-  isTrial: boolean;
-}
-
-type BannerModel =
-  | { kind: 'trial-calm'; days: number; dismissKey: string }
-  | { kind: 'trial-urgent'; days: number }
-  | { kind: 'renewal-urgent'; days: number }
-  | { kind: 'free-lapsed'; dismissKey: string }
-  | null;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Whole days between now and `iso`, rounded up (0.1 day left still reads
- * "1 jour"). Negative once the date has passed. */
-function daysUntil(iso: string): number {
-  return Math.ceil((new Date(iso).getTime() - Date.now()) / DAY_MS);
-}
+import { computeModel, dayLabel, type SubscriptionStatus } from './banner-model';
 
 function dismissed(key: string): boolean {
   try {
@@ -43,32 +15,6 @@ function dismissed(key: string): boolean {
   } catch {
     return false;
   }
-}
-
-function computeModel(sub: SubscriptionStatus): BannerModel {
-  const end = sub.currentPeriodEnd;
-
-  if (sub.plan === 'PRO' && end) {
-    const days = Math.max(0, daysUntil(end));
-    if (sub.isTrial) {
-      if (days <= TRIAL_BANNER_URGENT_DAYS) return { kind: 'trial-urgent', days };
-      return { kind: 'trial-calm', days, dismissKey: `cf:subBanner:${end}` };
-    }
-    // Paid Pro — only nag in the final stretch; a healthy subscriber sees nothing.
-    if (days <= RENEWAL_BANNER_URGENT_DAYS) return { kind: 'renewal-urgent', days };
-    return null;
-  }
-
-  // Free with a period end set = a trial or paid period that already lapsed.
-  if (sub.plan === 'FREE' && end) {
-    return { kind: 'free-lapsed', dismissKey: `cf:subBanner:lapsed:${end}` };
-  }
-
-  return null;
-}
-
-function dayLabel(days: number): string {
-  return days <= 1 ? "aujourd'hui" : `dans ${days} jours`;
 }
 
 /** State-aware subscription nudge for the dashboard. Renders nothing while
@@ -116,34 +62,45 @@ export function SubscriptionBanner() {
     tone: 'calm' | 'urgent' | 'neutral';
     text: string;
     cta: string;
-  } =
-    model.kind === 'trial-calm'
-      ? {
+  } = (() => {
+    switch (model.kind) {
+      case 'trial-calm':
+        return {
           icon: 'sparkles',
           tone: 'calm',
           text: `Essai Pro en cours — il te reste ${model.days} jour${model.days > 1 ? 's' : ''}.`,
           cta: 'Passer à Pro',
-        }
-      : model.kind === 'trial-urgent'
-        ? {
-            icon: 'alert-triangle',
-            tone: 'urgent',
-            text: `Ton essai Pro se termine ${dayLabel(model.days)}. Passe à Pro pour garder enveloppes illimitées, objectifs et tendances.`,
-            cta: 'Passer à Pro',
-          }
-        : model.kind === 'renewal-urgent'
-          ? {
-              icon: 'alert-triangle',
-              tone: 'urgent',
-              text: `Ton abonnement Pro se termine ${dayLabel(model.days)}. Renouvelle pour rester Pro sans interruption.`,
-              cta: 'Renouveler',
-            }
-          : {
-              icon: 'lock',
-              tone: 'neutral',
-              text: 'Ton accès Pro est terminé — objectifs, tendances et historique complet sont verrouillés (rien n’est supprimé).',
-              cta: 'Repasser à Pro',
-            };
+        };
+      case 'trial-urgent':
+        return {
+          icon: 'alert-triangle',
+          tone: 'urgent',
+          text: `Ton essai Pro se termine ${dayLabel(model.days)}. Passe à Pro pour garder enveloppes illimitées, objectifs et tendances.`,
+          cta: 'Passer à Pro',
+        };
+      case 'renewal-urgent':
+        return {
+          icon: 'alert-triangle',
+          tone: 'urgent',
+          text: `Ton abonnement Pro se termine ${dayLabel(model.days)}. Renouvelle pour rester Pro sans interruption.`,
+          cta: 'Renouveler',
+        };
+      case 'free-lapsed':
+        return {
+          icon: 'lock',
+          tone: 'neutral',
+          text: 'Ton accès Pro est terminé — objectifs, tendances et historique complet sont verrouillés (rien n’est supprimé).',
+          cta: 'Repasser à Pro',
+        };
+      case 'free-upsell':
+        return {
+          icon: 'sparkles',
+          tone: 'calm',
+          text: 'Passe à Pro : objectifs d’épargne, tendances et conseils personnalisés, enveloppes et historique illimités.',
+          cta: 'Découvrir Pro',
+        };
+    }
+  })();
 
   const toneClass =
     config.tone === 'urgent'
