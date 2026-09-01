@@ -342,7 +342,7 @@ export default function SubscriptionPage() {
 
             {/* Facturation */}
             <div className="rounded-lg border border-border bg-card p-5">
-              <div className="mb-4 grid grid-cols-2 gap-3">
+              <div className="mb-4 mt-1.5 grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setPeriod('monthly')}
@@ -358,24 +358,29 @@ export default function SubscriptionPage() {
                     {formatPrice(SUBSCRIPTION_PRICES.monthly)} F/mois
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPeriod('annual')}
-                  onPointerDown={ripple}
-                  className={`relative overflow-hidden rounded-lg border px-4 py-3 text-center font-body text-sm font-bold ${
-                    period === 'annual'
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border text-foreground'
-                  }`}
-                >
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-secondary px-2 py-0.5 font-body text-[10px] font-bold whitespace-nowrap text-secondary-foreground">
+                {/* Wrapper carries the badge so the button can keep
+                    `overflow-hidden` (needed for the ripple) without
+                    clipping the ribbon that pokes above its top edge. */}
+                <div className="relative">
+                  <span className="absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 rounded-full bg-secondary px-2 py-0.5 font-body text-[10px] font-bold whitespace-nowrap text-secondary-foreground shadow-sm">
                     Le plus populaire
                   </span>
-                  Annuel
-                  <span className="mt-1 block font-body text-xs font-normal opacity-80">
-                    {formatPrice(SUBSCRIPTION_PRICES.annual)} F/an
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setPeriod('annual')}
+                    onPointerDown={ripple}
+                    className={`relative h-full w-full overflow-hidden rounded-lg border px-4 py-3 text-center font-body text-sm font-bold ${
+                      period === 'annual'
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border text-foreground'
+                    }`}
+                  >
+                    Annuel
+                    <span className="mt-1 block font-body text-xs font-normal opacity-80">
+                      {formatPrice(SUBSCRIPTION_PRICES.annual)} F/an
+                    </span>
+                  </button>
+                </div>
               </div>
               {period === 'annual' && (
                 <p className="mb-4 text-center font-body text-xs text-muted-foreground">
