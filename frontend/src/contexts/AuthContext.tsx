@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchUser = useCallback(async () => {
+    setLoading(true);
     setError(null);
     try {
       const res = await api<{ user: User; csrfToken?: string }>('/api/auth/me');
@@ -65,17 +66,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Skip /me for anonymous visitors — the JS-readable CSRF cookie is only
     // set after login, so its absence is a reliable "no session" signal.
-    const csrfCookieName = `${COOKIE_PREFIX}-csrf`;
-    const hasCookie = document.cookie
-      .split(';')
-      .some((c) => c.trim().startsWith(`${csrfCookieName}=`));
-    if (!hasCookie) {
-      setLoading(false);
-      return;
-    }
-    void fetchUser();
+    const checkSession = () => {
+      const csrfCookieName = `${COOKIE_PREFIX}-csrf`;
+      const hasCookie = document.cookie
+        .split(';')
+        .some((c) => c.trim().startsWith(`${csrfCookieName}=`));
+      if (!hasCookie) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      void fetchUser();
+    };
+
+    checkSession();
+
+    // Back/forward navigation can restore this exact page from the
+    // browser's bfcache instead of re-running any JS — the mount effect
+    // above never fires again, so a session that changed while the page
+    // sat cached (logged in elsewhere, logged out, expired) stayed stuck
+    // showing whatever `user` last held until a real reload forced fresh
+    // JS execution. `pageshow` with `event.persisted` is the standard
+    // signal for "this page just came back from bfcache" — re-run the
+    // same check when it fires.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) checkSession();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
     // Run once on mount; fetchUser is stable.
-  }, []);
+  }, [fetchUser]);
 
   const logout = useCallback(async () => {
     setLoggingOut(true);
