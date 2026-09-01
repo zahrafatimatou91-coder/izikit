@@ -457,6 +457,11 @@ model Subscription {
   status           String    @default("ACTIVE") // ACTIVE | PAST_DUE | CANCELED
   currentPeriodEnd DateTime?
   lastOrderId      String? // pointer to the Order that paid for the current period
+  // Dedup marker for the subscription-renewal-reminders cron: the exact
+  // currentPeriodEnd value a reminder email was already sent for. A renewal
+  // that extends currentPeriodEnd naturally re-arms the reminder for the
+  // new period — see lib/server/subscriptions/renewal-reminder.ts.
+  renewalReminderSentForPeriodEnd DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }

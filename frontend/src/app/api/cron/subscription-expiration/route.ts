@@ -1,8 +1,14 @@
 // POST /api/cron/subscription-expiration — daily. Flips lapsed PRO
 // subscriptions (trial or paid) back to FREE and archives their surplus.
-// The pre-lapse "ends soon" reminders it used to also send were dropped —
-// the dashboard SubscriptionBanner covers that state now. See
+// The pre-lapse "ends soon" IN-APP reminders it used to also send were
+// dropped — the dashboard SubscriptionBanner covers that state for anyone
+// who opens the app. See
 // docs/superpowers/specs/2026-08-29-monetization-subscription-design.md.
+// A separate EMAIL channel for paid (non-trial) subscriptions was added
+// later — see the subscription-renewal-reminders cron + Subscriptions
+// domain rationale in lib/server/subscriptions/renewal-reminder.ts — since
+// Mobile Money has no card-on-file and a user who never opens the app
+// before lapsing gets no signal at all otherwise.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;

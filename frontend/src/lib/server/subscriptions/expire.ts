@@ -7,13 +7,19 @@
 //   paid subscription that wasn't renewed and a trial that wasn't
 //   converted — same mechanism, per the spec ("Fin d'essai non converti").
 //
-// The "your trial/subscription ends soon" *reminders* that used to live
-// here were removed: they duplicated the always-visible dashboard
+// The "your trial/subscription ends soon" IN-APP *reminders* that used to
+// live here were removed: they duplicated the always-visible dashboard
 // SubscriptionBanner (components/subscription/SubscriptionBanner.tsx),
 // which is a strictly better surface for a live, self-clearing state.
 // Only the post-lapse SUBSCRIPTION_EXPIRED notification stays — that one
 // records a fait accompli (plan flipped, surplus archived) worth a
 // timestamped entry in the bell.
+//
+// A separate pre-lapse EMAIL reminder (a different channel, not a repeat
+// of the banner) was added later for PAID subscriptions only — see
+// renewal-reminder.ts + the subscription-renewal-reminders cron. Mobile
+// Money has no card-on-file, so a user who never opens the app before
+// `currentPeriodEnd` gets no signal at all without it.
 //
 // The notification is created directly via createNotification(prisma, ...),
 // never via the outbox — this cron isn't running inside a webhook's
