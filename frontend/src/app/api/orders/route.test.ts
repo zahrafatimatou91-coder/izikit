@@ -54,7 +54,7 @@ import {
   PaymentProviderUnconfiguredError,
 } from '@/lib/server/payments/provider-singleton';
 import { CircuitOpenError } from '@/lib/server/payments/circuit-breaker';
-import { POST } from './route';
+import { POST, GET } from './route';
 
 const mockRequireAuth = vi.mocked(requireAuth);
 const mockGetProvider = vi.mocked(getProvider);
@@ -538,5 +538,77 @@ describe('POST /api/orders [Wave 1] — CSRF', () => {
     );
     expect(res.status).toBe(403);
     expect(mockRequireAuth).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/orders — payment history', () => {
+  function makeGet(): NextRequest {
+    return new NextRequest('http://test/api/orders', { method: 'GET' });
+  }
+
+  it('returns the caller PAID orders with purpose/period lifted from metadata', async () => {
+    prismaMock.order.findMany.mockResolvedValue([
+      seededOrder({
+        id: 'ord_annual',
+        status: 'PAID',
+        amount: 13_500,
+        metadata: { purpose: 'subscription', period: 'annual' },
+        paidAt: new Date('2026-08-01T09:00:00Z'),
+      }),
+      seededOrder({
+        id: 'ord_monthly',
+        status: 'PAID',
+        amount: 1_500,
+        metadata: { purpose: 'subscription', period: 'monthly' },
+        paidAt: new Date('2026-07-01T09:00:00Z'),
+      }),
+    ] as never);
+
+    const res = await GET(makeGet());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(prismaMock.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'user-1', status: 'PAID' },
+        take: 24,
+      }),
+    );
+    expect(body.orders).toHaveLength(2);
+    expect(body.orders[0]).toMatchObject({
+      id: 'ord_annual',
+      amount: 13_500,
+      purpose: 'subscription',
+      period: 'annual',
+      paidAt: '2026-08-01T09:00:00.000Z',
+    });
+    expect(body.orders[1]).toMatchObject({ id: 'ord_monthly', period: 'monthly' });
+  });
+
+  it('tolerates a row with no metadata (purpose/period null)', async () => {
+    prismaMock.order.findMany.mockResolvedValue([
+      seededOrder({ id: 'ord_bare', status: 'PAID', metadata: null, paidAt: null }),
+    ] as never);
+
+    const res = await GET(makeGet());
+    const body = await res.json();
+    expect(body.orders[0]).toMatchObject({ id: 'ord_bare', purpose: null, period: null });
+    expect(body.orders[0].paidAt).toBeNull();
+  });
+
+  it('returns an empty list when the user has no paid orders', async () => {
+    prismaMock.order.findMany.mockResolvedValue([] as never);
+    const res = await GET(makeGet());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ orders: [] });
+  });
+
+  it('401 when not authenticated', async () => {
+    mockRequireAuth.mockResolvedValueOnce(
+      NextResponse.json({ error: 'Missing token' }, { status: 401 }),
+    );
+    const res = await GET(makeGet());
+    expect(res.status).toBe(401);
+    expect(prismaMock.order.findMany).not.toHaveBeenCalled();
   });
 });

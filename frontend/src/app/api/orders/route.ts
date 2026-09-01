@@ -348,3 +348,54 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   });
 }
+
+// GET /api/orders — the caller's own paid orders, newest first. Backs the
+// "Mes paiements" history section on /subscription (the only checkout in
+// the app today is the Pro subscription, so in practice this is a
+// subscription-payment receipt list). Only PAID rows are returned —
+// PENDING/FAILED/EXPIRED attempts aren't receipts and would just be noise.
+// `purpose` / `period` are lifted out of the free-form `metadata` Json so
+// the client doesn't have to know its shape. Capped at 24 rows (two years
+// of monthly renewals) — no pagination needed at this scale.
+const ORDER_HISTORY_LIMIT = 24;
+
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const ctx = makeRequestContext(req.headers);
+  return withRequestContext(ctx, async () => {
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+
+    const rows = await prisma.order.findMany({
+      where: { userId: auth.user.sub, status: 'PAID' },
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        status: true,
+        metadata: true,
+        paidAt: true,
+        createdAt: true,
+      },
+      orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
+      take: ORDER_HISTORY_LIMIT,
+    });
+
+    const orders = rows.map((row) => {
+      const metadata = (row.metadata ?? null) as Record<string, unknown> | null;
+      const purpose = metadata && typeof metadata.purpose === 'string' ? metadata.purpose : null;
+      const period = metadata && typeof metadata.period === 'string' ? metadata.period : null;
+      return {
+        id: row.id,
+        amount: row.amount,
+        currency: row.currency,
+        status: row.status,
+        purpose,
+        period,
+        paidAt: row.paidAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      };
+    });
+
+    return NextResponse.json({ orders }, { headers: { 'x-request-id': ctx.requestId } });
+  });
+}
