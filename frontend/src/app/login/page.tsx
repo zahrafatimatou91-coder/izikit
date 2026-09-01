@@ -4,7 +4,7 @@ import { Suspense, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError, storeCsrfToken } from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useGuestOnly } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { PasswordField } from '@/components/auth/PasswordField';
@@ -29,10 +29,13 @@ function LoginForm() {
   const params = useSearchParams();
   const { refresh } = useAuth();
   const ripple = useRipple();
+  const isGuest = useGuestOnly();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  if (!isGuest) return null;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

@@ -146,3 +146,32 @@ export function useUser(redirectTo: string = '/login'): User | null {
   if (loading || !user) return null;
   return user;
 }
+
+/**
+ * Guest-only helper — the inverse of useUser(): bounces an already
+ * authenticated visitor away from a page meant for logged-out people
+ * (/login, /signup) instead of showing them a stale form for a session
+ * they're already in.
+ *
+ *   export default function LoginPage() {
+ *     const isGuest = useGuestOnly();  // false while redirecting/loading
+ *     if (!isGuest) return null;
+ *     return <LoginForm />;
+ *   }
+ *
+ * Default redirect target is `/dashboard`; override via `redirectTo`.
+ * Returns `false` while loading OR while the redirect is in flight, so the
+ * caller can render nothing rather than flash the guest-only content.
+ */
+export function useGuestOnly(redirectTo: string = '/dashboard'): boolean {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace(redirectTo);
+    }
+  }, [loading, user, redirectTo, router]);
+
+  return !loading && !user;
+}

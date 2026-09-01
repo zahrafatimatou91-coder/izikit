@@ -7,6 +7,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
+import { useGuestOnly } from '@/contexts/AuthContext';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { PasswordField } from '@/components/auth/PasswordField';
@@ -19,11 +20,14 @@ const googleSignInHref = '/api/auth/oauth/google/start?next=/onboarding';
 export default function SignupPage() {
   const router = useRouter();
   const ripple = useRipple();
+  const isGuest = useGuestOnly();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  if (!isGuest) return null;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

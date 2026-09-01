@@ -394,7 +394,7 @@ export default function SubscriptionPage() {
                   'Redirection en cours…'
                 ) : (
                   <>
-                    <Icon i="sparkles" size={16} />
+                    <Icon i="crown" size={16} />
                     {isProNow ? 'Prolonger mon abonnement — ' : 'Passer à Pro — '}
                     <AnimatedNumber value={SUBSCRIPTION_PRICES[period]} format={formatPrice} /> F
                   </>

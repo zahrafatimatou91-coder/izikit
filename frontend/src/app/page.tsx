@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/Icon';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useRipple } from '@/hooks/useRipple';
+import { useAuth } from '@/contexts/AuthContext';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { EnvelopeCard } from '@/components/envelopes/EnvelopeCard';
 import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
@@ -231,6 +232,13 @@ function PricingCard({ plan, price, priceNote, ctaLabel, highlight = false }: Pr
 
 export default function LandingPage() {
   const ripple = useRipple();
+  // Read-only auth check — never forces a redirect off the homepage, just
+  // swaps the nav CTA so a signed-in visitor isn't offered "Se connecter" /
+  // "Commencer" for an account they already have. Deliberately not
+  // useUser()/useGuestOnly(): those redirect, which would blank the page
+  // for a beat on every single anonymous visit while /api/auth/me is
+  // still loading — unacceptable on the highest-traffic page.
+  const { user } = useAuth();
   return (
     <div className="flex flex-col bg-background font-body">
       {/* ══════ MOBILE (< lg) ══════ */}
@@ -238,11 +246,11 @@ export default function LandingPage() {
         <nav className="flex items-center justify-between border-b border-border bg-background px-4 py-4">
           <BrandLogo size="sm" />
           <Link
-            href="/signup"
+            href={user ? '/dashboard' : '/signup'}
             onPointerDown={ripple}
             className="relative overflow-hidden rounded-lg bg-primary px-4 py-2 font-body text-xs font-bold text-primary-foreground"
           >
-            Commencer
+            {user ? 'Tableau de bord' : 'Commencer'}
           </Link>
         </nav>
 
@@ -519,11 +527,11 @@ export default function LandingPage() {
             </a>
           </div>
           <Link
-            href="/signup"
+            href={user ? '/dashboard' : '/signup'}
             onPointerDown={ripple}
             className="relative overflow-hidden rounded-xl bg-primary px-7 py-3 font-body text-sm font-bold text-primary-foreground"
           >
-            Commencer
+            {user ? 'Tableau de bord' : 'Commencer'}
           </Link>
         </nav>
 
