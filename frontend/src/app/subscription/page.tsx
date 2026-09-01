@@ -36,7 +36,53 @@ interface SubscriptionStatus {
   isTrial: boolean;
 }
 
+interface PaymentRow {
+  id: string;
+  amount: number;
+  currency: string;
+  purpose: string | null;
+  period: string | null;
+  paidAt: string | null;
+  createdAt: string;
+}
+
 type BillingPeriod = 'monthly' | 'annual';
+
+// Written out, one advantage at a time — the comparatif table below stays
+// as the at-a-glance version, but a table cell ("Illimitées") doesn't sell
+// anything by itself. Wording mirrors the FEATURE_ROWS values so the two
+// never contradict each other.
+const PRO_BENEFITS: {
+  icon: 'wallet' | 'target' | 'clock' | 'trending-up' | 'bell';
+  title: string;
+  desc: string;
+}[] = [
+  {
+    icon: 'wallet',
+    title: 'Enveloppes illimitées',
+    desc: 'Crée une enveloppe par vraie catégorie de dépense — plus besoin de tout entasser dans les 2 du plan Free.',
+  },
+  {
+    icon: 'target',
+    title: "Objectifs d'épargne",
+    desc: "La fonctionnalité 100% Pro : mets de l'argent de côté pour de vrai, avec un rythme calculé pour toi.",
+  },
+  {
+    icon: 'clock',
+    title: 'Historique complet',
+    desc: 'Retrouve chaque transaction depuis le premier jour — pas seulement les deux derniers mois.',
+  },
+  {
+    icon: 'trending-up',
+    title: 'Tendances & conseils personnalisés',
+    desc: 'Comprends où part ton argent mois après mois, et reçois des conseils qui collent à tes vraies dépenses.',
+  },
+  {
+    icon: 'bell',
+    title: 'Toutes les notifications',
+    desc: "Rappels, jalons d'objectifs, rythme d'épargne manqué — jamais pris au dépourvu.",
+  },
+];
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
@@ -79,7 +125,8 @@ export default function SubscriptionPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [period, setPeriod] = useState<BillingPeriod>('annual');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [cancelInfoOpen, setCancelInfoOpen] = useState(false);
+  const [renewalInfoOpen, setRenewalInfoOpen] = useState(false);
+  const [payments, setPayments] = useState<PaymentRow[] | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -90,6 +137,11 @@ export default function SubscriptionPage() {
           err instanceof ApiError ? err.message : 'Impossible de charger ton abonnement.',
         ),
       );
+    // Non-critical — the "Mes paiements" section just stays hidden if this
+    // fails; it never blocks the upgrade flow.
+    api<{ orders: PaymentRow[] }>('/api/orders')
+      .then((res) => setPayments(res.orders))
+      .catch(() => setPayments([]));
   }, [user]);
 
   if (!user) return <ListPageSkeleton rows={6} />;
@@ -98,6 +150,10 @@ export default function SubscriptionPage() {
   const isProNow = sub?.plan === 'PRO';
   const isTrialNow = isProNow && sub?.isTrial === true;
   const wasProBefore = sub?.plan === 'FREE' && sub?.currentPeriodEnd !== null;
+  // Orders in this app are only ever the Pro checkout, but filter on
+  // purpose anyway so an unrelated future order type can't show up
+  // mislabeled as "Pro —".
+  const subscriptionPayments = (payments ?? []).filter((p) => p.purpose === 'subscription');
 
   async function handleCheckout() {
     setCheckoutLoading(true);
@@ -173,12 +229,12 @@ export default function SubscriptionPage() {
                       </p>
                       <button
                         type="button"
-                        onClick={() => setCancelInfoOpen((v) => !v)}
+                        onClick={() => setRenewalInfoOpen((v) => !v)}
                         className="self-start font-body text-xs font-medium text-muted-foreground underline"
                       >
-                        Annuler mon abonnement
+                        Que se passe-t-il à l'échéance ?
                       </button>
-                      {cancelInfoOpen && (
+                      {renewalInfoOpen && (
                         <p className="font-body text-xs text-muted-foreground">
                           Aucune carte n'est jamais débitée automatiquement — il n'y a donc rien à
                           annuler. Tu resteras Pro jusqu'au {formatDateLong(sub.currentPeriodEnd)},
@@ -210,6 +266,38 @@ export default function SubscriptionPage() {
               <p className="font-body text-sm text-muted-foreground">
                 Enveloppes illimitées, objectifs d'épargne, tendances et conseils personnalisés —
                 tout ce qu'il te faut pour garder le contrôle, un franc à la fois.
+              </p>
+            </div>
+
+            {/* Avantages Pro, écrits en toutes lettres */}
+            <div className="flex flex-col gap-3">
+              {PRO_BENEFITS.map((b) => (
+                <div
+                  key={b.title}
+                  className="flex gap-3 rounded-lg border border-secondary/30 bg-secondary/10 p-4"
+                >
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-secondary/40 bg-secondary/20">
+                    <Icon i={b.icon} size={18} className="text-secondary-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-body text-sm font-bold text-foreground">{b.title}</p>
+                    <p className="mt-0.5 font-body text-xs leading-relaxed text-muted-foreground">
+                      {b.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Ce qui reste gratuit — pas de honte sur le Free, juste un rappel */}
+            <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4">
+              <Icon i="check-circle" size={18} className="mt-0.5 flex-shrink-0 text-primary" />
+              <p className="font-body text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  Toujours gratuit, sans limite :{' '}
+                </span>
+                transactions illimitées et tableau de bord complet. Le plan Free reste utilisable au
+                quotidien — Pro débloque ce qui va plus loin.
               </p>
             </div>
 
@@ -300,18 +388,56 @@ export default function SubscriptionPage() {
                 onClick={handleCheckout}
                 onPointerDown={ripple}
                 disabled={checkoutLoading}
-                className="relative w-full overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+                className="relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-primary px-6 py-3.5 font-body text-sm font-bold text-primary-foreground shadow-lg disabled:opacity-50"
               >
                 {checkoutLoading ? (
                   'Redirection en cours…'
                 ) : (
                   <>
+                    <Icon i="sparkles" size={16} />
                     {isProNow ? 'Prolonger mon abonnement — ' : 'Passer à Pro — '}
                     <AnimatedNumber value={SUBSCRIPTION_PRICES[period]} format={formatPrice} /> F
                   </>
                 )}
               </button>
+              <p className="mt-3 text-center font-body text-xs text-muted-foreground">
+                Sans engagement · Wave, Orange Money, Free Money ou carte
+              </p>
             </div>
+
+            {/* Mes paiements — reçus des périodes déjà payées. Masqué tant
+                qu'il n'y a rien : un utilisateur Free qui n'a jamais payé
+                n'a pas besoin d'une section vide. */}
+            {subscriptionPayments.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="font-headings text-lg font-bold text-foreground">Mes paiements</h3>
+                <div className="divide-y divide-border rounded-lg border border-border bg-card">
+                  {subscriptionPayments.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-body text-sm font-medium text-foreground">
+                          Pro —{' '}
+                          {p.period === 'annual'
+                            ? 'Annuel'
+                            : p.period === 'monthly'
+                              ? 'Mensuel'
+                              : 'Abonnement'}
+                        </p>
+                        <p className="font-body text-xs text-muted-foreground">
+                          {formatDateLong(p.paidAt ?? p.createdAt)}
+                        </p>
+                      </div>
+                      <p className="flex-shrink-0 whitespace-nowrap font-body text-sm font-bold text-foreground">
+                        {formatPrice(p.amount)} F
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* FAQ */}
             <div className="flex flex-col gap-3">
