@@ -30,11 +30,11 @@ export function ProgressSkeleton() {
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex max-w-4xl flex-col gap-6 lg:gap-8">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-6"
+                  className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-3 sm:p-6"
                 >
                   <Skeleton className="h-3 w-20" />
                   <Skeleton className="h-8 w-12" />
@@ -44,7 +44,7 @@ export function ProgressSkeleton() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="rounded-lg border border-border bg-card p-6">
+                <div key={i} className="rounded-lg border border-border bg-card p-4 sm:p-6">
                   <div className="mb-4 flex items-center gap-3">
                     <Skeleton className="h-10 w-10 rounded-lg" />
                     <Skeleton className="h-4 w-28" />
@@ -58,7 +58,7 @@ export function ProgressSkeleton() {
               ))}
             </div>
 
-            <div className="rounded-lg border border-border bg-card p-8">
+            <div className="rounded-lg border border-border bg-card p-5 sm:p-8">
               <Skeleton className="mb-6 h-5 w-48" />
               <div className="space-y-3">
                 {Array.from({ length: 7 }).map((_, i) => (

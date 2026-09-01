@@ -297,7 +297,7 @@ export default function EnvelopesPage() {
             )}
 
             {envelopes && envelopes.length === 0 && formMode === 'none' && (
-              <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center sm:p-8">
                 <p className="font-body text-sm text-muted-foreground">
                   Tu n&apos;as pas encore d&apos;enveloppe.
                 </p>

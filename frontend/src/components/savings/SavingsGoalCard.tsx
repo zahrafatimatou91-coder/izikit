@@ -40,18 +40,18 @@ export function SavingsGoalCard({
   const ripple = useRipple();
 
   return (
-    <div className="rounded-lg border border-border bg-card p-6">
+    <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-secondary">
             <Icon i={icon} size={20} className="text-secondary-foreground" />
           </div>
-          <div>
-            <h3 className="font-headings text-base font-bold text-foreground">{name}</h3>
-            {pace && <p className="font-body text-xs text-muted-foreground">{pace}</p>}
+          <div className="min-w-0">
+            <h3 className="truncate font-headings text-base font-bold text-foreground">{name}</h3>
+            {pace && <p className="truncate font-body text-xs text-muted-foreground">{pace}</p>}
           </div>
         </div>
-        <div className="flex items-start gap-2">
+        <div className="flex flex-shrink-0 items-start gap-2">
           <div className="text-right">
             <p className="font-headings text-lg font-bold text-primary">
               <AnimatedNumber value={currentAmount} format={formatPrice} />

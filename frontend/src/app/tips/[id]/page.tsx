@@ -88,14 +88,25 @@ export default function TipDetailPage({ params }: { params: Promise<{ id: string
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex max-w-2xl flex-col gap-6 lg:gap-8">
-            <div className="flex items-center gap-4 rounded-lg bg-gradient-to-r from-primary to-secondary p-8 text-primary-foreground">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-primary-foreground/20">
-                <Icon i={tip.icon as IconName} size={32} className="text-primary-foreground" />
+            <div className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-primary to-secondary p-5 text-primary-foreground sm:gap-4 sm:p-8">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary-foreground/20 sm:h-16 sm:w-16">
+                <Icon
+                  i={tip.icon as IconName}
+                  size={24}
+                  className="text-primary-foreground sm:hidden"
+                />
+                <Icon
+                  i={tip.icon as IconName}
+                  size={32}
+                  className="hidden text-primary-foreground sm:block"
+                />
               </div>
-              <div>
-                <h1 className="font-headings text-2xl font-bold lg:text-3xl">{tip.title}</h1>
+              <div className="min-w-0">
+                <h1 className="font-headings text-xl font-bold sm:text-2xl lg:text-3xl">
+                  {tip.title}
+                </h1>
                 {tip.estimatedSavingsFcfa !== null && (
-                  <p className="text-sm opacity-80 lg:text-base">
+                  <p className="text-xs opacity-80 sm:text-sm lg:text-base">
                     Économise jusqu&apos;à ~{formatPrice(tip.estimatedSavingsFcfa)} FCFA/mois
                   </p>
                 )}
@@ -103,22 +114,22 @@ export default function TipDetailPage({ params }: { params: Promise<{ id: string
             </div>
 
             {tip.estimatedSavingsFcfa !== null && (
-              <div className="rounded-lg border border-border bg-card p-6 text-center">
-                <p className="mb-2 font-headings text-4xl font-bold text-primary">
+              <div className="rounded-lg border border-border bg-card p-4 text-center sm:p-6">
+                <p className="mb-2 font-headings text-2xl font-bold text-primary sm:text-4xl">
                   ~{formatPrice(tip.estimatedSavingsFcfa)}
                 </p>
                 <p className="font-body text-sm text-muted-foreground">FCFA/mois à économiser</p>
               </div>
             )}
 
-            <div className="rounded-lg border border-border bg-card p-8">
-              <h2 className="mb-6 font-headings text-2xl font-bold text-foreground">
+            <div className="rounded-lg border border-border bg-card p-5 sm:p-8">
+              <h2 className="mb-4 font-headings text-lg font-bold text-foreground sm:mb-6 sm:text-2xl">
                 Comment ça marche ?
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {tip.steps.map((step, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+                  <div key={i} className="flex gap-3 sm:gap-4">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10">
                       <span className="font-headings text-sm font-bold text-secondary-foreground">
                         {i + 1}
                       </span>

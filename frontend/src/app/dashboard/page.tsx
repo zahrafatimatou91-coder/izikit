@@ -298,7 +298,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
               {data.envelopes.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
+                <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center sm:p-8">
                   <p className="mb-3 font-body text-sm text-muted-foreground">
                     Tu n&apos;as pas encore d&apos;enveloppe.
                   </p>
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               {data.recentTransactions.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
+                <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center sm:p-8">
                   <p className="mb-3 font-body text-sm text-muted-foreground">
                     Aucune transaction pour l&apos;instant.
                   </p>

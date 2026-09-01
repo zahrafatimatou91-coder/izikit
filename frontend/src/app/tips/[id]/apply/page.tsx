@@ -125,9 +125,9 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex max-w-2xl flex-col gap-6 lg:gap-8">
-            <div className="flex items-start gap-4 rounded-lg border border-primary/20 bg-primary/10 p-6">
+            <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/10 p-4 sm:gap-4 sm:p-6">
               <Icon i="check-circle-2" size={24} className="flex-shrink-0 text-primary" />
-              <div>
+              <div className="min-w-0">
                 <h3 className="mb-1 font-headings font-bold text-foreground">
                   {linkedExistingGoal
                     ? 'Conseil relié à ton objectif existant'
@@ -146,12 +146,16 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-card p-8">
-              <div className="mb-6 flex items-start justify-between">
-                <div>
+            <div className="rounded-lg border border-border bg-card p-5 sm:p-8">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
                   <div className="mb-2 flex items-center gap-3">
-                    <Icon i={goal.icon as IconName} size={24} className="text-primary" />
-                    <h2 className="font-headings text-2xl font-bold text-foreground">
+                    <Icon
+                      i={goal.icon as IconName}
+                      size={24}
+                      className="flex-shrink-0 text-primary"
+                    />
+                    <h2 className="min-w-0 font-headings text-xl font-bold text-foreground sm:text-2xl">
                       {goal.name}
                     </h2>
                   </div>
@@ -159,8 +163,8 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
                     Objectif mensuel : économiser ~{formatPrice(goal.targetAmount)} FCFA
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="mb-1 font-headings text-3xl font-bold text-primary">
+                <div className="sm:text-right">
+                  <p className="mb-1 font-headings text-2xl font-bold text-primary sm:text-3xl">
                     <AnimatedNumber value={goal.currentAmount} format={formatPrice} /> F
                   </p>
                   <p className="font-body text-xs text-muted-foreground">
@@ -189,17 +193,17 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
               </p>
             </div>
 
-            <div className="rounded-lg border border-border bg-card p-8">
-              <h3 className="mb-6 font-headings text-lg font-bold text-foreground">
+            <div className="rounded-lg border border-border bg-card p-5 sm:p-8">
+              <h3 className="mb-4 font-headings text-lg font-bold text-foreground sm:mb-6">
                 Plan d&apos;action
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {tip.steps.map((step, i) => (
-                  <div key={i} className="flex gap-4 rounded-lg bg-input p-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+                  <div key={i} className="flex gap-3 rounded-lg bg-input p-3 sm:gap-4 sm:p-4">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10">
                       <Icon i="calendar" size={16} className="text-secondary-foreground" />
                     </div>
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-start justify-between">
                         <span className="font-body text-xs font-medium text-foreground">
                           Jour {i + 1}
@@ -212,7 +216,7 @@ export default function ApplyTipPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
-            <div className="rounded-lg border border-secondary/30 bg-secondary/10 p-8">
+            <div className="rounded-lg border border-secondary/30 bg-secondary/10 p-5 sm:p-8">
               <h3 className="mb-4 font-headings text-lg font-bold text-foreground">
                 Conseils pour réussir
               </h3>

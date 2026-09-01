@@ -173,7 +173,7 @@ export default function InsightsPage() {
             </div>
 
             {data && !hasActivity && (
-              <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center sm:p-8">
                 <p className="font-body text-sm text-muted-foreground">
                   Aucune transaction sur {periodLabel.toLowerCase()}.
                 </p>
@@ -182,38 +182,38 @@ export default function InsightsPage() {
 
             {data && hasActivity && (
               <>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="rounded-lg border border-border bg-card p-6">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                  <div className="rounded-lg border border-border bg-card p-3 sm:p-6">
                     <p className="mb-1 font-body text-xs text-muted-foreground">Dépensé</p>
-                    <p className="font-headings text-xl font-bold text-foreground lg:text-2xl">
+                    <p className="font-headings text-base font-bold text-foreground sm:text-xl lg:text-2xl">
                       <AnimatedNumber value={data.totalSpent} format={formatPrice} /> F
                     </p>
                     {spentDelta !== null && (
                       <p
-                        className={`mt-1 font-body text-xs font-medium ${spentDelta > 0 ? 'text-accent' : 'text-primary'}`}
+                        className={`mt-1 font-body text-xs font-medium leading-tight ${spentDelta > 0 ? 'text-accent' : 'text-primary'}`}
                       >
                         {spentDelta > 0 ? '+' : ''}
-                        {spentDelta}% vs période précédente
+                        {spentDelta}% vs précédent
                       </p>
                     )}
                   </div>
-                  <div className="rounded-lg border border-border bg-card p-6">
+                  <div className="rounded-lg border border-border bg-card p-3 sm:p-6">
                     <p className="mb-1 font-body text-xs text-muted-foreground">Revenu</p>
-                    <p className="font-headings text-xl font-bold text-foreground lg:text-2xl">
+                    <p className="font-headings text-base font-bold text-foreground sm:text-xl lg:text-2xl">
                       <AnimatedNumber value={data.totalIncome} format={formatPrice} /> F
                     </p>
                     {incomeDelta !== null && (
                       <p
-                        className={`mt-1 font-body text-xs font-medium ${incomeDelta < 0 ? 'text-accent' : 'text-primary'}`}
+                        className={`mt-1 font-body text-xs font-medium leading-tight ${incomeDelta < 0 ? 'text-accent' : 'text-primary'}`}
                       >
                         {incomeDelta > 0 ? '+' : ''}
-                        {incomeDelta}% vs période précédente
+                        {incomeDelta}% vs précédent
                       </p>
                     )}
                   </div>
-                  <div className="rounded-lg border border-border bg-card p-6">
+                  <div className="rounded-lg border border-border bg-card p-3 sm:p-6">
                     <p className="mb-1 font-body text-xs text-muted-foreground">Épargné</p>
-                    <p className="font-headings text-xl font-bold text-primary lg:text-2xl">
+                    <p className="font-headings text-base font-bold text-primary sm:text-xl lg:text-2xl">
                       <AnimatedNumber value={data.savedInPeriod} format={formatPrice} /> F
                     </p>
                   </div>
@@ -233,21 +233,23 @@ export default function InsightsPage() {
                         .filter((e) => e.spent > 0)
                         .map((e) => (
                           <div key={e.id}>
-                            <div className="mb-1 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <div className="flex min-w-0 items-center gap-2">
                                 <Icon
                                   i={e.icon as IconName}
                                   size={14}
-                                  className="text-muted-foreground"
+                                  className="flex-shrink-0 text-muted-foreground"
                                 />
-                                <span className="font-body text-sm text-foreground">{e.name}</span>
+                                <span className="truncate font-body text-sm text-foreground">
+                                  {e.name}
+                                </span>
                                 {topEnvelope?.id === e.id && (
-                                  <span className="rounded-full bg-accent/10 px-2 py-0.5 font-body text-[10px] font-medium text-accent">
+                                  <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-accent/10 px-2 py-0.5 font-body text-[10px] font-medium text-accent">
                                     Plus grosse dépense
                                   </span>
                                 )}
                               </div>
-                              <span className="font-body text-sm font-medium text-foreground">
+                              <span className="flex-shrink-0 whitespace-nowrap font-body text-sm font-medium text-foreground">
                                 <AnimatedNumber value={e.spent} format={formatPrice} /> F
                               </span>
                             </div>
@@ -291,14 +293,18 @@ export default function InsightsPage() {
                         : 0;
                     return (
                       <div key={g.id} className="rounded-lg bg-input p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Icon i={g.icon as IconName} size={16} className="text-foreground" />
-                            <span className="font-body text-sm font-medium text-foreground">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Icon
+                              i={g.icon as IconName}
+                              size={16}
+                              className="flex-shrink-0 text-foreground"
+                            />
+                            <span className="truncate font-body text-sm font-medium text-foreground">
                               {g.name}
                             </span>
                           </div>
-                          <span className="font-body text-xs font-bold text-foreground">
+                          <span className="flex-shrink-0 font-body text-xs font-bold text-foreground">
                             <AnimatedNumber value={pct} />%
                           </span>
                         </div>

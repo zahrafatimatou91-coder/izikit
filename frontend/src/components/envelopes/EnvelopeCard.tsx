@@ -21,14 +21,18 @@ export function EnvelopeCard({ name, icon, spent, total, color }: EnvelopeCardPr
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`${swatch.bg} flex h-8 w-8 items-center justify-center rounded-md`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <div
+            className={`${swatch.bg} flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md`}
+          >
             <Icon i={icon} size={15} className={swatch.text} />
           </div>
-          <span className="font-body text-sm font-medium text-foreground">{name}</span>
+          <span className="truncate font-body text-sm font-medium text-foreground">{name}</span>
         </div>
-        <span className={`font-body text-xs ${danger ? 'text-accent' : 'text-muted-foreground'}`}>
+        <span
+          className={`flex-shrink-0 font-body text-xs ${danger ? 'text-accent' : 'text-muted-foreground'}`}
+        >
           <AnimatedNumber value={pct} />%
         </span>
       </div>
@@ -40,12 +44,14 @@ export function EnvelopeCard({ name, icon, spent, total, color }: EnvelopeCardPr
         />
       </div>
 
-      <div className="flex items-baseline justify-between">
-        <span className="font-headings text-xl font-bold text-foreground">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        <span className="whitespace-nowrap font-headings text-lg font-bold text-foreground sm:text-xl">
           <AnimatedNumber value={remaining} format={formatPrice} />
           <span className="ml-1 font-body text-xs font-normal text-muted-foreground">FCFA</span>
         </span>
-        <span className="font-body text-xs text-muted-foreground">sur {formatPrice(total)}</span>
+        <span className="whitespace-nowrap font-body text-xs text-muted-foreground">
+          sur {formatPrice(total)}
+        </span>
       </div>
     </div>
   );

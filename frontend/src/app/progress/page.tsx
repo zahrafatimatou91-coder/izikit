@@ -139,24 +139,28 @@ export default function ProgressPage() {
             )}
 
             {summary && (
-              <div className="grid grid-cols-3 gap-4">
-                <div className="rounded-lg border border-border bg-card p-6 text-center">
-                  <p className="mb-2 font-body text-sm text-muted-foreground">Objectifs actifs</p>
-                  <p className="font-headings text-3xl font-bold text-primary">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="rounded-lg border border-border bg-card p-3 text-center sm:p-6">
+                  <p className="mb-1 font-body text-xs text-muted-foreground sm:mb-2 sm:text-sm">
+                    Objectifs actifs
+                  </p>
+                  <p className="font-headings text-lg font-bold text-primary sm:text-3xl">
                     <AnimatedNumber value={summary.activeGoals} />
                   </p>
                 </div>
-                <div className="rounded-lg border border-border bg-card p-6 text-center">
-                  <p className="mb-2 font-body text-sm text-muted-foreground">
+                <div className="rounded-lg border border-border bg-card p-3 text-center sm:p-6">
+                  <p className="mb-1 font-body text-xs leading-tight text-muted-foreground sm:mb-2 sm:text-sm">
                     Économisé cette semaine
                   </p>
-                  <p className="font-headings text-3xl font-bold text-foreground">
+                  <p className="font-headings text-lg font-bold text-foreground sm:text-3xl">
                     <AnimatedNumber value={summary.savedThisWeek} format={formatPrice} /> F
                   </p>
                 </div>
-                <div className="rounded-lg border border-border bg-card p-6 text-center">
-                  <p className="mb-2 font-body text-sm text-muted-foreground">Jours actifs</p>
-                  <p className="font-headings text-3xl font-bold text-foreground">
+                <div className="rounded-lg border border-border bg-card p-3 text-center sm:p-6">
+                  <p className="mb-1 font-body text-xs text-muted-foreground sm:mb-2 sm:text-sm">
+                    Jours actifs
+                  </p>
+                  <p className="font-headings text-lg font-bold text-foreground sm:text-3xl">
                     <AnimatedNumber value={summary.activeDays} />
                   </p>
                 </div>
@@ -183,7 +187,7 @@ export default function ProgressPage() {
             )}
 
             {goals && goals.length === 0 && (
-              <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center sm:p-8">
                 <p className="font-body text-sm text-muted-foreground">
                   Tu n&apos;as pas encore d&apos;objectif d&apos;épargne.
                 </p>
@@ -191,7 +195,7 @@ export default function ProgressPage() {
             )}
 
             {breakdown.length > 0 && (
-              <div className="rounded-lg border border-border bg-card p-8">
+              <div className="rounded-lg border border-border bg-card p-5 sm:p-8">
                 <h3 className="mb-1 font-headings text-lg font-bold text-foreground">
                   Détail par jour (cette semaine)
                 </h3>
@@ -251,7 +255,7 @@ export default function ProgressPage() {
               </div>
             )}
 
-            <div className="rounded-lg border border-secondary/30 bg-secondary/10 p-8">
+            <div className="rounded-lg border border-secondary/30 bg-secondary/10 p-5 sm:p-8">
               <h3 className="mb-4 font-headings text-lg font-bold text-foreground">
                 Ce qu&apos;il faut savoir
               </h3>

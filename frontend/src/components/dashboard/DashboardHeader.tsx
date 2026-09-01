@@ -39,14 +39,14 @@ export function DashboardHeader({
 
   return (
     <div className="bg-primary px-5 pb-8 pt-12">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="font-body text-xs text-primary-foreground/70">{timeOfDayGreeting()},</p>
-          <p className="font-headings text-lg font-bold text-primary-foreground">
+          <p className="truncate font-headings text-lg font-bold text-primary-foreground">
             {firstName(name)} {timeOfDayEmoji()}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-shrink-0 items-center gap-3">
           <button
             type="button"
             aria-label="Notifications"

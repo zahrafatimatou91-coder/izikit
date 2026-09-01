@@ -66,7 +66,7 @@ export function TransactionRow({
           </div>
         </div>
         <span
-          className={`font-headings text-base font-bold ${isPositive ? 'text-primary' : 'text-foreground'}`}
+          className={`flex-shrink-0 whitespace-nowrap font-headings text-base font-bold ${isPositive ? 'text-primary' : 'text-foreground'}`}
         >
           {isPositive ? '+' : ''}
           {formatPrice(amount)} F

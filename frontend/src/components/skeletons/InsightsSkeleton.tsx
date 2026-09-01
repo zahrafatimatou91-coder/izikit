@@ -31,11 +31,11 @@ export function InsightsSkeleton() {
           <div className="mx-auto flex max-w-4xl flex-col gap-6 lg:gap-8">
             <Skeleton className="h-9 w-40 max-w-full rounded-lg" />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="rounded-lg border border-border bg-card p-6">
+                <div key={i} className="rounded-lg border border-border bg-card p-3 sm:p-6">
                   <Skeleton className="mb-2 h-3 w-16" />
-                  <Skeleton className="h-7 w-24" />
+                  <Skeleton className="h-7 w-full max-w-24" />
                 </div>
               ))}
             </div>

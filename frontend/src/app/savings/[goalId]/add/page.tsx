@@ -147,24 +147,27 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
               </div>
             )}
 
-            <form onSubmit={onSubmit} className="rounded-lg border border-border bg-card p-8">
-              <h3 className="mb-6 font-headings text-lg font-bold text-foreground">
+            <form
+              onSubmit={onSubmit}
+              className="rounded-lg border border-border bg-card p-5 sm:p-8"
+            >
+              <h3 className="mb-4 font-headings text-lg font-bold text-foreground sm:mb-6">
                 Enregistrer une nouvelle économie
               </h3>
 
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-5 sm:gap-6">
                 <div>
                   <p className="mb-3 font-body text-sm font-medium text-foreground">
                     Montants rapides
                   </p>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
                     {QUICK_AMOUNTS.map((q) => (
                       <button
                         key={q}
                         type="button"
                         onClick={() => setAmount(q)}
                         onPointerDown={ripple}
-                        className={`relative overflow-hidden rounded-lg border px-4 py-3 font-body text-sm font-medium ${
+                        className={`relative overflow-hidden rounded-lg border px-2 py-3 font-body text-sm font-medium sm:px-4 ${
                           amount === q
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border bg-input text-foreground'
@@ -233,12 +236,12 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                   </p>
                 )}
 
-                <div className="flex gap-4">
+                <div className="flex gap-3 sm:gap-4">
                   <button
                     type="button"
                     onClick={() => router.push('/progress')}
                     onPointerDown={ripple}
-                    className="relative flex-1 overflow-hidden rounded-lg border border-primary bg-transparent px-6 py-3 font-body text-sm font-medium text-primary"
+                    className="relative flex-1 overflow-hidden rounded-lg border border-primary bg-transparent px-4 py-3 font-body text-sm font-medium text-primary sm:px-6"
                   >
                     Annuler
                   </button>
@@ -246,7 +249,7 @@ export default function AddEconomyPage({ params }: { params: Promise<{ goalId: s
                     type="submit"
                     disabled={submitting || amount <= 0}
                     onPointerDown={ripple}
-                    className="relative flex-1 overflow-hidden rounded-lg bg-primary px-6 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50"
+                    className="relative flex-1 overflow-hidden rounded-lg bg-primary px-4 py-3 font-body text-sm font-bold text-primary-foreground disabled:opacity-50 sm:px-6"
                   >
                     {submitting ? 'Enregistrement…' : "Enregistrer l'économie"}
                   </button>

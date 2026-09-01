@@ -116,11 +116,12 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
 
         <div className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex max-w-2xl flex-col gap-6 lg:gap-8">
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-primary/20 bg-primary/10 p-8 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-                <Icon i="check" size={32} className="text-white" />
+            <div className="flex flex-col items-center gap-4 rounded-lg border border-primary/20 bg-primary/10 p-5 text-center sm:p-8">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary sm:h-16 sm:w-16">
+                <Icon i="check" size={28} className="text-white sm:hidden" />
+                <Icon i="check" size={32} className="hidden text-white sm:block" />
               </div>
-              <h2 className="font-headings text-2xl font-bold text-foreground">
+              <h2 className="font-headings text-xl font-bold text-foreground sm:text-2xl">
                 Économie enregistrée !
               </h2>
               {lastEntry && (
@@ -131,9 +132,9 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
               )}
             </div>
 
-            <div className="rounded-lg border border-border bg-card p-8">
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+            <div className="rounded-lg border border-border bg-card p-5 sm:p-8">
+              <div className="mb-6 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-secondary">
                     <Icon
                       i={goal.icon as IconName}
@@ -141,9 +142,11 @@ export default function EconomyConfirmedPage({ params }: { params: Promise<{ goa
                       className="text-secondary-foreground"
                     />
                   </div>
-                  <h3 className="font-headings text-sm font-bold text-foreground">{goal.name}</h3>
+                  <h3 className="truncate font-headings text-sm font-bold text-foreground">
+                    {goal.name}
+                  </h3>
                 </div>
-                <div className="text-right">
+                <div className="flex-shrink-0 text-right">
                   <p className="font-body text-sm font-bold text-primary">
                     <AnimatedNumber value={goal.currentAmount} format={formatPrice} /> F
                   </p>

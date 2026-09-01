@@ -206,7 +206,7 @@ export default function NotificationsPage() {
             </div>
 
             {hasLoaded && items.length === 0 && (
-              <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
+              <div className="rounded-lg border border-dashed border-border bg-card p-5 text-center sm:p-8">
                 <p className="font-body text-sm text-muted-foreground">Aucune notification.</p>
               </div>
             )}

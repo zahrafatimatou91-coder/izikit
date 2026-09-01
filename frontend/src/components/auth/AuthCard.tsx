@@ -13,7 +13,7 @@ interface AuthCardProps {
 export function AuthCard({ title, subtitle, children }: AuthCardProps) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 font-body">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 sm:p-8">
         <div className="mb-6">
           <BrandLogo size="sm" />
         </div>
