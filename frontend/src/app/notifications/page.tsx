@@ -36,12 +36,11 @@ interface NotificationItem {
   createdAt: string;
 }
 
-type FilterId = 'all' | 'ENVELOPE_THRESHOLD' | 'TIP_APPLIED' | 'GOAL_MILESTONE';
+type FilterId = 'all' | 'ENVELOPE_THRESHOLD' | 'GOAL_MILESTONE';
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: 'all', label: 'Tous' },
   { id: 'ENVELOPE_THRESHOLD', label: 'Alertes' },
-  { id: 'TIP_APPLIED', label: 'Conseils' },
   { id: 'GOAL_MILESTONE', label: 'Réalisations' },
 ];
 
@@ -54,12 +53,6 @@ const TYPE_STYLE: Record<
     wrap: 'bg-accent/10 border-accent/20',
     iconWrap: 'bg-accent',
     iconColor: 'text-accent-foreground',
-  },
-  TIP_APPLIED: {
-    icon: 'lightbulb',
-    wrap: 'bg-secondary/10 border-secondary/20',
-    iconWrap: 'bg-secondary',
-    iconColor: 'text-secondary-foreground',
   },
   GOAL_MILESTONE: {
     icon: 'trophy',

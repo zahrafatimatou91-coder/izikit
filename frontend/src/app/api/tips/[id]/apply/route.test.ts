@@ -16,16 +16,10 @@ vi.mock('@/lib/server/middleware', () => ({
   requireAuth: vi.fn(),
 }));
 
-vi.mock('@/lib/server/notifications', () => ({
-  createNotification: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { requireAuth } from '@/lib/server/middleware';
-import { createNotification } from '@/lib/server/notifications';
 import { POST } from './route';
 
 const mockRequireAuth = vi.mocked(requireAuth);
-const mockCreateNotification = vi.mocked(createNotification);
 const authedCtx = { user: { sub: 'user-1', email: 'me@example.com' } };
 
 function makeApplyRequest(): NextRequest {
@@ -73,7 +67,6 @@ describe('POST /api/tips/[id]/apply', () => {
     expect(body.alreadyApplied).toBe(false);
     expect(body.linkedExistingGoal).toBe(false);
     expect(prismaMock.savingsGoal.create).toHaveBeenCalled();
-    expect(mockCreateNotification).toHaveBeenCalled();
   });
 
   it('returns the existing goal when this exact tip was already applied (no duplicate)', async () => {
@@ -92,7 +85,6 @@ describe('POST /api/tips/[id]/apply', () => {
     expect(body.alreadyApplied).toBe(true);
     expect(body.linkedExistingGoal).toBe(false);
     expect(prismaMock.savingsGoal.create).not.toHaveBeenCalled();
-    expect(mockCreateNotification).not.toHaveBeenCalled();
   });
 
   // Regression: applying "Fonds d'urgence" when the user already manually
@@ -134,7 +126,6 @@ describe('POST /api/tips/[id]/apply', () => {
       data: { tipId: 'tip-1' },
     });
     expect(prismaMock.savingsGoal.create).not.toHaveBeenCalled();
-    expect(mockCreateNotification).not.toHaveBeenCalled();
   });
 
   it('matches an existing goal name accent/case-insensitively', async () => {

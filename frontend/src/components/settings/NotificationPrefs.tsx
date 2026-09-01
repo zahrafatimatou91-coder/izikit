@@ -8,10 +8,10 @@ import { SwitchRow } from './primitives';
 type ChannelPrefs = { email?: boolean; inApp?: boolean };
 type Prefs = Record<string, ChannelPrefs>;
 
-// Only "nags" the user might reasonably want to silence. GOAL_MILESTONE and
-// TIP_APPLIED stay always-on — they confirm the user's own wins/actions,
-// not interruptions. Each type here has an isChannelEnabled() guard wired
-// at its trigger site, so these switches are real, not decorative.
+// Only "nags" the user might reasonably want to silence. GOAL_MILESTONE
+// stays always-on — it celebrates the user's own win, it's not an
+// interruption. Each type here has an isChannelEnabled() guard wired at
+// its trigger site, so these switches are real, not decorative.
 const TOGGLES = [
   {
     type: 'ENVELOPE_THRESHOLD',

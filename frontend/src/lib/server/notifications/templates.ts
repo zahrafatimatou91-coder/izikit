@@ -80,21 +80,9 @@ export function envelopeThresholdNotification(
   };
 }
 
-/** Fired from POST /api/tips/[id]/apply, only on real goal creation (never
- * on the idempotent replay branch). */
-export function tipAppliedNotification(
-  userId: string,
-  goal: { id: string; name: string },
-): CreateNotificationInput {
-  return {
-    userId,
-    type: 'TIP_APPLIED',
-    title: 'Conseil appliqué',
-    body: `« ${goal.name} » a été ajouté à tes objectifs d'économie.`,
-    data: { goalId: goal.id },
-    dedupeKey: `tip-applied:${goal.id}`,
-  };
-}
+// No tipAppliedNotification: applying a tip drops the user on the
+// /tips/[id]/apply confirmation screen and the new goal appears on
+// /progress — a bell ping repeating "conseil appliqué" added nothing.
 
 /** Fired from POST /api/savings-goals/[id]/entries when an entry pushes
  * currentAmount from below targetAmount to at/above it — the goal just

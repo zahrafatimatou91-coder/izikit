@@ -29,8 +29,6 @@ import { Prisma } from '@prisma/client';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
-import { createNotification } from '@/lib/server/notifications';
-import { tipAppliedNotification } from '@/lib/server/notifications/templates';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { normalizeForCompare } from '@/lib/text';
 
@@ -111,14 +109,9 @@ export async function POST(
       }
     }
 
-    if (created) {
-      try {
-        await createNotification(prisma, tipAppliedNotification(auth.user.sub, goal));
-      } catch {
-        // Swallow — the goal is already committed; a notification hiccup
-        // must not poison the response (same posture as withdrawals/route.ts).
-      }
-    }
+    // No "tip applied" notification: the /tips/[id]/apply screen the user
+    // is looking at right now already confirms it, and the new goal shows
+    // up on /progress. A bell ping saying the same thing is pure noise.
 
     return NextResponse.json(
       {
