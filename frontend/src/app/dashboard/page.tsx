@@ -17,6 +17,7 @@ import { TransactionRow } from '@/components/transactions/TransactionRow';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
+import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
 import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { formatPrice } from '@/lib/utils';
 import { budgetPeriodLabel } from '@/lib/budget-period-label';
@@ -169,6 +170,8 @@ export default function DashboardPage() {
 
         <div className="flex-1 px-4 pb-32 pt-6 lg:overflow-y-auto lg:px-8 lg:py-8 lg:pb-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-8">
+            <SubscriptionBanner />
+
             {/* Desktop greeting — mobile gets its own inside DashboardHeader */}
             <div className="hidden lg:block">
               <h1 className="font-headings text-2xl font-bold text-foreground">

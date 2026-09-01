@@ -68,11 +68,11 @@ export const SUBSCRIPTION_PERIOD_DAYS: Record<'monthly' | 'annual', number> = {
   annual: 365,
 };
 
-/** Reminder windows before `currentPeriodEnd`, in days — consumed by the
- * subscription-expiration cron. A trial (never billed) and a paid renewal
- * get distinct copy and distinct windows (spec: -2j essai, -3j payant). */
-export const SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS = 2;
-export const SUBSCRIPTION_RENEWAL_REMINDER_DAYS = 3;
+// The pre-lapse reminder windows that used to live here
+// (SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS / _RENEWAL_REMINDER_DAYS) moved
+// to lib/subscription-plans.ts as the dashboard SubscriptionBanner's
+// urgent-tone thresholds, when the reminder notifications were retired in
+// favour of that always-visible banner.
 
 export interface SubscriptionOrderMetadata {
   purpose: 'subscription';

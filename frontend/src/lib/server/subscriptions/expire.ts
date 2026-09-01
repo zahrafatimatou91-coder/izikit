@@ -1,34 +1,29 @@
 // frontend/src/lib/server/subscriptions/expire.ts
 //
-// Two responsibilities for the daily subscription-expiration cron:
-//   1. expireLapsedSubscriptions — flip PRO subscriptions whose
-//      currentPeriodEnd has passed back to FREE, archiving any surplus
-//      envelopes/savings-goals (subscriptions/archive.ts). Covers both a
-//      paid subscription that wasn't renewed and a trial that wasn't
-//      converted — same mechanism, per the spec ("Fin d'essai non converti").
-//   2. sendUpcomingSubscriptionReminders — notify users whose PRO
-//      subscription is about to lapse: -2 days for a trial
-//      (lastOrderId === null), -3 days for a paid subscription.
+// One responsibility for the daily subscription-expiration cron:
+//   expireLapsedSubscriptions — flip PRO subscriptions whose
+//   currentPeriodEnd has passed back to FREE, archiving any surplus
+//   envelopes/savings-goals (subscriptions/archive.ts). Covers both a
+//   paid subscription that wasn't renewed and a trial that wasn't
+//   converted — same mechanism, per the spec ("Fin d'essai non converti").
 //
-// Notifications are created directly via createNotification(prisma, ...),
+// The "your trial/subscription ends soon" *reminders* that used to live
+// here were removed: they duplicated the always-visible dashboard
+// SubscriptionBanner (components/subscription/SubscriptionBanner.tsx),
+// which is a strictly better surface for a live, self-clearing state.
+// Only the post-lapse SUBSCRIPTION_EXPIRED notification stays — that one
+// records a fait accompli (plan flipped, surplus archived) worth a
+// timestamped entry in the bell.
+//
+// The notification is created directly via createNotification(prisma, ...),
 // never via the outbox — this cron isn't running inside a webhook's
 // Serializable transaction, so there's no protected dispatcher.ts to touch
 // (same posture as the existing savings-goal-reminders cron).
 import 'server-only';
 import type { PrismaClient } from '@prisma/client';
 import { createNotification } from '../notifications';
-import {
-  subscriptionTrialEndingNotification,
-  subscriptionRenewalReminderNotification,
-  subscriptionExpiredNotification,
-} from '../notifications/templates';
-import {
-  SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS,
-  SUBSCRIPTION_RENEWAL_REMINDER_DAYS,
-} from './tier';
+import { subscriptionExpiredNotification } from '../notifications/templates';
 import { archiveSurplusForFreeDowngrade } from './archive';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface ExpireLapsedSubscriptionsOptions {
   prisma: PrismaClient;
@@ -88,66 +83,4 @@ export async function expireLapsedSubscriptions(
     }
   }
   return { expired };
-}
-
-export interface SendUpcomingSubscriptionRemindersOptions {
-  prisma: PrismaClient;
-  now?: Date;
-}
-
-export async function sendUpcomingSubscriptionReminders(
-  opts: SendUpcomingSubscriptionRemindersOptions,
-): Promise<{ trialReminded: number; renewalReminded: number }> {
-  const now = opts.now ?? new Date();
-  const maxWindowDays = Math.max(
-    SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS,
-    SUBSCRIPTION_RENEWAL_REMINDER_DAYS,
-  );
-  const horizon = new Date(now.getTime() + maxWindowDays * DAY_MS);
-
-  const upcoming = await opts.prisma.subscription.findMany({
-    where: { plan: 'PRO', currentPeriodEnd: { gt: now, lte: horizon } },
-    select: { userId: true, lastOrderId: true, currentPeriodEnd: true },
-  });
-
-  let trialReminded = 0;
-  let renewalReminded = 0;
-
-  for (const sub of upcoming) {
-    if (!sub.currentPeriodEnd) continue;
-    const daysLeft = (sub.currentPeriodEnd.getTime() - now.getTime()) / DAY_MS;
-    const isTrialSub = sub.lastOrderId === null;
-
-    try {
-      if (isTrialSub) {
-        if (daysLeft > SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS) continue;
-        const [envelopeCount, goalCount] = await Promise.all([
-          opts.prisma.envelope.count({ where: { userId: sub.userId, archivedAt: null } }),
-          opts.prisma.savingsGoal.count({ where: { userId: sub.userId, archivedAt: null } }),
-        ]);
-        const created = await createNotification(
-          opts.prisma,
-          subscriptionTrialEndingNotification(sub.userId, {
-            currentPeriodEnd: sub.currentPeriodEnd,
-            envelopeCount,
-            goalCount,
-          }),
-        );
-        if (created) trialReminded++;
-      } else {
-        if (daysLeft > SUBSCRIPTION_RENEWAL_REMINDER_DAYS) continue;
-        const created = await createNotification(
-          opts.prisma,
-          subscriptionRenewalReminderNotification(sub.userId, {
-            currentPeriodEnd: sub.currentPeriodEnd,
-          }),
-        );
-        if (created) renewalReminded++;
-      }
-    } catch {
-      // Swallow — same posture as expireLapsedSubscriptions above.
-    }
-  }
-
-  return { trialReminded, renewalReminded };
 }

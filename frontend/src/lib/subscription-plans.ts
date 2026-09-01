@@ -19,6 +19,14 @@ export function getDailyEquivalentFcfa(annualPriceFcfa: number): number {
   return Math.round(annualPriceFcfa / 365);
 }
 
+/** Days-left thresholds at which the dashboard SubscriptionBanner switches
+ * from its calm "info" tone to the urgent, non-dismissible "act now" tone.
+ * These replaced the old -2j / -3j reminder *notifications* (retired in
+ * favour of the always-visible banner): a persistent banner can afford a
+ * wider warning window than a one-off ping. */
+export const TRIAL_BANNER_URGENT_DAYS = 3;
+export const RENEWAL_BANNER_URGENT_DAYS = 7;
+
 /** Free/Pro comparison rows — shared between `/subscription` (the full
  * comparison table) and the landing page's Tarifs section (a condensed
  * pricing-card list), so the two never drift out of sync. */

@@ -3,16 +3,10 @@ import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/server/subscriptions/expire', () => ({
   expireLapsedSubscriptions: vi.fn().mockResolvedValue({ expired: 2 }),
-  sendUpcomingSubscriptionReminders: vi
-    .fn()
-    .mockResolvedValue({ trialReminded: 1, renewalReminded: 3 }),
 }));
 
 import { POST } from './route';
-import {
-  expireLapsedSubscriptions,
-  sendUpcomingSubscriptionReminders,
-} from '@/lib/server/subscriptions/expire';
+import { expireLapsedSubscriptions } from '@/lib/server/subscriptions/expire';
 
 function makeReq(authHeader?: string): NextRequest {
   return new NextRequest('http://test/api/cron/subscription-expiration', {
@@ -33,13 +27,12 @@ describe('POST /api/cron/subscription-expiration', () => {
     expect(expireLapsedSubscriptions).not.toHaveBeenCalled();
   });
 
-  it('runs both steps and reports counts on a valid request', async () => {
+  it('expires lapsed subscriptions and reports the count', async () => {
     const res = await POST(makeReq('Bearer test-cron-secret'));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ ok: true, expired: 2, trialReminded: 1, renewalReminded: 3 });
+    expect(body).toEqual({ ok: true, expired: 2 });
     expect(expireLapsedSubscriptions).toHaveBeenCalledTimes(1);
-    expect(sendUpcomingSubscriptionReminders).toHaveBeenCalledTimes(1);
   });
 
   it("exports runtime='nodejs'", async () => {
