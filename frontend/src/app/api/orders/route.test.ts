@@ -38,9 +38,13 @@ vi.mock('@/lib/server/payments/provider-singleton', () => ({
   // Use the real CircuitBreaker so its state machine runs, but expose a
   // mockable `execute` per-test via spies on the returned object.
   breaker: { execute: vi.fn() },
+  // Moneroo pair — mirrors the Bictorys pair above. Country-based routing
+  // (country-routing.ts) picks between them from the user's own `country`.
+  getMonerooProvider: vi.fn(),
+  monerooBreaker: { execute: vi.fn() },
   PaymentProviderUnconfiguredError: class PaymentProviderUnconfiguredError extends Error {
-    constructor() {
-      super('Payment provider not configured');
+    constructor(message?: string) {
+      super(message ?? 'Payment provider not configured');
       this.name = 'PaymentProviderUnconfiguredError';
     }
   },
@@ -51,6 +55,8 @@ import { requireAuth } from '@/lib/server/middleware';
 import {
   getProvider,
   breaker,
+  getMonerooProvider,
+  monerooBreaker,
   PaymentProviderUnconfiguredError,
 } from '@/lib/server/payments/provider-singleton';
 import { CircuitOpenError } from '@/lib/server/payments/circuit-breaker';
@@ -59,6 +65,8 @@ import { POST, GET } from './route';
 const mockRequireAuth = vi.mocked(requireAuth);
 const mockGetProvider = vi.mocked(getProvider);
 const mockExecute = vi.mocked(breaker.execute);
+const mockGetMonerooProvider = vi.mocked(getMonerooProvider);
+const mockMonerooExecute = vi.mocked(monerooBreaker.execute);
 
 const authedCtx = { user: { sub: 'user-1', email: 'me@example.com' } };
 
@@ -300,7 +308,13 @@ describe('POST /api/orders [Wave 1] — idempotency', () => {
     expect(mockExecute).not.toHaveBeenCalled();
   });
 
-  it('POST replay with same key + same amount + DIFFERENT currency → 422', async () => {
+  // Country-based provider routing (see country-routing.ts) made `currency`
+  // server-derived from the user's own `country`, never a client-supplied
+  // value — so a client sending a different `currency` on replay no longer
+  // produces a fingerprint mismatch. (`prisma.user.findUnique` for country
+  // isn't mocked in this file, so it resolves `undefined` -> the default
+  // UEMOA/XOF routing, matching `existing.currency: 'XOF'` below either way.)
+  it('POST replay with same key + same amount + DIFFERENT client-sent currency → replay succeeds (currency is server-derived, CR-02)', async () => {
     prismaMock.order.findUnique.mockResolvedValue(
       seededOrder({
         id: 'order_existing_currency',
@@ -308,6 +322,7 @@ describe('POST /api/orders [Wave 1] — idempotency', () => {
         currency: 'XOF',
         idempotencyKey: 'replay-currency-mismatch',
         metadata: null,
+        paymentUrl: 'https://pay.example/order_existing_currency',
       }) as never,
     );
 
@@ -315,9 +330,10 @@ describe('POST /api/orders [Wave 1] — idempotency', () => {
       makePost({ amount: 1000, currency: 'USD' }, { idempotencyKey: 'replay-currency-mismatch' }),
     );
 
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.error).toBe('IDEMPOTENCY_KEY_BODY_MISMATCH');
+    expect(body.id).toBe('order_existing_currency');
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
   });
 
   it('POST replay using stored fingerprint hash matches → 200', async () => {
@@ -494,6 +510,80 @@ describe('POST /api/orders [Wave 1] — config guards', () => {
     );
 
     expect(res.status).toBe(201);
+  });
+});
+
+describe('POST /api/orders — country-based provider routing', () => {
+  beforeEach(() => {
+    process.env.MONEROO_API_KEY = 'test-moneroo-key';
+    process.env.MONEROO_WEBHOOK_SECRET = 'test-moneroo-webhook-secret';
+    mockGetMonerooProvider.mockReturnValue({
+      name: 'moneroo',
+      charge: vi.fn(async () => ({
+        providerChargeId: 'py_test_1',
+        paymentUrl: 'https://checkout.moneroo.io/p/test',
+        status: 'PENDING' as const,
+      })),
+    } as never);
+    mockMonerooExecute.mockImplementation(async (fn) => fn());
+  });
+
+  it('routes a CEMAC user (country=CM) to Moneroo — Order gets provider=moneroo, currency=XAF', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ country: 'CM' } as never);
+    prismaMock.order.findUnique.mockResolvedValue(null as never);
+    prismaMock.order.create.mockResolvedValue(seededOrder({ provider: 'moneroo' }) as never);
+    prismaMock.order.update.mockResolvedValue(seededOrder({ provider: 'moneroo' }) as never);
+
+    // The client-sent currency (XOF, the Zod default) is irrelevant —
+    // routing.currency (derived from country=CM -> XAF) is what's used.
+    const res = await POST(makePost({ amount: 1500 }, { idempotencyKey: 'cemac-key-1' }));
+
+    expect(res.status).toBe(201);
+    expect(mockGetMonerooProvider).toHaveBeenCalled();
+    expect(mockGetProvider).not.toHaveBeenCalled();
+    expect(mockMonerooExecute).toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ provider: 'moneroo', currency: 'XAF' }),
+      }),
+    );
+  });
+
+  it('routes a UEMOA user (country=SN) to Bictorys — unchanged from the no-country default', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ country: 'SN' } as never);
+    prismaMock.order.findUnique.mockResolvedValue(null as never);
+    prismaMock.order.create.mockResolvedValue(seededOrder() as never);
+    prismaMock.order.update.mockResolvedValue(seededOrder() as never);
+
+    const res = await POST(makePost({ amount: 1500 }, { idempotencyKey: 'uemoa-key-1' }));
+
+    expect(res.status).toBe(201);
+    expect(mockGetProvider).toHaveBeenCalled();
+    expect(mockGetMonerooProvider).not.toHaveBeenCalled();
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ provider: 'bictorys', currency: 'XOF' }),
+      }),
+    );
+  });
+
+  it('a CEMAC user with Moneroo unconfigured gets 503 PAYMENT_PROVIDER_UNCONFIGURED (Bictorys being configured is irrelevant)', async () => {
+    delete process.env.MONEROO_API_KEY;
+    mockGetMonerooProvider.mockImplementation(() => {
+      throw new PaymentProviderUnconfiguredError(
+        'Payment provider not configured (MONEROO_API_KEY/_WEBHOOK_SECRET missing or empty)',
+      );
+    });
+    prismaMock.user.findUnique.mockResolvedValue({ country: 'CM' } as never);
+    prismaMock.order.findUnique.mockResolvedValue(null as never);
+
+    const res = await POST(makePost({ amount: 1500 }, { idempotencyKey: 'cemac-unconfigured' }));
+
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe('PAYMENT_PROVIDER_UNCONFIGURED');
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
   });
 });
 

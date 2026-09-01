@@ -48,8 +48,12 @@ import { CircuitOpenError } from '@/lib/server/payments/circuit-breaker';
 import {
   breaker,
   getProvider,
+  monerooBreaker,
+  getMonerooProvider,
   PaymentProviderUnconfiguredError,
 } from '@/lib/server/payments/provider-singleton';
+import { resolveCountryRouting } from '@/lib/server/payments/country-routing';
+import type { PaymentProvider } from '@/lib/server/payments/provider';
 
 // CR-02 helpers ────────────────────────────────────────────────────────
 // Idempotency-Key length cap. 200 chars matches Stripe's documented limit
@@ -92,6 +96,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
 
+    // 2b. Country-based provider routing — the user's own `country`
+    // (set at onboarding) decides provider + currency SERVER-SIDE, never a
+    // client-supplied value (a request body has no `country`/`provider`
+    // field at all). UEMOA -> Bictorys/XOF, CEMAC -> Moneroo/XAF; `null`
+    // (pre-onboarding or pre-migration accounts) defaults to Bictorys/XOF,
+    // this app's original single-market behavior. See
+    // lib/server/payments/country-routing.ts.
+    const dbUser = await prisma.user.findUnique({
+      where: { id: auth.user.sub },
+      select: { country: true },
+    });
+    const routing = resolveCountryRouting(dbUser?.country);
+
     // 3. Idempotency-Key header (D-PAY-01)
     const idemKey = req.headers.get('idempotency-key') ?? '';
     if (!idemKey) {
@@ -129,9 +146,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
       );
     }
+    // The fingerprint (and every later use of "the currency") is
+    // `routing.currency` — server-derived from the user's country — not
+    // `parsed.data.currency`. The body still accepts/validates a `currency`
+    // field for backward compatibility, but a client can no longer pick a
+    // currency that doesn't match its own account's provider.
     const bodyHash = fingerprintBody({
       amount: parsed.data.amount,
-      currency: parsed.data.currency,
+      currency: routing.currency,
     });
 
     // 5. Replay (Pitfall 3 — echo the outcome, not the row)
@@ -154,7 +176,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const matchesBody =
         storedHash !== null
           ? storedHash === bodyHash
-          : existing.amount === parsed.data.amount && existing.currency === parsed.data.currency;
+          : existing.amount === parsed.data.amount && existing.currency === routing.currency;
       if (!matchesBody) {
         return NextResponse.json(
           {
@@ -211,10 +233,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 6. Lazy provider init (Pitfall 7 — translate to 503, never 500)
-    let provider;
+    // 6. Lazy provider init (Pitfall 7 — translate to 503, never 500).
+    // Which provider/breaker to use was already decided in step 2b from the
+    // user's country — never re-derived from the request body.
+    let provider: PaymentProvider;
+    let orderBreaker: typeof breaker;
     try {
-      provider = getProvider();
+      if (routing.provider === 'moneroo') {
+        provider = getMonerooProvider();
+        orderBreaker = monerooBreaker;
+      } else {
+        provider = getProvider();
+        orderBreaker = breaker;
+      }
     } catch (err) {
       if (err instanceof PaymentProviderUnconfiguredError) {
         return NextResponse.json(
@@ -262,8 +293,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       data: {
         userId: auth.user.sub,
         amount: parsed.data.amount,
-        currency: parsed.data.currency,
-        provider: 'bictorys',
+        currency: routing.currency,
+        provider: routing.provider,
         status: 'PENDING',
         expiresAt: new Date(Date.now() + ORDER_EXPIRY_MS),
         idempotencyKey: idemKey,
@@ -274,12 +305,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
     });
 
-    // 8. Wrap charge in CircuitBreaker (D-PAY-02)
+    // 8. Wrap charge in CircuitBreaker (D-PAY-02) — the breaker matching the
+    // provider selected in step 6, so a Moneroo outage can't trip Bictorys'
+    // breaker or vice versa.
     try {
-      const result = await breaker.execute(() =>
+      const result = await orderBreaker.execute(() =>
         provider.charge({
           amount: parsed.data.amount,
-          currency: parsed.data.currency,
+          currency: routing.currency,
           customer: {
             email: parsed.data.customerEmail ?? auth.user.email,
             ...(parsed.data.customerPhone ? { phone: parsed.data.customerPhone } : {}),

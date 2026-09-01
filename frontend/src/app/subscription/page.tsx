@@ -171,7 +171,10 @@ export default function SubscriptionPage() {
           headers: { 'Idempotency-Key': idempotencyKey },
           body: {
             amount: SUBSCRIPTION_PRICES[period],
-            currency: 'XOF',
+            // No `currency` here — the server derives it (and the payment
+            // provider) from the user's own country (UEMOA -> XOF/Bictorys,
+            // CEMAC -> XAF/Moneroo). See country-routing.ts; a client value
+            // would be ignored anyway.
             metadata: { purpose: 'subscription', period },
           },
         },
