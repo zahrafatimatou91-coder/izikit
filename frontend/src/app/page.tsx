@@ -5,29 +5,37 @@ import { Icon } from '@/components/ui/Icon';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useRipple } from '@/hooks/useRipple';
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+import { EnvelopeCard } from '@/components/envelopes/EnvelopeCard';
+import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
 import { FEATURE_ROWS, SUBSCRIPTION_PRICES } from '@/lib/subscription-plans';
 import { formatPrice } from '@/lib/utils';
 
 const PAYMENT_METHODS = ['Wave', 'Orange Money', 'Free Money', 'Carte bancaire'];
 
+// Same components + realistic sample data as the real /dashboard — not a
+// hand-drawn lookalike — so the hero preview never drifts from what a
+// signed-up user actually sees. totalBudget/spent/daysLeft below are picked
+// to land on a clean "182 400 F" remaining, matching this section's
+// long-standing headline number.
 interface PreviewEnvelope {
-  cat: string;
-  pct: number;
-  tendu: boolean;
+  name: string;
+  icon: 'utensils' | 'car' | 'users';
+  spent: number;
+  total: number;
+  color: EnvelopeSwatchKey;
 }
 
 const HERO_ENVELOPES_DESKTOP: PreviewEnvelope[] = [
-  { cat: 'Nourriture', pct: 65, tendu: false },
-  { cat: 'Transport', pct: 40, tendu: false },
-  { cat: 'Famille', pct: 85, tendu: true },
+  { name: 'Nourriture', icon: 'utensils', spent: 26000, total: 40000, color: 'envelope-4' }, // 65%
+  { name: 'Transport', icon: 'car', spent: 10000, total: 25000, color: 'envelope-2' }, // 40%
+  { name: 'Famille', icon: 'users', spent: 52000, total: 60000, color: 'envelope-6' }, // 87% — real "tendu" styling
 ];
 
 const HERO_ENVELOPES_MOBILE: PreviewEnvelope[] = [
-  { cat: 'Nourriture', pct: 65, tendu: false },
-  { cat: 'Famille', pct: 85, tendu: true },
+  HERO_ENVELOPES_DESKTOP[0]!,
+  HERO_ENVELOPES_DESKTOP[2]!,
 ];
-
-const HERO_GOAL = { name: 'Ordinateur portable', pct: 55 };
 
 const HERO_BADGES = [
   {
@@ -114,33 +122,13 @@ const TESTIMONIALS_MOBILE = [
   { text: "L'appli que j'attendais.", name: 'Fatima Ndiaye', role: 'Médecine, Abidjan' },
 ];
 
-function HeroEnvelopeRow({ e }: { e: PreviewEnvelope }) {
-  return (
-    <div
-      className={`rounded-xl border px-4 py-3 ${
-        e.tendu ? 'border-amber-300 bg-amber-50' : 'border-border bg-card'
-      }`}
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <p className="font-body text-sm font-bold text-foreground">{e.cat}</p>
-        <p className={`font-body text-sm font-bold ${e.tendu ? 'text-amber-700' : 'text-primary'}`}>
-          {e.pct}%
-        </p>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={`h-full rounded-full ${e.tendu ? 'bg-amber-400' : 'bg-primary'}`}
-          style={{ width: `${e.pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
+/** Wraps the real dashboard header + envelope cards in a browser-window
+ * frame — this is the literal /dashboard UI, not a redrawn lookalike, so it
+ * can never silently drift from what a signed-up user actually sees. */
 function HeroProductPreview({ compact = false }: { compact?: boolean }) {
   const envelopes = compact ? HERO_ENVELOPES_MOBILE : HERO_ENVELOPES_DESKTOP;
   return (
-    <div className="overflow-hidden rounded-2xl border-2 border-border bg-white shadow-lg lg:rounded-3xl lg:shadow-2xl">
+    <div className="mx-auto w-full max-w-md overflow-hidden rounded-2xl border-2 border-border bg-white shadow-lg lg:max-w-none lg:rounded-3xl lg:shadow-2xl">
       <div className="flex items-center gap-2 border-b-2 border-border bg-input px-3 py-3 lg:gap-3 lg:px-6 lg:py-4">
         <div className="flex gap-1.5 lg:gap-2">
           <div className="h-2 w-2 rounded-full bg-muted lg:h-3 lg:w-3" />
@@ -152,35 +140,24 @@ function HeroProductPreview({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 bg-background p-4 lg:gap-6 lg:p-8">
-        <div className="rounded-xl bg-primary p-5 text-primary-foreground shadow-md lg:rounded-2xl lg:p-8 lg:shadow-lg">
-          <p className="mb-2 text-xs opacity-75 lg:mb-3 lg:text-sm">Reste ce mois-ci</p>
-          <p className="font-headings text-2xl font-bold lg:text-4xl">182 400 F</p>
-        </div>
+      <div className="bg-background">
+        <DashboardHeader name="Fatou" totalBudget={220000} spent={37600} income={0} daysLeft={18} />
 
-        <div className="flex flex-col gap-2 lg:gap-3">
+        <div className="flex flex-col gap-2 p-4 lg:gap-3 lg:p-6">
+          <p className="font-headings text-sm font-bold text-foreground lg:text-base">
+            Mes enveloppes
+          </p>
           {envelopes.map((e) => (
-            <HeroEnvelopeRow key={e.cat} e={e} />
+            <EnvelopeCard
+              key={e.name}
+              name={e.name}
+              icon={e.icon}
+              spent={e.spent}
+              total={e.total}
+              color={e.color}
+            />
           ))}
         </div>
-
-        {!compact && (
-          <div className="rounded-xl border border-border bg-card px-4 py-3">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="flex items-center gap-1.5 font-body text-sm font-bold text-foreground">
-                <Icon i="target" size={14} className="text-primary" />
-                {HERO_GOAL.name}
-              </p>
-              <p className="font-body text-sm font-bold text-primary">{HERO_GOAL.pct}%</p>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${HERO_GOAL.pct}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -376,7 +353,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-[linear-gradient(135deg,rgba(39,126,255,0.05)_0%,rgba(219,231,251,0.1)_100%)] px-4 py-12">
+        <section className="bg-gradient-to-br from-secondary/10 to-transparent px-4 py-12">
           <div className="flex flex-col gap-10">
             <div className="text-center">
               <p className="mb-2 font-body text-xs font-bold uppercase tracking-widest text-primary">
@@ -664,7 +641,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-[linear-gradient(135deg,rgba(39,126,255,0.05)_0%,rgba(219,231,251,0.1)_100%)] px-20 py-32">
+        <section className="bg-gradient-to-br from-secondary/10 to-transparent px-20 py-32">
           <div className="mx-auto flex max-w-6xl flex-col gap-20">
             <div className="text-center">
               <p className="mb-4 font-body text-xs font-bold uppercase tracking-widest text-primary">
