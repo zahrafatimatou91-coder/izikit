@@ -49,25 +49,26 @@ Pour obtenir `DATABASE_URL` + `DIRECT_URL` : crée un projet gratuit sur https:/
 
 ## Variables d'environnement requises (boot)
 
-| Variable | Rôle |
-|---|---|
-| `DATABASE_URL` | URL pooler Neon (`?pgbouncer=true&connection_limit=1&pool_timeout=15&sslmode=require`) |
-| `DIRECT_URL` | URL Neon directe (non-poolée) pour `prisma migrate` |
-| `JWT_SECRET` | ≥32 chars, générer avec `openssl rand -base64 32` |
-| `ENCRYPTION_KEY` | 32 bytes base64, générer avec `openssl rand -base64 32` |
-| `CRON_SECRET` | Bearer token requis par les handlers `/api/cron/*` ; `openssl rand -base64 32` |
-| `APP_URL` | Utilisé pour la génération des liens email et la base de redirect OAuth ; défaut `http://localhost:3000` |
+| Variable         | Rôle                                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`   | URL pooler Neon (`?pgbouncer=true&connection_limit=1&pool_timeout=15&sslmode=require`)                   |
+| `DIRECT_URL`     | URL Neon directe (non-poolée) pour `prisma migrate`                                                      |
+| `JWT_SECRET`     | ≥32 chars, générer avec `openssl rand -base64 32`                                                        |
+| `ENCRYPTION_KEY` | 32 bytes base64, générer avec `openssl rand -base64 32`                                                  |
+| `CRON_SECRET`    | Bearer token requis par les handlers `/api/cron/*` ; `openssl rand -base64 32`                           |
+| `APP_URL`        | Utilisé pour la génération des liens email et la base de redirect OAuth ; défaut `http://localhost:3000` |
 
 Groupes optionnels (set les vars pour activer ; absent = inerte) :
 
-| Groupe | Vars | Comportement quand absent |
-|---|---|---|
-| Storage (Cloudinary) | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_UPLOAD_PRESET?` | `/api/upload` renvoie 503 ; les URLs retournées sont des `secure_url` Cloudinary servies directement par leur CDN. **⚠️ Ces URLs sont publiques — quiconque a l'URL peut lire le fichier. OK pour avatars / posts publics ; pour KYC / factures, ajoute Cloudinary signed delivery ou un proxy auth.** |
-| Email (Resend) | `RESEND_API_KEY`, `EMAIL_FROM` | Les lignes en queue email s'accumulent mais ne partent jamais (drainage au cron suivant dès que la clé arrive) |
-| Paiements (Bictorys) | `BICTORYS_API_KEY`, `BICTORYS_PRIVATE_KEY`, `BICTORYS_WEBHOOK_SECRET`, `BICTORYS_MERCHANT_SECRET_CODE` | `/api/orders` et `/api/webhooks/bictorys` renvoient 404 ; circuit breaker reste CLOSED |
-| Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | `/api/auth/oauth/google/*` renvoient 404 |
-| Sentry | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_TRACES_SAMPLE_RATE?`, ... | No-op silencieux (zéro coût perf) |
-| Upstash Redis | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Fallback rate-limit en mémoire avec `logger.warn` au boot — NE PAS lancer en prod sans Upstash |
+| Groupe                                              | Vars                                                                                                   | Comportement quand absent                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Storage (Cloudinary)                                | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_UPLOAD_PRESET?`    | `/api/upload` renvoie 503 ; les URLs retournées sont des `secure_url` Cloudinary servies directement par leur CDN. **⚠️ Ces URLs sont publiques — quiconque a l'URL peut lire le fichier. OK pour avatars / posts publics ; pour KYC / factures, ajoute Cloudinary signed delivery ou un proxy auth.** |
+| Email (Resend)                                      | `RESEND_API_KEY`, `EMAIL_FROM`                                                                         | Les lignes en queue email s'accumulent mais ne partent jamais (drainage au cron suivant dès que la clé arrive)                                                                                                                                                                                         |
+| Paiements (Bictorys, UEMOA/XOF)                     | `BICTORYS_API_KEY`, `BICTORYS_PRIVATE_KEY`, `BICTORYS_WEBHOOK_SECRET`, `BICTORYS_MERCHANT_SECRET_CODE` | `/api/orders` et `/api/webhooks/bictorys` renvoient 404 ; circuit breaker reste CLOSED                                                                                                                                                                                                                 |
+| Paiements (Moneroo, CEMAC/XAF + reste de l'Afrique) | `MONEROO_API_KEY`, `MONEROO_WEBHOOK_SECRET`                                                            | `/api/webhooks/moneroo` renvoie 401/500 ; tout checkout routé vers Moneroo renvoie 503 `PAYMENT_PROVIDER_UNCONFIGURED`                                                                                                                                                                                 |
+| Google OAuth                                        | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`                                      | `/api/auth/oauth/google/*` renvoient 404                                                                                                                                                                                                                                                               |
+| Sentry                                              | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_TRACES_SAMPLE_RATE?`, ...                              | No-op silencieux (zéro coût perf)                                                                                                                                                                                                                                                                      |
+| Upstash Redis                                       | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`                                                   | Fallback rate-limit en mémoire avec `logger.warn` au boot — NE PAS lancer en prod sans Upstash                                                                                                                                                                                                         |
 
 Référence env complète avec toutes les flags : voir [`.env.example`](.env.example) à la racine du repo (14 sections, chaque clé documentée avec défaut + impact).
 
@@ -76,84 +77,93 @@ Référence env complète avec toutes les flags : voir [`.env.example`](.env.exa
 40 routes sous `frontend/src/app/api/`. Toutes déclarent `export const runtime = 'nodejs'` (enforced par [`frontend/src/lib/server/observability/runtime-enforcement.test.ts`](frontend/src/lib/server/observability/runtime-enforcement.test.ts)).
 
 ### Auth (`/api/auth/*`) — 10 routes
-| Méthode | Path | Auth |
-|---|---|---|
-| POST | `/signup` | aucune |
-| POST | `/login` | aucune |
-| POST | `/logout` | cookies |
-| POST | `/refresh` | cookie refresh (scope `/api/auth`) |
-| GET | `/me` | cookie access |
-| POST | `/verify-email` | aucune |
-| POST | `/forgot-password` | aucune |
-| POST | `/reset-password` | aucune |
-| PUT | `/change-password` | access + CSRF |
-| GET/POST/DELETE | `/withdrawal-pin` | access + CSRF |
+
+| Méthode         | Path               | Auth                               |
+| --------------- | ------------------ | ---------------------------------- |
+| POST            | `/signup`          | aucune                             |
+| POST            | `/login`           | aucune                             |
+| POST            | `/logout`          | cookies                            |
+| POST            | `/refresh`         | cookie refresh (scope `/api/auth`) |
+| GET             | `/me`              | cookie access                      |
+| POST            | `/verify-email`    | aucune                             |
+| POST            | `/forgot-password` | aucune                             |
+| POST            | `/reset-password`  | aucune                             |
+| PUT             | `/change-password` | access + CSRF                      |
+| GET/POST/DELETE | `/withdrawal-pin`  | access + CSRF                      |
 
 ### OAuth — 2 routes
-| Méthode | Path | Auth |
-|---|---|---|
-| GET | `/api/auth/oauth/google/start` | aucune |
-| GET | `/api/auth/oauth/google/callback` | cookie state |
+
+| Méthode | Path                              | Auth         |
+| ------- | --------------------------------- | ------------ |
+| GET     | `/api/auth/oauth/google/start`    | aucune       |
+| GET     | `/api/auth/oauth/google/callback` | cookie state |
 
 ### Notifications — 3 routes
-| Méthode | Path | Auth |
-|---|---|---|
-| GET | `/api/notifications` (liste) | access |
-| POST | `/api/notifications` (mark-read) | access + CSRF |
-| GET | `/api/notifications/count` | access |
-| GET/PATCH | `/api/notifications/prefs` | access (+CSRF sur PATCH) |
+
+| Méthode   | Path                             | Auth                     |
+| --------- | -------------------------------- | ------------------------ |
+| GET       | `/api/notifications` (liste)     | access                   |
+| POST      | `/api/notifications` (mark-read) | access + CSRF            |
+| GET       | `/api/notifications/count`       | access                   |
+| GET/PATCH | `/api/notifications/prefs`       | access (+CSRF sur PATCH) |
 
 ### Orders + Withdrawals — 2 routes
-| Méthode | Path | Auth |
-|---|---|---|
-| POST | `/api/orders` | optionnelle |
+
+| Méthode  | Path               | Auth                    |
+| -------- | ------------------ | ----------------------- |
+| POST     | `/api/orders`      | optionnelle             |
 | POST/GET | `/api/withdrawals` | access (+CSRF sur POST) |
 
 ### Uploads — 1 route
-| Méthode | Path | Auth |
-|---|---|---|
-| POST | `/api/upload` | access + CSRF |
+
+| Méthode | Path          | Auth          |
+| ------- | ------------- | ------------- |
+| POST    | `/api/upload` | access + CSRF |
 
 Les fichiers uploadés renvoient un `secure_url` Cloudinary servi directement par leur CDN — pas de route proxy côté Next.
 
 ### Webhooks — 1 route
-| Méthode | Path | Auth |
-|---|---|---|
-| POST | `/api/webhooks/bictorys` | HMAC provider + replay window 60s |
+
+| Méthode | Path                     | Auth                              |
+| ------- | ------------------------ | --------------------------------- |
+| POST    | `/api/webhooks/bictorys` | HMAC provider + replay window 60s |
 
 ### Handlers cron — 8 routes, 9 déclenchements (toutes `Authorization: Bearer ${CRON_SECRET}`)
-| Path | Schedule (`vercel.json`) |
-|---|---|
-| `/api/cron/outbox-drain` | toutes les minutes |
-| `/api/cron/email-queue-drain` | toutes les minutes |
-| `/api/cron/verification-cleanup` | toutes les heures |
-| `/api/cron/order-expiration` | toutes les 5 min |
-| `/api/cron/webhook-log-purge` | quotidien |
-| `/api/cron/email-job-purge` | quotidien |
-| `/api/cron/savings-goal-reminders` | quotidien (8h UTC) |
-| `/api/cron/inactivity-nudges` | 2×/jour (13h + 20h UTC) |
+
+| Path                               | Schedule (`vercel.json`) |
+| ---------------------------------- | ------------------------ |
+| `/api/cron/outbox-drain`           | toutes les minutes       |
+| `/api/cron/email-queue-drain`      | toutes les minutes       |
+| `/api/cron/verification-cleanup`   | toutes les heures        |
+| `/api/cron/order-expiration`       | toutes les 5 min         |
+| `/api/cron/webhook-log-purge`      | quotidien                |
+| `/api/cron/email-job-purge`        | quotidien                |
+| `/api/cron/savings-goal-reminders` | quotidien (8h UTC)       |
+| `/api/cron/inactivity-nudges`      | 2×/jour (13h + 20h UTC)  |
 
 ### Admin (`/api/admin/*`) — 12 routes
-| Méthode | Path | Auth |
-|---|---|---|
-| GET | `/me` | ADMIN |
-| GET | `/users` (liste) | ADMIN |
-| GET | `/users/:id` | ADMIN |
-| PATCH | `/users/:id/role` | SUPERADMIN + CSRF |
-| PATCH | `/users/:id/status` | ADMIN/SUPERADMIN + CSRF |
-| GET | `/orders` | ADMIN |
-| GET | `/withdrawals` | ADMIN |
-| POST | `/withdrawals/:id/cancel` | SUPERADMIN + CSRF |
-| GET | `/audit-log` | ADMIN |
-| GET | `/outbox` | ADMIN |
-| GET | `/email-queue` | ADMIN |
-| GET | `/rate-limits` | ADMIN |
+
+| Méthode | Path                      | Auth                    |
+| ------- | ------------------------- | ----------------------- |
+| GET     | `/me`                     | ADMIN                   |
+| GET     | `/users` (liste)          | ADMIN                   |
+| GET     | `/users/:id`              | ADMIN                   |
+| PATCH   | `/users/:id/role`         | SUPERADMIN + CSRF       |
+| PATCH   | `/users/:id/status`       | ADMIN/SUPERADMIN + CSRF |
+| GET     | `/orders`                 | ADMIN                   |
+| GET     | `/withdrawals`            | ADMIN                   |
+| POST    | `/withdrawals/:id/cancel` | SUPERADMIN + CSRF       |
+| GET     | `/audit-log`              | ADMIN                   |
+| GET     | `/outbox`                 | ADMIN                   |
+| GET     | `/email-queue`            | ADMIN                   |
+| GET     | `/rate-limits`            | ADMIN                   |
 
 ### Health — 2 routes
-| Méthode | Path | Réponse |
-|---|---|---|
-| GET | `/api/health` | `{ ok: true, time }` (liveness) |
-| GET | `/api/readyz` | `{ ok, db, redis }` (readiness, 503 si l'un tombe) |
+
+| Méthode | Path          | Réponse                                            |
+| ------- | ------------- | -------------------------------------------------- |
+| GET     | `/api/health` | `{ ok: true, time }` (liveness)                    |
+| GET     | `/api/readyz` | `{ ok, db, redis }` (readiness, 503 si l'un tombe) |
 
 Shapes complètes des requêtes/réponses : lis les route handlers sous [`frontend/src/app/api/`](frontend/src/app/api/). Les route handlers SONT le contrat.
 
@@ -194,12 +204,12 @@ Le starter ne ship **aucun composant UI** par design. Ce que tu as :
 
 Les forks ouverts dans Claude Code récupèrent automatiquement plusieurs skills sous [.claude/skills/](.claude/skills/) — elles comblent le gap « headless = no UI » pour les débutants :
 
-| Skill | Phrases déclencheuses | Ce qu'elle fait |
-|---|---|---|
-| [`setup-kit`](.claude/skills/setup-kit/SKILL.md) | « /setup-kit », « je débute », « qu'est-ce que je dois installer » | Audit Git / Node / pnpm / gh CLI / env vars / Claude Code surface, blocker explicite si l'user a téléchargé le ZIP au lieu de cloner, install paste-ready (UI palette ou CLI) des 2 plugins manquants, Neon en provider Postgres par défaut (alternatives Supabase/Railway/Render documentées mais surfacées seulement à la demande). Mode débutant non-négociable. |
-| [`banani-design-implementation`](.claude/skills/banani-design-implementation/SKILL.md) | « build this from Banani », « use the Banani MCP », « reproduce this screen » | Reproduction pixel-perfect 1:1 des écrans Banani sélectionnés via MCP (optionnel — Banani n'est pas requis). Lit `CLAUDE.md` pour la stack, planifie, tracke entre sessions. |
-| [`ui-ux-pro-max`](.claude/skills/ui-ux-pro-max/SKILL.md) | « design », « build », « improve », « review UI » + button/modal/navbar/dashboard/landing/SaaS/glassmorphism/etc. | Design intelligence searchable : 67 styles, 96 palettes, 57 paires de fonts, 99 guidelines UX, 25 types de charts sur 13 stacks (Next.js, React, Vue, SwiftUI, Flutter…). Intégration MCP shadcn/ui. |
-| [`izisaas-payments-handler`](.claude/skills/izisaas-payments-handler/SKILL.md) | « intégrer Stripe », « ajouter Moneroo », « swap Bictorys pour … », « webhook signature failure » | Reference complète pour 4 providers de paiement (Stripe worldwide cards + subscriptions, Moneroo / Bictorys / PayTech mobile money UEMOA). Couvre signature verification, idempotent fulfillment, lifecycle subscriptions, stockage credentials AES-256-GCM, gotchas spécifiques par provider. Surface seulement si le fork swap ou étend le default Bictorys. |
+| Skill                                                                                  | Phrases déclencheuses                                                                                             | Ce qu'elle fait                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`setup-kit`](.claude/skills/setup-kit/SKILL.md)                                       | « /setup-kit », « je débute », « qu'est-ce que je dois installer »                                                | Audit Git / Node / pnpm / gh CLI / env vars / Claude Code surface, blocker explicite si l'user a téléchargé le ZIP au lieu de cloner, install paste-ready (UI palette ou CLI) des 2 plugins manquants, Neon en provider Postgres par défaut (alternatives Supabase/Railway/Render documentées mais surfacées seulement à la demande). Mode débutant non-négociable. |
+| [`banani-design-implementation`](.claude/skills/banani-design-implementation/SKILL.md) | « build this from Banani », « use the Banani MCP », « reproduce this screen »                                     | Reproduction pixel-perfect 1:1 des écrans Banani sélectionnés via MCP (optionnel — Banani n'est pas requis). Lit `CLAUDE.md` pour la stack, planifie, tracke entre sessions.                                                                                                                                                                                        |
+| [`ui-ux-pro-max`](.claude/skills/ui-ux-pro-max/SKILL.md)                               | « design », « build », « improve », « review UI » + button/modal/navbar/dashboard/landing/SaaS/glassmorphism/etc. | Design intelligence searchable : 67 styles, 96 palettes, 57 paires de fonts, 99 guidelines UX, 25 types de charts sur 13 stacks (Next.js, React, Vue, SwiftUI, Flutter…). Intégration MCP shadcn/ui.                                                                                                                                                                |
+| [`izisaas-payments-handler`](.claude/skills/izisaas-payments-handler/SKILL.md)         | « intégrer Stripe », « ajouter Moneroo », « swap Bictorys pour … », « webhook signature failure »                 | Reference complète pour 4 providers de paiement (Stripe worldwide cards + subscriptions, Moneroo / Bictorys / PayTech mobile money UEMOA). Couvre signature verification, idempotent fulfillment, lifecycle subscriptions, stockage credentials AES-256-GCM, gotchas spécifiques par provider. Surface seulement si le fork swap ou étend le default Bictorys.      |
 
 Les débutants peuvent donc passer de `gh repo clone` à un UI designé en un seul chat : décris l'écran → une skill prend le relais → les routes API sont déjà câblées.
 
@@ -227,18 +237,18 @@ izikit/
 
 Décisions de scope du starter — copié ici pour rendre ce README self-contained.
 
-| Feature | Raison |
-|---|---|
-| Composants UI / pages | Headless par design — chaque fork construit son propre UX |
-| Multi-provider paiements out-of-the-box | L'interface `PaymentProvider` permet le swap par projet ; défaut Bictorys only |
-| Worker process long-running | Décision Vercel-first — tout le background tourne en route handlers planifiés |
-| Migration Auth.js / NextAuth | JWT custom + cookies + CSRF gardés pour la parité template complète |
-| Runtime Edge / Cloudflare Workers | Toutes les routes sont `runtime='nodejs'` |
-| Distribution OSS publique (docs site, package npm, CLI bootstrapper) | Usage privé / personnel |
-| Framework de test frontend (Playwright / RTL) | Vitest couvre `lib/server/**` only ; les tests UI sont per-projet |
-| Circuit breaker distribué en v1 | Limite single-instance ; reporté à v2 |
-| i18n au-delà des défauts FCFA | Concern per-projet |
-| TOTP / 2FA built-in | Passkeys (v2) les remplacent |
+| Feature                                                              | Raison                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Composants UI / pages                                                | Headless par design — chaque fork construit son propre UX                      |
+| Multi-provider paiements out-of-the-box                              | L'interface `PaymentProvider` permet le swap par projet ; défaut Bictorys only |
+| Worker process long-running                                          | Décision Vercel-first — tout le background tourne en route handlers planifiés  |
+| Migration Auth.js / NextAuth                                         | JWT custom + cookies + CSRF gardés pour la parité template complète            |
+| Runtime Edge / Cloudflare Workers                                    | Toutes les routes sont `runtime='nodejs'`                                      |
+| Distribution OSS publique (docs site, package npm, CLI bootstrapper) | Usage privé / personnel                                                        |
+| Framework de test frontend (Playwright / RTL)                        | Vitest couvre `lib/server/**` only ; les tests UI sont per-projet              |
+| Circuit breaker distribué en v1                                      | Limite single-instance ; reporté à v2                                          |
+| i18n au-delà des défauts FCFA                                        | Concern per-projet                                                             |
+| TOTP / 2FA built-in                                                  | Passkeys (v2) les remplacent                                                   |
 
 ## Invariants critiques
 
@@ -256,4 +266,4 @@ Ce sont les règles que chaque session Claude doit respecter — voir [CLAUDE.md
 
 ## Licence
 
-Tout membre ayant obtenu légitimement accès à ce kit est autorisé, de manière non exclusive, mondiale, perpétuelle et sans redevance supplémentaire, à utiliser, copier, modifier et adapter le code afin de créer, déployer et commercialiser ses propres applications, SaaS et projets clients. Ces droits restent acquis pour les versions du kit obtenues pendant la période d’adhésion. La redistribution ou la revente du kit lui-même comme template ou produit concurrent reste interdite. 
+Tout membre ayant obtenu légitimement accès à ce kit est autorisé, de manière non exclusive, mondiale, perpétuelle et sans redevance supplémentaire, à utiliser, copier, modifier et adapter le code afin de créer, déployer et commercialiser ses propres applications, SaaS et projets clients. Ces droits restent acquis pour les versions du kit obtenues pendant la période d’adhésion. La redistribution ou la revente du kit lui-même comme template ou produit concurrent reste interdite.

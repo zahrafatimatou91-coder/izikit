@@ -27,18 +27,21 @@ import {
   createBictorysProvider,
   type BictorysProviderHandle,
 } from '@/lib/server/payments/bictorys';
+import { createMonerooProvider, type MonerooProviderHandle } from '@/lib/server/payments/moneroo';
 import { CircuitBreaker } from '@/lib/server/payments/circuit-breaker';
 
 /**
- * Thrown by `getProvider()` when BICTORYS_API_URL, BICTORYS_API_KEY, or
- * BICTORYS_WEBHOOK_SECRET is missing/empty. The orders route should catch
- * this `instanceof` and return 503 PAYMENT_PROVIDER_UNCONFIGURED.
+ * Thrown by `getProvider()` / `getMonerooProvider()` when required env vars
+ * are missing/empty. The orders route (and any future caller) should catch
+ * this `instanceof` and return 503 PAYMENT_PROVIDER_UNCONFIGURED. The
+ * message defaults to the Bictorys var names for backward compatibility —
+ * `getMonerooProvider()` passes its own.
  */
 export class PaymentProviderUnconfiguredError extends Error {
-  constructor() {
-    super(
-      'Payment provider not configured (BICTORYS_API_URL/_API_KEY/_WEBHOOK_SECRET missing or empty)',
-    );
+  constructor(
+    message = 'Payment provider not configured (BICTORYS_API_URL/_API_KEY/_WEBHOOK_SECRET missing or empty)',
+  ) {
+    super(message);
     this.name = 'PaymentProviderUnconfiguredError';
   }
 }
@@ -84,13 +87,56 @@ export const breaker = new CircuitBreaker({
   cooldownMs: 60_000,
 });
 
+// ───────────────────────────────────────────────────────────────────────
+// Moneroo — CEMAC/XAF-capable complement to Bictorys (UEMOA/XOF-only).
+// Same lazy-init-plus-shared-breaker shape as the Bictorys pair above; kept
+// as an independent accessor/breaker pair rather than folding into
+// `getProvider()` so each provider's failures are counted separately and
+// neither provider being unconfigured affects the other's availability.
+// ───────────────────────────────────────────────────────────────────────
+
+let _monerooProvider: MonerooProviderHandle | null = null;
+
 /**
- * Test-only escape hatch — clears the cached provider so a test can mutate
- * `process.env.BICTORYS_*` and re-trigger lazy init. Never call this from
- * application code.
+ * Lazy-init singleton accessor for Moneroo, mirroring `getProvider()`.
+ * Throws `PaymentProviderUnconfiguredError` if MONEROO_API_KEY or
+ * MONEROO_WEBHOOK_SECRET is missing.
+ */
+export function getMonerooProvider(): MonerooProviderHandle {
+  if (_monerooProvider) return _monerooProvider;
+
+  const apiKey = process.env.MONEROO_API_KEY ?? '';
+  const webhookSecret = process.env.MONEROO_WEBHOOK_SECRET ?? '';
+
+  if (!apiKey || !webhookSecret) {
+    throw new PaymentProviderUnconfiguredError(
+      'Payment provider not configured (MONEROO_API_KEY/_WEBHOOK_SECRET missing or empty)',
+    );
+  }
+
+  _monerooProvider = createMonerooProvider({
+    MONEROO_API_KEY: apiKey,
+    MONEROO_WEBHOOK_SECRET: webhookSecret,
+  });
+  return _monerooProvider;
+}
+
+/** Independent breaker — a Moneroo outage must not trip Bictorys' breaker or vice versa. */
+export const monerooBreaker = new CircuitBreaker({
+  name: 'moneroo.charge',
+  failureThreshold: 5,
+  windowMs: 30_000,
+  cooldownMs: 60_000,
+});
+
+/**
+ * Test-only escape hatch — clears both cached providers so a test can
+ * mutate `process.env.BICTORYS_*` / `process.env.MONEROO_*` and re-trigger
+ * lazy init. Never call this from application code.
  *
  * @internal
  */
 export function __resetProviderSingleton(): void {
   _provider = null;
+  _monerooProvider = null;
 }
