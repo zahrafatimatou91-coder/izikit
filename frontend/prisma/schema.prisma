@@ -38,6 +38,14 @@ model User {
   // until the user completes the "Ton budget" onboarding step.
   totalBudget     Int?
   budgetFrequency String? // "monthly" | "weekly" | "daily"
+  // ISO 3166-1 alpha-2 country code (e.g. "SN", "CM"), set during onboarding.
+  // Drives payment-provider routing — see lib/server/payments/country-routing.ts:
+  // UEMOA countries (XOF) -> Bictorys, CEMAC countries (XAF) -> Moneroo.
+  // Nullable: unset until onboarding, and for accounts created before this
+  // field existed — country-routing.ts treats null as UEMOA/Bictorys (SN),
+  // the app's original single-market default, so existing users see no
+  // behavior change.
+  country         String?
 
   verificationCodes VerificationCode[]
   uploads           FileUpload[]

@@ -16,6 +16,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useRipple } from '@/hooks/useRipple';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
+import { COUNTRY_GROUPS } from '@/lib/countries';
 
 const BUDGET_SUGGESTIONS = [
   { amount: 40000, label: 'Bourse standard' },
@@ -42,6 +43,10 @@ export default function OnboardingPage() {
   const ripple = useRipple();
   const [amount, setAmount] = useState(40000);
   const [frequency, setFrequency] = useState<(typeof FREQUENCIES)[number]['id']>('monthly');
+  // Drives payment-provider routing at checkout (Bictorys/XOF for UEMOA,
+  // Moneroo/XAF for CEMAC) — see lib/server/payments/country-routing.ts.
+  // Defaults to Sénégal, the app's original single-market default.
+  const [country, setCountry] = useState('SN');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -56,6 +61,9 @@ export default function OnboardingPage() {
       setAmount(user.totalBudget);
       if (user.budgetFrequency) {
         setFrequency(user.budgetFrequency as (typeof FREQUENCIES)[number]['id']);
+      }
+      if (user.country) {
+        setCountry(user.country);
       }
       setPrefilledFromUser(true);
     }
@@ -72,7 +80,7 @@ export default function OnboardingPage() {
     try {
       await api('/api/onboarding', {
         method: 'POST',
-        body: { totalBudget: amount, budgetFrequency: frequency },
+        body: { totalBudget: amount, budgetFrequency: frequency, country },
       });
       setDone(true);
     } catch (err) {
@@ -266,6 +274,41 @@ export default function OnboardingPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="country"
+                className="mb-2 block font-body text-xs font-medium text-muted-foreground"
+              >
+                Dans quel pays es-tu ?
+              </label>
+              <div className="relative">
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full appearance-none rounded-lg border border-border bg-input px-4 py-3.5 font-body text-sm font-medium text-foreground outline-none focus:border-primary"
+                >
+                  {COUNTRY_GROUPS.map((group) => (
+                    <optgroup key={group.zone} label={`${group.zone} (${group.currency})`}>
+                      {group.countries.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <Icon
+                  i="chevron-down"
+                  size={16}
+                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+              <p className="mt-2 font-body text-xs text-muted-foreground">
+                Ça détermine les moyens de paiement disponibles pour ton abonnement Premium.
+              </p>
             </div>
 
             <div className="flex gap-4 rounded-lg border border-secondary/30 bg-secondary/20 p-5">

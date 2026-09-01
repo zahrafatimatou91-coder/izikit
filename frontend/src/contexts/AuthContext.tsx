@@ -20,6 +20,8 @@ export interface User {
   avatarUrl: string | null;
   totalBudget: number | null;
   budgetFrequency: string | null;
+  /** ISO 3166-1 alpha-2, set during onboarding — drives payment-provider routing. */
+  country: string | null;
 }
 
 interface AuthContextValue {

@@ -10,10 +10,23 @@ import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { ALL_COUNTRIES } from '@/lib/countries';
+
+const VALID_COUNTRY_CODES = new Set(ALL_COUNTRIES.map((c) => c.code));
 
 const Body = z.object({
   totalBudget: z.number().int().positive(),
   budgetFrequency: z.enum(['monthly', 'weekly', 'daily']),
+  // Optional — the "Settings → modifier le budget" re-entry flow re-submits
+  // this same endpoint without asking for country again. Only the first,
+  // real onboarding screen collects it. Validated against the app's known
+  // country list (see lib/countries.ts) rather than a bare ISO-2 regex, so
+  // a typo can't silently route a checkout to the wrong provider.
+  country: z
+    .string()
+    .refine((v) => VALID_COUNTRY_CODES.has(v.toUpperCase()), 'Unknown country code')
+    .transform((v) => v.toUpperCase())
+    .optional(),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -39,11 +52,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       data: {
         totalBudget: parsed.data.totalBudget,
         budgetFrequency: parsed.data.budgetFrequency,
+        ...(parsed.data.country ? { country: parsed.data.country } : {}),
       },
     });
 
     return NextResponse.json(
-      { totalBudget: parsed.data.totalBudget, budgetFrequency: parsed.data.budgetFrequency },
+      {
+        totalBudget: parsed.data.totalBudget,
+        budgetFrequency: parsed.data.budgetFrequency,
+        country: parsed.data.country ?? null,
+      },
       { status: 200, headers: { 'x-request-id': ctx.requestId } },
     );
   });
