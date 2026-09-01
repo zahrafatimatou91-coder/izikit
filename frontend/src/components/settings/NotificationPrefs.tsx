@@ -16,7 +16,7 @@ const TOGGLES = [
   {
     type: 'ENVELOPE_THRESHOLD',
     label: 'Alertes de dépassement',
-    desc: 'Quand une enveloppe atteint 50 %, 80 % puis 100 % de sa limite.',
+    desc: 'Quand une enveloppe dépasse sa limite.',
   },
   {
     type: 'SAVINGS_GOAL_PACE_MISSED',

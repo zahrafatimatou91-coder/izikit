@@ -52,31 +52,28 @@ export function paymentReceived(
 }
 
 /**
- * Fired from POST /api/transactions when an expense pushes an envelope's
- * period-scoped spend past 50%, 80% (`isOverLimit=false` for both), or
- * 100% (`isOverLimit=true`) of its monthlyLimit. `periodStartIso` scopes
- * the dedupeKey so the same threshold can fire again next period.
+ * Fired from POST /api/transactions (and the edit route) when an expense
+ * pushes an envelope's period-scoped spend past 100% of its monthlyLimit.
+ * The old 50% / 80% tiers were dropped: the dashboard's live "getting
+ * close" warning (≥85%) already covers the approach, so the bell only
+ * flags the moment you actually cross the line — one ping per envelope per
+ * period instead of three. `periodStartIso` scopes the dedupeKey so it can
+ * fire again next period.
  */
 export function envelopeThresholdNotification(
   userId: string,
   envelope: { id: string; name: string },
   spentFcfa: number,
   limitFcfa: number,
-  pct: number,
   periodStartIso: string,
-  isOverLimit: boolean,
 ): CreateNotificationInput {
   return {
     userId,
     type: 'ENVELOPE_THRESHOLD',
-    title: isOverLimit
-      ? `Catégorie ${envelope.name} dépassée`
-      : `Catégorie ${envelope.name} à ${pct}%`,
-    body: isOverLimit
-      ? `Tu as dépensé ${spentFcfa} F sur ${limitFcfa} F. Ajuste tes dépenses !`
-      : `Tu as dépensé ${spentFcfa} F sur ${limitFcfa} F. Modère tes dépenses !`,
-    data: { envelopeId: envelope.id, spentFcfa, limitFcfa, pct },
-    dedupeKey: `envelope-threshold:${envelope.id}:${pct}:${periodStartIso}`,
+    title: `Catégorie ${envelope.name} dépassée`,
+    body: `Tu as dépensé ${spentFcfa} F sur ${limitFcfa} F. Ajuste tes dépenses !`,
+    data: { envelopeId: envelope.id, spentFcfa, limitFcfa, pct: 100 },
+    dedupeKey: `envelope-threshold:${envelope.id}:${periodStartIso}`,
   };
 }
 

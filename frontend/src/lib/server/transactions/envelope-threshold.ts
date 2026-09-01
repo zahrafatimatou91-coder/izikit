@@ -1,16 +1,18 @@
 // Shared by both POST /api/transactions and PATCH /api/transactions/[id]
-// — creating OR editing a transaction can push an envelope's spend past a
-// 50/80/100% threshold, so both call sites need the same check. Lives
-// here (not exported from a route.ts) because Next.js route modules are
-// only supposed to export HTTP method handlers + config.
+// — creating OR editing a transaction can push an envelope's spend over
+// its limit, so both call sites need the same check. Lives here (not
+// exported from a route.ts) because Next.js route modules are only
+// supposed to export HTTP method handlers + config.
+//
+// Only the 100% (over-limit) alert fires. The old 50% / 80% pings were
+// removed as noise — the dashboard already shows a live "≥85%, careful"
+// warning, so the bell is reserved for "you actually went over".
 import 'server-only';
 import { prisma } from '@/lib/server/prisma';
 import { currentBudgetPeriod } from '@/lib/server/budget-period';
 import { createNotification } from '@/lib/server/notifications';
 import { envelopeThresholdNotification } from '@/lib/server/notifications/templates';
 import { isChannelEnabled, type NotificationPrefs } from '@/lib/server/notifications/prefs-merge';
-
-const ALERT_THRESHOLDS = [0.5, 0.8, 1] as const;
 
 export async function maybeFireEnvelopeThreshold(
   userId: string,
@@ -40,31 +42,21 @@ export async function maybeFireEnvelopeThreshold(
     _sum: { amount: true },
   });
   const spent = Math.abs(agg._sum.amount ?? 0);
-  const ratio = spent / envelope.monthlyLimit;
+  if (spent < envelope.monthlyLimit) return; // still within budget — nothing to flag
 
-  // Fire the highest threshold crossed — a single transaction that jumps
-  // straight past 100% still only produces one notification, not two.
-  for (const threshold of [...ALERT_THRESHOLDS].reverse()) {
-    if (ratio >= threshold) {
-      const pct = Math.round(threshold * 100);
-      try {
-        await createNotification(
-          prisma,
-          envelopeThresholdNotification(
-            userId,
-            envelope,
-            spent,
-            envelope.monthlyLimit,
-            pct,
-            period.start.toISOString(),
-            threshold >= 1,
-          ),
-        );
-      } catch {
-        // Swallow — the transaction is already committed; a notification
-        // hiccup must not poison the response.
-      }
-      return;
-    }
+  try {
+    await createNotification(
+      prisma,
+      envelopeThresholdNotification(
+        userId,
+        envelope,
+        spent,
+        envelope.monthlyLimit,
+        period.start.toISOString(),
+      ),
+    );
+  } catch {
+    // Swallow — the transaction is already committed; a notification
+    // hiccup must not poison the response.
   }
 }
