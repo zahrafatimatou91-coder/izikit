@@ -11,7 +11,7 @@
 // back on /orders/[id]/success once Bictorys redirects the user home.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -19,6 +19,7 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useRipple } from '@/hooks/useRipple';
+import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
@@ -128,8 +129,7 @@ export default function SubscriptionPage() {
   const [renewalInfoOpen, setRenewalInfoOpen] = useState(false);
   const [payments, setPayments] = useState<PaymentRow[] | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
+  const reload = useCallback(() => {
     api<SubscriptionStatus>('/api/subscription')
       .then(setSub)
       .catch((err) =>
@@ -142,7 +142,12 @@ export default function SubscriptionPage() {
     api<{ orders: PaymentRow[] }>('/api/orders')
       .then((res) => setPayments(res.orders))
       .catch(() => setPayments([]));
-  }, [user]);
+  }, []);
+
+  useEffect(() => {
+    if (user) reload();
+  }, [user, reload]);
+  useRevalidateOnRestore(reload);
 
   if (!user) return <ListPageSkeleton rows={6} />;
 

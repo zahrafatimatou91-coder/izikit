@@ -25,6 +25,7 @@ import {
 } from '@/components/insights/DateRangePicker';
 import { formatPrice } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
 
 /** "YYYY-MM-DD" from local date parts — deliberately NOT
  * `.toISOString().slice(0, 10)`, which converts to UTC first and can
@@ -123,6 +124,8 @@ export default function InsightsPage() {
   useEffect(() => {
     if (user) void load(range);
   }, [user, range, load]);
+  const revalidate = useCallback(() => void load(range), [load, range]);
+  useRevalidateOnRestore(revalidate);
 
   if (!user) return <InsightsSkeleton />;
   if (data === null && !error) return <InsightsSkeleton />;

@@ -25,6 +25,7 @@ import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { formatRelativeDateTime } from '@/lib/format-date';
 import { useRipple } from '@/hooks/useRipple';
+import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
 
 interface NotificationItem {
   id: string;
@@ -107,8 +108,7 @@ export default function NotificationsPage() {
     );
   }, []);
 
-  useEffect(() => {
-    if (!user) return;
+  const reloadFirstPage = useCallback(() => {
     setHasLoaded(false);
     loadPage(filter, null)
       .then((res) => {
@@ -118,7 +118,12 @@ export default function NotificationsPage() {
         setInitialLoadDone(true);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Une erreur est survenue.'));
-  }, [user, filter, loadPage]);
+  }, [filter, loadPage]);
+
+  useEffect(() => {
+    if (user) reloadFirstPage();
+  }, [user, reloadFirstPage]);
+  useRevalidateOnRestore(reloadFirstPage);
 
   async function loadMore() {
     if (!cursor) return;

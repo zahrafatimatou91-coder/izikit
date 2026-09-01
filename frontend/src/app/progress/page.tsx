@@ -31,6 +31,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SavingsGoalCard } from '@/components/savings/SavingsGoalCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useRipple } from '@/hooks/useRipple';
+import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
 import { formatPrice } from '@/lib/utils';
 
 interface Goal {
@@ -90,6 +91,7 @@ export default function ProgressPage() {
   useEffect(() => {
     if (user) void load();
   }, [user, load]);
+  useRevalidateOnRestore(load);
 
   async function confirmDelete() {
     if (!deleteTarget) return;

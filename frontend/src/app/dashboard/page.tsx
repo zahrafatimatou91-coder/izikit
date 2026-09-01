@@ -8,6 +8,7 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useRipple } from '@/hooks/useRipple';
+import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
 import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -70,6 +71,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user) void load();
   }, [user, load]);
+  useRevalidateOnRestore(load);
 
   async function confirmDeleteTransaction() {
     if (!deleteTarget) return;

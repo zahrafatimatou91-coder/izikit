@@ -8,6 +8,7 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { useRipple } from '@/hooks/useRipple';
+import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
@@ -75,6 +76,7 @@ export default function EnvelopesPage() {
   useEffect(() => {
     if (user) void load();
   }, [user, load]);
+  useRevalidateOnRestore(load);
 
   if (!user) return <EnvelopesSkeleton />;
   if (envelopes === null && !error) return <EnvelopesSkeleton />;
