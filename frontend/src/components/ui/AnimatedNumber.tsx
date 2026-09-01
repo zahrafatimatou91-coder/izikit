@@ -13,9 +13,11 @@ interface AnimatedNumberProps {
 
 /**
  * Displays a number that tweens to its new value whenever `value` changes,
- * instead of jumping. Shows the value immediately on first mount (nothing to
- * animate from yet) and skips the tween entirely under
- * `prefers-reduced-motion: reduce`.
+ * instead of jumping — including on first mount, where it counts up from 0.
+ * Every page load is a fresh mount, so this is what actually makes the
+ * animation visible in normal navigation (a "only animate on update" version
+ * only ever fires while staying on an already-open page — nearly never in
+ * practice). Skips the tween entirely under `prefers-reduced-motion: reduce`.
  */
 export function AnimatedNumber({
   value,
@@ -23,27 +25,30 @@ export function AnimatedNumber({
   durationMs = 600,
   className,
 }: AnimatedNumberProps) {
-  const [display, setDisplay] = useState(value);
-  const fromRef = useRef(value);
+  const [display, setDisplay] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? value
+      : 0,
+  );
+  const fromRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const mountedRef = useRef(false);
 
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      fromRef.current = value;
-      setDisplay(value);
-      return;
-    }
-
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced || fromRef.current === value) {
+    const firstMount = !mountedRef.current;
+    mountedRef.current = true;
+
+    // Nothing to animate: reduced motion always jumps straight to the
+    // target, and an update to the same value (re-render, unrelated prop
+    // change) has nothing to tween.
+    if (prefersReduced || (!firstMount && fromRef.current === value)) {
       fromRef.current = value;
       setDisplay(value);
       return;
     }
 
-    const from = fromRef.current;
+    const from = firstMount ? 0 : fromRef.current;
     const to = value;
     const start = performance.now();
 
@@ -56,7 +61,11 @@ export function AnimatedNumber({
         setDisplay(to);
         return;
       }
-      setDisplay(tweenValue(from, to, t));
+      // Rounded mid-tween too — every value this app displays (FCFA has no
+      // decimals, percentages and counts are whole numbers) is an integer,
+      // so a fractional intermediate frame (e.g. "43 223,364") would be a
+      // display artifact, not a real in-between value.
+      setDisplay(Math.round(tweenValue(from, to, t)));
       rafRef.current = requestAnimationFrame(tick);
     };
 
