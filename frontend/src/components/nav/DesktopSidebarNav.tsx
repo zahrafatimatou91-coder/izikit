@@ -112,9 +112,15 @@ export function DesktopSidebarNav({
               "no repetition" rule). Free-only, and distinct from that
               banner's full message: this is a compact entry point, not a
               second copy of the pitch.
+              Also hidden on the dashboard specifically — SubscriptionBanner
+              already renders the full upsell pitch there, so this button
+              would double it on the one page where the two would sit
+              stacked on top of each other. Every other authenticated page
+              has no banner at all, so the sidebar is the only entry point
+              there.
               Label is "Passer Pro" (a call to action), never "Premium" —
               this app only ever has two real plans, FREE and PRO. */}
-          {plan === 'FREE' && (
+          {plan === 'FREE' && active !== 'dashboard' && (
             <button
               type="button"
               onClick={() => router.push('/subscription')}
