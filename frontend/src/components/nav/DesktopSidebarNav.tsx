@@ -1,10 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useRipple } from '@/hooks/useRipple';
+import { api } from '@/lib/api';
+import type { SubscriptionStatus } from '@/components/subscription/banner-model';
 import { NAV_ITEMS, type NavId } from './nav-items';
 
 export type { NavId };
@@ -28,6 +32,27 @@ export function DesktopSidebarNav({
   avatarUrl = null,
 }: DesktopSidebarNavProps) {
   const ripple = useRipple();
+  const router = useRouter();
+  // Self-fetched, like NotificationBell/SubscriptionBanner — keeps this
+  // change scoped to this one file instead of threading a new prop through
+  // every page that renders the sidebar. Non-critical: on failure the plan
+  // pill and the Premium upsell badge simply don't render, same fail-open
+  // behavior as the bell's unread count.
+  const [plan, setPlan] = useState<SubscriptionStatus['plan'] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api<SubscriptionStatus>('/api/subscription')
+      .then((res) => {
+        if (!cancelled) setPlan(res.plan);
+      })
+      .catch(() => {
+        /* non-critical — no plan pill on failure */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     // Outer element only reserves the w-64 column in the page's flex row —
     // it carries no visuals. The real sidebar is `fixed` inside it, pinned
@@ -65,10 +90,40 @@ export function DesktopSidebarNav({
             avatarUrl={avatarUrl}
             className="h-10 w-10 flex-shrink-0 rounded-lg"
           />
-          <div className="min-w-0">
-            <p className="font-body text-sm font-medium text-foreground">{userName}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <p className="truncate font-body text-sm font-medium text-foreground">{userName}</p>
+              {plan && (
+                <span className="flex-shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-body text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                  {plan === 'PRO' ? 'Pro' : 'Free'}
+                </span>
+              )}
+            </div>
             <p className="truncate font-body text-xs text-muted-foreground">{userEmail}</p>
           </div>
+          {/* Upsell only — a Pro member already has it, so showing this
+              would just be a redundant nag (see SubscriptionBanner's own
+              "no repetition" rule). Free-only, and distinct from that
+              banner's full message: this is a compact entry point, not a
+              second copy of the pitch.
+              Label is "Passer Pro" (a call to action), never "Premium" —
+              this app only ever has two real plans, FREE and PRO; a third
+              tier-sounding word sitting right next to the "FREE" status
+              pill reads as a contradiction ("free AND premium at once?")
+              instead of the action it actually is. */}
+          {plan === 'FREE' && (
+            <button
+              type="button"
+              onClick={() => router.push('/subscription')}
+              onPointerDown={ripple}
+              aria-label="Passer à Pro"
+              title="Passer à Pro"
+              className="relative flex flex-shrink-0 items-center gap-1 overflow-hidden rounded-full bg-secondary px-2 py-1 font-body text-[10px] font-bold text-secondary-foreground"
+            >
+              <Icon i="sparkles" size={11} />
+              Passer Pro
+            </button>
+          )}
         </div>
       </div>
     </div>
