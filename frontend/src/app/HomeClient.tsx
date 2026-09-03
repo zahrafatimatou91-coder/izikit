@@ -299,9 +299,9 @@ export default function HomeClient() {
                     <Icon i={b.icon} size={20} className="text-[#faf7f2]" />
                   </div>
                   <div>
-                    <h4 className="mb-1 font-headings text-sm font-bold text-[#faf7f2]">
+                    <h2 className="mb-1 font-headings text-sm font-bold text-[#faf7f2]">
                       {b.title}
-                    </h4>
+                    </h2>
                     <p className="font-body text-xs leading-relaxed text-[#faf7f2]/70">{b.desc}</p>
                   </div>
                 </div>
@@ -350,9 +350,9 @@ export default function HomeClient() {
                     <Icon i={f.icon} size={22} className="text-secondary-foreground" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="mb-1 font-headings text-base font-bold text-foreground">
+                    <h3 className="mb-1 font-headings text-base font-bold text-foreground">
                       {f.title}
-                    </h4>
+                    </h3>
                     <p className="font-body text-xs leading-relaxed text-muted-foreground">
                       {f.desc}
                     </p>
@@ -383,9 +383,9 @@ export default function HomeClient() {
                     </span>
                   </div>
                   <div className="flex-1 pt-1">
-                    <h4 className="mb-1 font-headings text-base font-bold text-foreground">
+                    <h3 className="mb-1 font-headings text-base font-bold text-foreground">
                       {s.title}
-                    </h4>
+                    </h3>
                     <p className="font-body text-xs text-muted-foreground">{s.desc}</p>
                   </div>
                 </div>
@@ -571,9 +571,9 @@ export default function HomeClient() {
                       <Icon i={b.icon} size={22} className="text-[#faf7f2]" />
                     </div>
                     <div>
-                      <h4 className="mb-1 font-headings text-base font-bold text-[#faf7f2]">
+                      <h2 className="mb-1 font-headings text-base font-bold text-[#faf7f2]">
                         {b.title}
-                      </h4>
+                      </h2>
                       <p className="font-body text-sm leading-relaxed text-[#faf7f2]/70">
                         {b.desc}
                       </p>
@@ -678,9 +678,9 @@ export default function HomeClient() {
                     </span>
                   </div>
                   <div>
-                    <h4 className="mb-3 font-headings text-xl font-bold text-foreground">
+                    <h3 className="mb-3 font-headings text-xl font-bold text-foreground">
                       {s.title}
-                    </h4>
+                    </h3>
                     <p className="font-body text-base leading-relaxed text-muted-foreground">
                       {s.desc}
                     </p>
