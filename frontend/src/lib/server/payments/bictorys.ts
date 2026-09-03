@@ -16,6 +16,15 @@
  * backoff (2s, 4s, 8s) — this matches the cagnottes.sn pattern that
  * works against Bictorys' Cloudflare front.
  *
+ * WAF transport: Bictorys sits behind an AWS ALB + WAF Bot Control that
+ * fingerprints Node's native `fetch` (undici) TLS handshake and blocks it
+ * with a 403 "Forbidden" HTML page — confirmed against the real sandbox API
+ * (not a hypothetical). Every outbound call therefore shells out to `curl`
+ * (see `bictorysCurl` below) instead of using `fetch`. DO NOT add curl flags
+ * beyond `-i -X <method> -H ... -d ...` — extra flags (-s, -A, --noproxy,
+ * Accept, User-Agent) re-trigger the same fingerprint block.
+ *
+
  * Webhook signature: the webhook handler accepts EITHER:
  *   1. `x-secret-key` header equal to BICTORYS_WEBHOOK_SECRET (timing-safe), OR
  *   2. `x-webhook-signature` header = HMAC-SHA256(timestamp + "." + rawBody)
@@ -27,6 +36,8 @@
  * loud warning is logged on every bypass.
  */
 import crypto from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { createLogger } from '../logger';
 import type { WebhookProvider, ParsedIds } from '../webhook/handler';
 import type {
@@ -153,6 +164,45 @@ function mapMethodToBictorysType(method: string): string {
 }
 
 // ───────────────────────────────────────────────────────────────────────
+// curl-based transport (WAF workaround — see module doc)
+// ───────────────────────────────────────────────────────────────────────
+
+const execFileP = promisify(execFile);
+
+/** `curl -i` emits `STATUS LINE\r\nHEADERS\r\n\r\nBODY` — split on the blank
+ * line and pull the status code off the status line. */
+function parseCurlResponse(raw: string): { status: number; text: string } {
+  const sep = raw.indexOf('\r\n\r\n');
+  const head = sep >= 0 ? raw.slice(0, sep) : raw;
+  const body = sep >= 0 ? raw.slice(sep + 4) : '';
+  const statusLine = head.split(/\r?\n/)[0] ?? '';
+  const m = statusLine.match(/^HTTP\/[\d.]+\s+(\d+)/);
+  return { status: m ? parseInt(m[1]!, 10) : 0, text: body };
+}
+
+/**
+ * Minimal curl subprocess call. Throws on process-level failure (non-zero
+ * exit, timeout, curl not installed) — callers wrap that into their own
+ * "Bictorys network error" message, matching the previous fetch-based
+ * behavior. DO NOT add flags — see module doc.
+ */
+async function bictorysCurl(
+  url: string,
+  init: { method: string; headers: Record<string, string>; body?: string },
+): Promise<{ status: number; text: string }> {
+  const args: string[] = ['-i', '-X', init.method];
+  for (const [k, v] of Object.entries(init.headers)) args.push('-H', `${k}: ${v}`);
+  if (init.body) args.push('-d', init.body);
+  args.push(url);
+
+  const { stdout } = await execFileP('curl', args, {
+    timeout: HTTP_TIMEOUT_MS,
+    maxBuffer: 4 * 1024 * 1024,
+  });
+  return parseCurlResponse(stdout);
+}
+
+// ───────────────────────────────────────────────────────────────────────
 // Factory
 // ───────────────────────────────────────────────────────────────────────
 
@@ -210,30 +260,28 @@ export function createBictorysProvider(env: BictorysEnv): BictorysProviderHandle
         await new Promise((r) => setTimeout(r, delay));
       }
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
-      let res: Response;
+      let status: number;
+      let text: string;
       try {
-        res = await fetch(url, {
+        const result = await bictorysCurl(url, {
           method: 'POST',
           headers: {
             'X-Api-Key': env.BICTORYS_API_KEY,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(body),
-          signal: controller.signal,
         });
+        status = result.status;
+        text = result.text;
       } catch (err) {
-        clearTimeout(timer);
         const msg = err instanceof Error ? err.message : String(err);
         // Network / timeout — surface immediately (caller's circuit breaker
         // counts the failure).
         throw new Error(`Bictorys network error: ${msg}`);
       }
-      clearTimeout(timer);
 
-      if (res.ok) {
-        const data = (await res.json()) as {
+      if (status >= 200 && status < 300) {
+        const data = JSON.parse(text) as {
           transactionId?: string;
           chargeId?: string;
           id?: string;
@@ -254,17 +302,16 @@ export function createBictorysProvider(env: BictorysEnv): BictorysProviderHandle
         };
       }
 
-      const text = await res.text().catch(() => '');
       lastErr = text;
 
       // Only the WAF 403 HTML response is retried — Bictorys returns the
       // same 403 for legitimate auth errors, so we additionally require
       // the body to contain "Forbidden" (the WAF page signature).
-      if (res.status === 403 && text.includes('Forbidden') && attempt < retryDelays.length) {
+      if (status === 403 && text.includes('Forbidden') && attempt < retryDelays.length) {
         continue;
       }
 
-      throw new Error(`Bictorys charge failed: HTTP ${res.status} — ${text.slice(0, 200)}`);
+      throw new Error(`Bictorys charge failed: HTTP ${status} — ${text.slice(0, 200)}`);
     }
 
     throw new Error(`Bictorys charge failed after retries: ${lastErr.slice(0, 200)}`);
@@ -306,11 +353,10 @@ export function createBictorysProvider(env: BictorysEnv): BictorysProviderHandle
       merchant: { secretCode: env.BICTORYS_MERCHANT_SECRET_CODE },
     };
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
-    let res: Response;
+    let status: number;
+    let raw: string;
     try {
-      res = await fetch(url, {
+      const result = await bictorysCurl(url, {
         method: 'POST',
         headers: {
           'X-API-Key': env.BICTORYS_PRIVATE_KEY,
@@ -319,26 +365,22 @@ export function createBictorysProvider(env: BictorysEnv): BictorysProviderHandle
           'idempotency-key': input.externalRef,
         },
         body: JSON.stringify(body),
-        signal: controller.signal,
       });
+      status = result.status;
+      raw = result.text;
     } catch (err) {
-      clearTimeout(timer);
       const msg = err instanceof Error ? err.message : String(err);
       throw new Error(`Bictorys payout network error: ${msg}`);
     }
-    clearTimeout(timer);
 
-    const raw = await res.text();
     let data: Record<string, unknown> | undefined;
     try {
       data = raw ? (JSON.parse(raw) as Record<string, unknown>) : undefined;
     } catch {
-      throw new Error(
-        `Bictorys payout returned non-JSON (HTTP ${res.status}): ${raw.slice(0, 200)}`,
-      );
+      throw new Error(`Bictorys payout returned non-JSON (HTTP ${status}): ${raw.slice(0, 200)}`);
     }
 
-    if (res.status === 200 || res.status === 201) {
+    if (status === 200 || status === 201) {
       const providerPayoutId = String((data?.id as string | undefined) ?? '');
       if (!providerPayoutId) throw new Error('Bictorys payout returned no id');
       const result: PayoutResult = {
@@ -354,7 +396,7 @@ export function createBictorysProvider(env: BictorysEnv): BictorysProviderHandle
     const message =
       (data?.message as string | undefined) ??
       (data?.error as string | undefined) ??
-      `HTTP ${res.status}`;
+      `HTTP ${status}`;
     throw new Error(`Bictorys payout failed: ${message}`);
   }
 
