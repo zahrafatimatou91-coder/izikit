@@ -7,19 +7,27 @@ import { Icon } from '@/components/ui/Icon';
 import type { IconName } from 'lucide-react/dynamic';
 import { useRipple } from '@/hooks/useRipple';
 import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
-import { computeModel, dayLabel, type SubscriptionStatus } from './banner-model';
+import {
+  computeModel,
+  dayLabel,
+  dismissValue,
+  isDismissed,
+  type Dismissible,
+  type SubscriptionStatus,
+} from './banner-model';
 
-function dismissed(key: string): boolean {
+function readKey(key: string): string | null {
   try {
-    return localStorage.getItem(key) === '1';
+    return localStorage.getItem(key);
   } catch {
-    return false;
+    return null;
   }
 }
 
 /** State-aware subscription nudge for the dashboard. Renders nothing while
- * loading, on error, for a healthy paid subscriber, or once the relevant
- * banner has been dismissed. */
+ * loading, on error, for a healthy paid subscriber, or while the relevant
+ * banner is dismissed. Closing a conversion banner (upsell / lapsed) only
+ * snoozes it — it comes back on the next visit after a day. */
 export function SubscriptionBanner() {
   const router = useRouter();
   const ripple = useRipple();
@@ -43,13 +51,13 @@ export function SubscriptionBanner() {
 
   const model = computeModel(sub);
   if (!model) return null;
-  if ('dismissKey' in model && dismissed(model.dismissKey)) return null;
+  const dismiss: Dismissible | null = 'dismiss' in model ? model.dismiss : null;
+  if (dismiss && isDismissed(dismiss, readKey(dismiss.key))) return null;
 
-  const dismissKey = 'dismissKey' in model ? model.dismissKey : null;
-  function dismiss() {
-    if (dismissKey) {
+  function handleDismiss() {
+    if (dismiss) {
       try {
-        localStorage.setItem(dismissKey, '1');
+        localStorage.setItem(dismiss.key, dismissValue(dismiss));
       } catch {
         /* private mode — hide for this session at least */
       }
@@ -127,11 +135,11 @@ export function SubscriptionBanner() {
           >
             {config.cta}
           </button>
-          {dismissKey && (
+          {dismiss && (
             <button
               type="button"
-              onClick={dismiss}
-              aria-label="Masquer"
+              onClick={handleDismiss}
+              aria-label={dismiss.snoozeHours ? 'Masquer pour aujourd’hui' : 'Masquer'}
               className="flex-shrink-0 opacity-60 hover:opacity-100"
             >
               <Icon i="x" size={16} />
