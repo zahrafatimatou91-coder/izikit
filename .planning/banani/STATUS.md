@@ -417,9 +417,83 @@ Flow: https://app.banani.co/flow/JvzUHP0KGNdG ("Chaque Franc", 22 designs fetche
     isolation, unrelated to this change).
 
 ## In progress
-_(none — ready to start Phase 6; a next.config.ts change is pending a
-manual dev-server restart on the user's machine before final live
-re-verification of this batch)_
+- (nothing)
+
+## Done (2026-09-03) — Phase 7, Admin back-office
+
+Plan: `admin-backoffice.md`. 5 Banani screens implemented (`AdminDashboard`,
+`AdminUsersTable`, `AdminSubscriptions`, `AdminTransactions`,
+`AdminConfiguration`); `AdminCoupons` DEFERRED (own spec — a coupon system is
+a new subsystem, not "manage what exists"). User approved all 4 open
+questions ("ok defauts").
+
+- **New backend**:
+  - `AppSetting` key/value model (`prisma/schema.prisma`) + hand-written
+    migration `20260902120000_add_app_setting`. **Migration written, applied
+    separately** — see below.
+  - `lib/server/settings/` — typed accessors (`getSubscriptionPricing`,
+    `getSupportEmail`, `getAnnouncement`, `getAllSettings`, `writeSetting`),
+    per-key Zod schemas, compile-time defaults. Every read degrades to the
+    shipped constant on a malformed row **or a DB/table error** (so the app
+    keeps working before the migration lands) — 23 unit tests.
+  - `GET /api/pricing` (public, 60s cache) + `GET /api/announcement` (public)
+    — so `/subscription` + the landing Tarifs section + the app-wide banner
+    track the admin-set values. New `useLivePricing()` hook (constant as
+    first-paint default, reconciled from `/api/pricing`).
+  - `GET /api/admin/overview` (KPIs: users/plan split/trials, 6-month signup
+    buckets, MRR from live pricing + order-period, env-presence system
+    booleans, 5 recent users).
+  - `GET /api/admin/subscriptions` (Subscription ⋈ user email, cursor;
+    `trial`/`paid`/`expiring`/`status`/`q` filters; per-row live
+    `effectivePlan`/`isTrial`/`isComp`).
+  - `GET /api/admin/settings` (all keys + defaults + provenance +
+    integration booleans) · `PATCH /api/admin/settings` (SUPERADMIN,
+    Zod-validated, audited `settings.update`).
+  - `POST /api/admin/users/[id]/subscription` (SUPERADMIN grant/revoke Pro;
+    comp sentinel `lastOrderId = "comp:<adminId>"` keeps `isTrial()` false;
+    reuses `archive.ts`; audited `subscription.grant`/`.revoke`).
+  - Extended `GET /api/admin/users` (+ `[id]`) with subscription join,
+    `effectivePlan`/`isTrial`, resource counts + recent orders.
+  - **Dynamic pricing wired into both webhooks** — `bictorys` + `moneroo`
+    `onPaid` now read `getSubscriptionPricing(tx)` inside their Serializable
+    tx instead of the `SUBSCRIPTION_PRICE_FCFA` constant. Exact-equality
+    check unchanged (a mid-checkout price change → Pro not granted → user
+    retries; `>=` would re-open the low-amount exploit).
+- **Frontend** (`components/admin/*` + `app/admin/*`):
+  - `AdminShell` (fixed `lg` rail + mobile slide-over drawer), `layout.tsx`
+    gate on `GET /api/admin/me` (`AdminContext` provides role + `can[]`;
+    non-admin → `/`), `DataTable` (generic, horizontal-scroll on mobile,
+    "Précédent/Suivant" cursor pager), `useCursorList` hook, `primitives.tsx`
+    (StatCard / Badge family / SectionCard), `AuditLogViewer`,
+    `AnnouncementBanner` (root layout, dismiss-per-message via localStorage).
+  - `/admin` overview · `/admin/users` (+ `/admin/users/[id]` with
+    role/suspend/grant-revoke actions, `ConfirmDialog`-gated) ·
+    `/admin/subscriptions` (Free/Pro cards, inline Pro price editing for
+    SUPERADMIN with a confirm dialog, active-subs table) · `/admin/transactions`
+    (Paiements/Retraits tabs, withdrawal cancel for SUPERADMIN) · `/admin/config`
+    (support email, announcement editor + live preview, integration status,
+    embedded audit log).
+  - **Deviations from Banani** (see plan): dropped Solde column /
+    "Nouvel utilisateur" / trash-delete (→ Suspendre) / "Nouvel abonnement" /
+    the 3-tier Standard/Premium/Pro pricing (reality is Free + Pro) / the
+    API-keys + 2FA + IP-whitelist + reset-DB sections (no backend, broken
+    affordances) / "Envoyer une annonce globale" broadcast (→ the announcement
+    banner setting, same goal, no fan-out). Numbered pagination →
+    cursor "Précédent/Suivant" throughout.
+  - `Icon.tsx`: +16 lucide icons used by the admin surface.
+- **`/api/admin/me` left untouched** — its capability list is a locked
+  contract with an exact-match test; the new SUPERADMIN-only controls gate on
+  `admin.role` directly instead.
+- Verified: `pnpm format` / `lint` / `typecheck` clean; `pnpm test` 906/907
+  (the 1 failure is the documented signup-bcrypt full-suite timeout flake —
+  9/9 in isolation); `pnpm build` green (all 6 `/admin*` pages + 5 new API
+  routes in the manifest). Not yet live-smoke-tested against a running dev
+  server.
+- **AppSetting migration**: `20260902120000_add_app_setting` (pure additive
+  `CREATE TABLE`) must be applied with `pnpm --filter frontend exec prisma
+  migrate deploy` (non-interactive, no shadow DB — safe per the incident
+  memory). Until it runs, the settings reads degrade to constants and the
+  admin write/announcement features 500 on save.
 
 ## Done (2026-08-27)
 - **Per-page loading skeletons** — `envelopes`, `history`, `notifications`,
