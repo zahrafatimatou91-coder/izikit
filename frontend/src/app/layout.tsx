@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { THEME_STORAGE_KEY } from '@/lib/theme-storage-key';
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from '@/lib/seo';
 
 // Runs before hydration so the correct theme applies on first paint — avoids
 // a flash of the wrong theme. Reads the same localStorage key ThemeContext
@@ -41,9 +42,29 @@ const playfair = Playfair_Display({
   display: 'swap',
 });
 
+// App-wide fallback — every authenticated page (dashboard, envelopes,
+// settings, admin, …) inherits this as-is; none of them export their own
+// `metadata`, and none should: their content is per-user and private,
+// with nothing for a search engine to index (see robots.ts). Only the
+// homepage (page.tsx) overrides this with page-specific title/description/
+// Open Graph — the `template` below is what makes that override read as
+// "Budget par enveloppes … | Chaque Franc" instead of replacing the brand
+// name outright.
 export const metadata: Metadata = {
-  title: 'Chaque Franc',
-  description: 'Budget par enveloppes pour étudiants — planifie, dépense intelligemment, épargne.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    siteName: SITE_NAME,
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
 };
 
 export const viewport: Viewport = {
