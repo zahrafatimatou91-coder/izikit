@@ -12,6 +12,11 @@ export const SUBSCRIPTION_PRICES: Record<'monthly' | 'annual', number> = {
   annual: 13500,
 };
 
+/** Free trial length in days — display-only mirror of the server's
+ * SUBSCRIPTION_TRIAL_DAYS (lib/server/subscriptions/tier.ts). Used as the
+ * first-paint default before GET /api/pricing responds. */
+export const SUBSCRIPTION_TRIAL_DAYS = 7;
+
 /** Daily-equivalent framing for the annual price ("~37 FCFA/jour") — makes
  * the total look more affordable without changing the real price. Rounded
  * to the nearest franc (FCFA has no sub-unit). */

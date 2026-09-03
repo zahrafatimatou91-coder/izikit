@@ -9,7 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { EnvelopeCard } from '@/components/envelopes/EnvelopeCard';
 import type { EnvelopeSwatchKey } from '@/lib/envelope-colors';
-import { FEATURE_ROWS, SUBSCRIPTION_PRICES } from '@/lib/subscription-plans';
+import { FEATURE_ROWS } from '@/lib/subscription-plans';
+import { useLivePricing } from '@/hooks/useLivePricing';
 import { formatPrice } from '@/lib/utils';
 
 const PAYMENT_METHODS = ['Wave', 'Orange Money', 'Free Money', 'Carte bancaire'];
@@ -239,6 +240,7 @@ export default function LandingPage() {
   // for a beat on every single anonymous visit while /api/auth/me is
   // still loading — unacceptable on the highest-traffic page.
   const { user } = useAuth();
+  const pricing = useLivePricing();
   return (
     <div className="flex flex-col bg-background font-body">
       {/* ══════ MOBILE (< lg) ══════ */}
@@ -453,8 +455,8 @@ export default function LandingPage() {
               />
               <PricingCard
                 plan="Pro"
-                price={`${formatPrice(SUBSCRIPTION_PRICES.monthly)} F`}
-                priceNote={`/mois — ou ${formatPrice(SUBSCRIPTION_PRICES.annual)} F/an`}
+                price={`${formatPrice(pricing.monthly)} F`}
+                priceNote={`/mois — ou ${formatPrice(pricing.annual)} F/an`}
                 ctaLabel="Commencer — 7 jours Pro offerts"
                 highlight
               />
@@ -750,8 +752,8 @@ export default function LandingPage() {
               />
               <PricingCard
                 plan="Pro"
-                price={`${formatPrice(SUBSCRIPTION_PRICES.monthly)} F`}
-                priceNote={`/mois — ou ${formatPrice(SUBSCRIPTION_PRICES.annual)} F/an`}
+                price={`${formatPrice(pricing.monthly)} F`}
+                priceNote={`/mois — ou ${formatPrice(pricing.annual)} F/an`}
                 ctaLabel="Commencer — 7 jours Pro offerts"
                 highlight
               />

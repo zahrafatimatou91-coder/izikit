@@ -23,11 +23,8 @@ import { useRevalidateOnRestore } from '@/hooks/useRevalidateOnRestore';
 import { BottomNav } from '@/components/nav/BottomNav';
 import { DesktopSidebarNav } from '@/components/nav/DesktopSidebarNav';
 import { ListPageSkeleton } from '@/components/skeletons/ListPageSkeleton';
-import {
-  SUBSCRIPTION_PRICES,
-  getDailyEquivalentFcfa,
-  FEATURE_ROWS,
-} from '@/lib/subscription-plans';
+import { getDailyEquivalentFcfa, FEATURE_ROWS } from '@/lib/subscription-plans';
+import { useLivePricing } from '@/hooks/useLivePricing';
 import { formatPrice } from '@/lib/utils';
 
 interface SubscriptionStatus {
@@ -121,6 +118,7 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const { toast } = useToast();
   const ripple = useRipple();
+  const pricing = useLivePricing();
 
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -170,7 +168,7 @@ export default function SubscriptionPage() {
           method: 'POST',
           headers: { 'Idempotency-Key': idempotencyKey },
           body: {
-            amount: SUBSCRIPTION_PRICES[period],
+            amount: pricing[period],
             // No `currency` here — the server derives it (and the payment
             // provider) from the user's own country (UEMOA -> XOF/Bictorys,
             // CEMAC -> XAF/Moneroo). See country-routing.ts; a client value
@@ -363,7 +361,7 @@ export default function SubscriptionPage() {
                 >
                   Mensuel
                   <span className="mt-1 block font-body text-xs font-normal opacity-80">
-                    {formatPrice(SUBSCRIPTION_PRICES.monthly)} F/mois
+                    {formatPrice(pricing.monthly)} F/mois
                   </span>
                 </button>
                 {/* Wrapper carries the badge so the button can keep
@@ -385,15 +383,14 @@ export default function SubscriptionPage() {
                   >
                     Annuel
                     <span className="mt-1 block font-body text-xs font-normal opacity-80">
-                      {formatPrice(SUBSCRIPTION_PRICES.annual)} F/an
+                      {formatPrice(pricing.annual)} F/an
                     </span>
                   </button>
                 </div>
               </div>
               {period === 'annual' && (
                 <p className="mb-4 text-center font-body text-xs text-muted-foreground">
-                  3 mois offerts — soit ~{getDailyEquivalentFcfa(SUBSCRIPTION_PRICES.annual)}{' '}
-                  FCFA/jour
+                  3 mois offerts — soit ~{getDailyEquivalentFcfa(pricing.annual)} FCFA/jour
                 </p>
               )}
               <button
@@ -409,7 +406,7 @@ export default function SubscriptionPage() {
                   <>
                     <Icon i="crown" size={16} />
                     {isProNow ? 'Prolonger mon abonnement — ' : 'Passer à Pro — '}
-                    <AnimatedNumber value={SUBSCRIPTION_PRICES[period]} format={formatPrice} /> F
+                    <AnimatedNumber value={pricing[period]} format={formatPrice} /> F
                   </>
                 )}
               </button>
