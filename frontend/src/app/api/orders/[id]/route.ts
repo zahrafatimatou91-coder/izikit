@@ -41,6 +41,20 @@ export async function GET(
 
     const metadata = (order.metadata ?? null) as Record<string, unknown> | null;
     const purpose = metadata && typeof metadata.purpose === 'string' ? metadata.purpose : null;
+    const period = metadata && typeof metadata.period === 'string' ? metadata.period : null;
+
+    // The success page needs the renewal date to show "next billing" on a
+    // subscription purchase — one extra indexed lookup, only for that
+    // purpose, scoped to the caller's own row (same auth boundary as the
+    // Order query above).
+    let currentPeriodEnd: string | null = null;
+    if (purpose === 'subscription') {
+      const sub = await prisma.subscription.findUnique({
+        where: { userId: auth.user.sub },
+        select: { currentPeriodEnd: true },
+      });
+      currentPeriodEnd = sub?.currentPeriodEnd?.toISOString() ?? null;
+    }
 
     return NextResponse.json(
       {
@@ -49,6 +63,8 @@ export async function GET(
         amount: order.amount,
         currency: order.currency,
         purpose,
+        period,
+        currentPeriodEnd,
         createdAt: order.createdAt.toISOString(),
       },
       { headers: { 'x-request-id': reqCtx.requestId } },

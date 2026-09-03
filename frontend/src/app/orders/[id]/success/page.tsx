@@ -26,10 +26,23 @@ interface OrderStatus {
   amount: number;
   currency: string;
   purpose: string | null;
+  period: string | null;
+  currentPeriodEnd: string | null;
 }
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLLS = 15; // ~30s total
+
+// Same convention as /subscription's own formatDateLong — kept local since
+// this page doesn't import from there (client pages don't share a util file
+// for this one-liner yet).
+function formatDateLong(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 export default function OrderSuccessPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -112,6 +125,37 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ id: str
             'On attend la confirmation de ta banque ou de ton opérateur...'}
         </p>
       </div>
+      {confirmed && isSubscription && (
+        <div className="flex w-full flex-col gap-3 rounded-lg border border-border bg-card p-5 text-left">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-body text-sm text-muted-foreground">Formule</span>
+            <span className="font-body text-sm font-bold text-foreground">
+              Pro —{' '}
+              {order.period === 'annual'
+                ? 'Annuel'
+                : order.period === 'monthly'
+                  ? 'Mensuel'
+                  : 'Abonnement'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-body text-sm text-muted-foreground">Montant payé</span>
+            <span className="font-body text-sm font-bold text-foreground">
+              {formatPrice(order.amount)} F
+            </span>
+          </div>
+          {order.currentPeriodEnd && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-body text-sm text-muted-foreground">
+                Prochain renouvellement
+              </span>
+              <span className="font-body text-sm font-bold text-foreground">
+                {formatDateLong(order.currentPeriodEnd)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
       <Link
         href={isSubscription ? '/subscription' : '/dashboard'}
         onPointerDown={ripple}

@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 describe('GET /api/orders/[id]', () => {
-  it('returns the order when owned by the caller', async () => {
+  it('returns the order plus the renewal date when owned by the caller', async () => {
     prismaMock.order.findFirst.mockResolvedValue({
       id: 'o1',
       status: 'PAID',
@@ -32,6 +32,9 @@ describe('GET /api/orders/[id]', () => {
       currency: 'XOF',
       metadata: { purpose: 'subscription', period: 'annual' },
       createdAt: new Date('2026-08-29T00:00:00.000Z'),
+    } as never);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      currentPeriodEnd: new Date('2027-08-29T00:00:00.000Z'),
     } as never);
 
     const res = await GET(new NextRequest('http://test/api/orders/o1'), ctxFor('o1'));
@@ -43,14 +46,19 @@ describe('GET /api/orders/[id]', () => {
       amount: 13500,
       currency: 'XOF',
       purpose: 'subscription',
+      period: 'annual',
+      currentPeriodEnd: '2027-08-29T00:00:00.000Z',
       createdAt: '2026-08-29T00:00:00.000Z',
     });
     expect(prismaMock.order.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'o1', userId: 'user-1' } }),
     );
+    expect(prismaMock.subscription.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'user-1' } }),
+    );
   });
 
-  it('returns null purpose for a non-subscription order', async () => {
+  it('returns null purpose/period/currentPeriodEnd for a non-subscription order', async () => {
     prismaMock.order.findFirst.mockResolvedValue({
       id: 'o2',
       status: 'PENDING',
@@ -63,6 +71,9 @@ describe('GET /api/orders/[id]', () => {
     const res = await GET(new NextRequest('http://test/api/orders/o2'), ctxFor('o2'));
     const body = await res.json();
     expect(body.purpose).toBeNull();
+    expect(body.period).toBeNull();
+    expect(body.currentPeriodEnd).toBeNull();
+    expect(prismaMock.subscription.findUnique).not.toHaveBeenCalled();
   });
 
   it('returns 404 when the order does not exist or belongs to another user', async () => {
