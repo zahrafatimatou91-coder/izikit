@@ -43,6 +43,7 @@ const WITHDRAWAL_SELECT = {
   requestedAt: true,
   processedAt: true,
   completedAt: true,
+  user: { select: { email: true, name: true } },
 } as const satisfies Prisma.WithdrawalSelect;
 
 function parseDate(raw: string | null): Date | null {
@@ -95,10 +96,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const last = items[items.length - 1];
+    const sliced = hasMore ? rows.slice(0, limit) : rows;
+    const last = sliced[sliced.length - 1];
     const nextCursor =
       hasMore && last ? encodeCursor({ createdAt: last.requestedAt, id: last.id }) : null;
+
+    const items = sliced.map(({ user, ...w }) => ({
+      ...w,
+      userEmail: user?.email ?? null,
+      userName: user?.name ?? null,
+    }));
 
     return NextResponse.json({ items, nextCursor }, { headers: { 'x-request-id': ctx.requestId } });
   });

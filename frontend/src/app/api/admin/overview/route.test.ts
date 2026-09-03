@@ -9,13 +9,16 @@ vi.mock('@/lib/server/middleware', () => ({ requireAdmin: vi.fn() }));
 vi.mock('@/lib/server/middleware/rate-limit-by-userid', () => ({
   enforceAdminRateLimit: vi.fn(),
 }));
+vi.mock('@/lib/server/redis', () => ({ getRedis: vi.fn(() => null) }));
 
 import { requireAdmin } from '@/lib/server/middleware';
 import { enforceAdminRateLimit } from '@/lib/server/middleware/rate-limit-by-userid';
+import { getRedis } from '@/lib/server/redis';
 import { GET } from './route';
 
 const mockRequireAdmin = vi.mocked(requireAdmin);
 const mockRateLimit = vi.mocked(enforceAdminRateLimit);
+const mockGetRedis = vi.mocked(getRedis);
 
 const adminCtx = {
   user: { sub: 'admin-1', email: 'a@test.local' },
@@ -61,7 +64,7 @@ describe('GET /api/admin/overview', () => {
     expect(body.signups).toHaveLength(6);
     expect(body.revenue).toEqual({ mrrFcfa: 0, paidSubs: 0, arpuFcfa: 0 });
     expect(body.system.db).toBe(true);
-    expect(typeof body.system.redis).toBe('boolean');
+    expect(body.system.redis).toBe('off'); // getRedis mocked to null
   });
 
   it('counts effective Pro / trials and computes MRR from the amount actually paid', async () => {
@@ -148,5 +151,19 @@ describe('GET /api/admin/overview', () => {
 
     const body = await (await GET(makeGet())).json();
     expect(body.recentUsers[0]).toMatchObject({ plan: 'PRO', isTrial: true });
+  });
+
+  it('reports redis "ok" when the live PING succeeds', async () => {
+    mockGetRedis.mockReturnValueOnce({ ping: vi.fn().mockResolvedValue('PONG') } as never);
+    const body = await (await GET(makeGet())).json();
+    expect(body.system.redis).toBe('ok');
+  });
+
+  it('reports redis "down" when configured but the PING throws', async () => {
+    mockGetRedis.mockReturnValueOnce({
+      ping: vi.fn().mockRejectedValue(new Error('unauthorized')),
+    } as never);
+    const body = await (await GET(makeGet())).json();
+    expect(body.system.redis).toBe('down');
   });
 });

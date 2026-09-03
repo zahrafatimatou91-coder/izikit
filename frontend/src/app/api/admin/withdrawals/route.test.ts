@@ -68,6 +68,7 @@ interface WRow {
   requestedAt: Date;
   processedAt: Date | null;
   completedAt: Date | null;
+  user?: { email: string; name: string | null } | null;
 }
 
 function wrow(overrides: Partial<WRow> = {}): WRow {
@@ -85,6 +86,7 @@ function wrow(overrides: Partial<WRow> = {}): WRow {
     requestedAt: overrides.requestedAt ?? new Date('2026-05-01T00:00:00Z'),
     processedAt: overrides.processedAt ?? null,
     completedAt: overrides.completedAt ?? null,
+    user: overrides.user ?? { email: 'holder@test.local', name: null },
   };
 }
 
@@ -128,7 +130,21 @@ describe('/api/admin/withdrawals [Wave 1] — list', () => {
       id: true,
       destination: true,
       requestedAt: true,
+      user: { select: { email: true, name: true } },
     });
+  });
+
+  it('GET flattens the account holder email onto each row', async () => {
+    prismaMock.withdrawal.findMany.mockResolvedValueOnce([
+      wrow({ id: 'w1', user: { email: 'jane@test.local', name: 'Jane' } }),
+    ] as never);
+    const res = await GET(makeGet('http://test/api/admin/withdrawals'));
+    const body = (await res.json()) as {
+      items: Array<{ userEmail: string | null; userName: string | null; user?: unknown }>;
+    };
+    expect(body.items[0]?.userEmail).toBe('jane@test.local');
+    expect(body.items[0]?.userName).toBe('Jane');
+    expect(body.items[0]).not.toHaveProperty('user'); // nested relation stripped
   });
 
   it('GET returns empty 200 (never 404) on no rows', async () => {

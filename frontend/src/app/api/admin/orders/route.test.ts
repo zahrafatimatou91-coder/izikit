@@ -61,6 +61,24 @@ describe('/api/admin/orders [Wave 1] — list', () => {
     expect(await res.json()).toEqual({ items: [], nextCursor: null });
   });
 
+  it('GET resolves the display email: checkout email, else account email', async () => {
+    prismaMock.order.findMany.mockResolvedValueOnce([
+      { ...seedOrder({ id: 'guest' }), customerEmail: 'guest@buy.local', user: null },
+      {
+        ...seedOrder({ id: 'member' }),
+        customerEmail: null,
+        user: { email: 'member@test.local', name: 'Mo' },
+      },
+    ] as never);
+    const res = await GET(makeGet('http://test/api/admin/orders'));
+    const body = (await res.json()) as {
+      items: Array<{ id: string; userEmail: string | null; user?: unknown }>;
+    };
+    expect(body.items.find((o) => o.id === 'guest')?.userEmail).toBe('guest@buy.local');
+    expect(body.items.find((o) => o.id === 'member')?.userEmail).toBe('member@test.local');
+    expect(body.items[0]).not.toHaveProperty('user');
+  });
+
   it('GET filters by status=PAID', async () => {
     prismaMock.order.findMany.mockResolvedValueOnce([
       seedOrder({ id: 'o1', status: 'PAID' }),

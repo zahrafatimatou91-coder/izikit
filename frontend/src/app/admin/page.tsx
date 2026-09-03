@@ -24,7 +24,12 @@ interface Overview {
   };
   signups: { month: string; count: number }[];
   revenue: { mrrFcfa: number; paidSubs: number; arpuFcfa: number };
-  system: { db: boolean; redis: boolean; email: boolean; payments: boolean };
+  system: {
+    db: boolean;
+    redis: 'ok' | 'down' | 'off';
+    email: boolean;
+    payments: boolean;
+  };
   recentUsers: {
     id: string;
     name: string | null;
@@ -56,24 +61,33 @@ function monthLabel(key: string): string {
   return MONTH_LABELS[m - 1] ?? key;
 }
 
+type SystemState = 'ok' | 'warn' | 'off';
+
 function SystemRow({
   label,
-  ok,
+  state,
+  okLabel = 'OK',
   offLabel = 'Non configuré',
+  warnLabel = 'Injoignable',
 }: {
   label: string;
-  ok: boolean;
+  state: SystemState;
+  okLabel?: string;
   offLabel?: string;
+  warnLabel?: string;
 }) {
+  const dot =
+    state === 'ok' ? 'bg-primary' : state === 'warn' ? 'bg-accent' : 'bg-muted-foreground';
+  const text =
+    state === 'ok' ? 'text-primary' : state === 'warn' ? 'text-accent' : 'text-muted-foreground';
+  const value = state === 'ok' ? okLabel : state === 'warn' ? warnLabel : offLabel;
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${ok ? 'bg-primary' : 'bg-muted-foreground'}`} />
+        <span className={`h-2 w-2 rounded-full ${dot}`} />
         <p className="font-body text-sm text-foreground">{label}</p>
       </div>
-      <p className={`font-body text-xs font-bold ${ok ? 'text-primary' : 'text-muted-foreground'}`}>
-        {ok ? 'OK' : offLabel}
-      </p>
+      <p className={`font-body text-xs font-bold ${text}`}>{value}</p>
     </div>
   );
 }
@@ -165,13 +179,36 @@ export default function AdminOverviewPage() {
 
         <SectionCard title="État du système">
           <div className="space-y-4 px-5 py-5">
-            <SystemRow label="Base de données" ok={data?.system.db ?? false} offLabel="HS" />
-            <SystemRow label="Redis (cache / rate-limit)" ok={data?.system.redis ?? false} />
-            <SystemRow label="Emails (Resend)" ok={data?.system.email ?? false} />
-            <SystemRow label="Paiements" ok={data?.system.payments ?? false} />
+            <SystemRow
+              label="Base de données"
+              state={data?.system.db ? 'ok' : 'off'}
+              offLabel="—"
+            />
+            <SystemRow
+              label="Redis (cache / rate-limit)"
+              state={
+                data
+                  ? data.system.redis === 'off'
+                    ? 'off'
+                    : data.system.redis === 'ok'
+                      ? 'ok'
+                      : 'warn'
+                  : 'off'
+              }
+            />
+            <SystemRow
+              label="Emails (Resend)"
+              state={data?.system.email ? 'ok' : 'off'}
+              okLabel="Clé présente"
+            />
+            <SystemRow
+              label="Paiements"
+              state={data?.system.payments ? 'ok' : 'off'}
+              okLabel="Clé présente"
+            />
             <p className="border-t border-input pt-3 font-body text-xs text-muted-foreground">
-              Présence des clés d&apos;environnement uniquement — aucune valeur secrète n&apos;est
-              lue. Gère la bannière d&apos;annonce dans{' '}
+              Base de données et Redis sont testés en direct ; Emails et Paiements indiquent
+              seulement la présence de la clé. Gère la bannière d&apos;annonce dans{' '}
               <Link href="/admin/config" className="text-primary underline">
                 Configuration
               </Link>

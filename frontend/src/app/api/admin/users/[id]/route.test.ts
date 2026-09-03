@@ -37,6 +37,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(adminCtx);
   mockRateLimit.mockResolvedValue(null);
+  prismaMock.envelope.count.mockResolvedValue(0 as never);
+  prismaMock.savingsGoal.count.mockResolvedValue(0 as never);
 });
 
 describe('/api/admin/users/[id] — detail', () => {
@@ -57,6 +59,40 @@ describe('/api/admin/users/[id] — detail', () => {
     const body = (await res.json()) as { user: { id: string; email: string } };
     expect(body.user.id).toBe('u1');
     expect(body.user).not.toHaveProperty('passwordHash');
+  });
+
+  it('GET reports envelope / goal counts as active vs archived', async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce({
+      id: 'u1',
+      email: 'u1@test.local',
+      name: null,
+      avatarUrl: null,
+      role: 'USER',
+      status: 'ACTIVE',
+      emailVerifiedAt: null,
+      createdAt: new Date('2026-05-01T00:00:00Z'),
+      country: null,
+      totalBudget: null,
+      budgetFrequency: null,
+      subscription: null,
+      _count: { envelopes: 8, savingsGoals: 3, transactions: 40, orders: 2 },
+      orders: [],
+    } as never);
+    prismaMock.envelope.count.mockResolvedValueOnce(6 as never); // 6 of 8 archived
+    prismaMock.savingsGoal.count.mockResolvedValueOnce(3 as never); // all archived
+
+    const res = await GET(makeGet('http://test/api/admin/users/u1'), ctxWith('u1'));
+    const body = (await res.json()) as {
+      user: { counts: Record<string, number> };
+    };
+    expect(body.user.counts).toEqual({
+      envelopes: 2,
+      envelopesArchived: 6,
+      savingsGoals: 0,
+      savingsGoalsArchived: 3,
+      transactions: 40,
+      orders: 2,
+    });
   });
 
   it('GET returns 404 USER_NOT_FOUND for a missing user', async () => {

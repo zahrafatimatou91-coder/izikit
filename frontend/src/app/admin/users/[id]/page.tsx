@@ -38,7 +38,14 @@ interface UserDetail {
     isTrial: boolean;
     isComp: boolean;
   } | null;
-  counts: { envelopes: number; savingsGoals: number; transactions: number; orders: number };
+  counts: {
+    envelopes: number;
+    envelopesArchived: number;
+    savingsGoals: number;
+    savingsGoalsArchived: number;
+    transactions: number;
+    orders: number;
+  };
   recentOrders: {
     id: string;
     amount: number;
@@ -230,16 +237,29 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
         <SectionCard title="Activité">
           <div className="grid grid-cols-2 gap-px bg-input sm:grid-cols-4">
             {[
-              { label: 'Enveloppes', value: user.counts.envelopes },
-              { label: 'Objectifs', value: user.counts.savingsGoals },
-              { label: 'Transactions', value: user.counts.transactions },
-              { label: 'Commandes', value: user.counts.orders },
+              {
+                label: 'Enveloppes',
+                value: user.counts.envelopes,
+                archived: user.counts.envelopesArchived,
+              },
+              {
+                label: 'Objectifs',
+                value: user.counts.savingsGoals,
+                archived: user.counts.savingsGoalsArchived,
+              },
+              { label: 'Transactions', value: user.counts.transactions, archived: 0 },
+              { label: 'Commandes', value: user.counts.orders, archived: 0 },
             ].map((c) => (
               <div key={c.label} className="bg-card px-4 py-4 text-center">
                 <p className="font-headings text-xl font-bold text-foreground">{c.value}</p>
                 <p className="font-body text-[11px] tracking-wide text-muted-foreground uppercase">
                   {c.label}
                 </p>
+                {c.archived > 0 && (
+                  <p className="mt-0.5 font-body text-[11px] text-muted-foreground">
+                    +{c.archived} archivée{c.archived > 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
             ))}
           </div>

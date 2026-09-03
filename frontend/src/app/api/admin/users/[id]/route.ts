@@ -39,6 +39,8 @@ const USER_SELECT = {
     },
   },
   _count: {
+    // Totals — the archived slice is pulled separately below so the detail
+    // screen can show "3 actives · 2 archivées" instead of one ambiguous "5".
     select: { envelopes: true, savingsGoals: true, transactions: true, orders: true },
   },
   orders: {
@@ -70,7 +72,11 @@ export async function GET(
     if (limited) return limited;
 
     const { id } = await ctx.params;
-    const row = await prisma.user.findUnique({ where: { id }, select: USER_SELECT });
+    const [row, envelopesArchived, savingsGoalsArchived] = await Promise.all([
+      prisma.user.findUnique({ where: { id }, select: USER_SELECT }),
+      prisma.envelope.count({ where: { userId: id, archivedAt: { not: null } } }),
+      prisma.savingsGoal.count({ where: { userId: id, archivedAt: { not: null } } }),
+    ]);
     if (!row) {
       return NextResponse.json(
         { error: 'USER_NOT_FOUND', message: 'User not found' },
@@ -97,8 +103,13 @@ export async function GET(
           }
         : null,
       counts: {
-        envelopes: _count?.envelopes ?? 0,
-        savingsGoals: _count?.savingsGoals ?? 0,
+        // envelopes / savingsGoals are the ACTIVE count (what the user sees
+        // in-app); archived rows (Free-downgrade surplus) are broken out so an
+        // admin fielding "I lost my envelopes" sees the real picture.
+        envelopes: Math.max(0, (_count?.envelopes ?? 0) - envelopesArchived),
+        envelopesArchived,
+        savingsGoals: Math.max(0, (_count?.savingsGoals ?? 0) - savingsGoalsArchived),
+        savingsGoalsArchived,
         transactions: _count?.transactions ?? 0,
         orders: _count?.orders ?? 0,
       },

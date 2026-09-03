@@ -21,6 +21,8 @@ interface OrderRow {
   currency: string;
   status: string;
   customerEmail: string | null;
+  userEmail: string | null;
+  userName: string | null;
   provider: string;
   paymentMethod: string | null;
   paidAt: string | null;
@@ -34,6 +36,8 @@ interface WithdrawalRow {
   currency: string;
   status: string;
   destination: unknown;
+  userEmail: string | null;
+  userName: string | null;
   provider: string;
   failureReason: string | null;
   requestedAt: string;
@@ -101,7 +105,9 @@ export default function AdminTransactionsPage() {
       width: '180px',
       render: (o) => (
         <div className="min-w-0">
-          <p className="truncate text-xs text-muted-foreground">{o.customerEmail ?? o.userId}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {o.userEmail ?? o.customerEmail ?? o.userId}
+          </p>
         </div>
       ),
     },
@@ -139,7 +145,9 @@ export default function AdminTransactionsPage() {
       key: 'user',
       header: 'Utilisateur',
       width: '150px',
-      render: (w) => <span className="text-xs text-muted-foreground">{w.userId}</span>,
+      render: (w) => (
+        <span className="text-xs text-muted-foreground">{w.userEmail ?? w.userId}</span>
+      ),
     },
     {
       key: 'amount',

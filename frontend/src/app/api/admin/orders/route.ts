@@ -32,6 +32,7 @@ const ORDER_SELECT = {
   expiresAt: true,
   paidAt: true,
   createdAt: true,
+  user: { select: { email: true, name: true } },
 } as const satisfies Prisma.OrderSelect;
 
 function parseDate(raw: string | null): Date | null {
@@ -77,8 +78,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     const page = buildPage(rows, limit);
-    return NextResponse.json(page, {
-      headers: { 'x-request-id': ctx.requestId },
-    });
+    const items = page.items.map(({ user, ...o }) => ({
+      ...o,
+      // What to show in the "Utilisateur" column: the checkout email for a
+      // guest order, else the account email, else (last resort) the raw id.
+      userEmail: o.customerEmail ?? user?.email ?? null,
+      userName: user?.name ?? null,
+    }));
+    return NextResponse.json(
+      { items, nextCursor: page.nextCursor },
+      { headers: { 'x-request-id': ctx.requestId } },
+    );
   });
 }

@@ -27,12 +27,28 @@ import {
   parseSubscriptionOrderMetadata,
 } from '@/lib/server/subscriptions/tier';
 import { getSubscriptionPricing } from '@/lib/server/settings';
+import { getRedis } from '@/lib/server/redis';
 
 const MONTH_KEYS = 6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function monthKey(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Real reachability, not just env presence: an invalid/expired Upstash
+ * token leaves the env vars set but every call failing — rate-limiting then
+ * silently degrades to in-memory and leader-leases break. `off` = not
+ * configured (fine in dev), `down` = configured but the PING failed. */
+async function redisHealth(): Promise<'ok' | 'down' | 'off'> {
+  const r = getRedis();
+  if (!r) return 'off';
+  try {
+    await r.ping();
+    return 'ok';
+  } catch {
+    return 'down';
+  }
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -50,7 +66,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (MONTH_KEYS - 1), 1),
     );
 
-    const [totalUsers, newLast30d, effectiveProSubs, signupRows, recentUsersRaw, pricing] =
+    const [totalUsers, newLast30d, effectiveProSubs, signupRows, recentUsersRaw, pricing, redis] =
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
@@ -82,6 +98,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           },
         }),
         getSubscriptionPricing(),
+        redisHealth(),
       ]);
 
     const isComp = (id: string | null): boolean => typeof id === 'string' && id.startsWith('comp:');
@@ -162,8 +179,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         signups,
         revenue: { mrrFcfa, paidSubs: paidSubs.length, arpuFcfa },
         system: {
-          db: true,
-          redis: Boolean(process.env.UPSTASH_REDIS_REST_URL),
+          db: true, // proven — this response just ran several DB queries
+          redis, // live PING: 'ok' | 'down' | 'off'
           email: Boolean(process.env.RESEND_API_KEY),
           payments: Boolean(process.env.BICTORYS_API_KEY || process.env.MONEROO_API_KEY),
         },
