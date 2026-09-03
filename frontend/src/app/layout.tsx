@@ -4,6 +4,7 @@ import './globals.css';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { THEME_STORAGE_KEY } from '@/lib/theme-storage-key';
 
 // Runs before hydration so the correct theme applies on first paint — avoids
@@ -69,7 +70,10 @@ export default function RootLayout({
       <body className={`${dmSans.className} bg-background text-foreground`}>
         <ThemeProvider>
           <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <AnnouncementBanner />
+              {children}
+            </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>
