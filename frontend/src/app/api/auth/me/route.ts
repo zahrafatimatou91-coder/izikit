@@ -53,6 +53,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         totalBudget: true,
         budgetFrequency: true,
         country: true,
+        role: true,
         oauthAccounts: { select: { provider: true } },
       },
     });
@@ -85,6 +86,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       totalBudget: dbUser?.totalBudget ?? null,
       budgetFrequency: dbUser?.budgetFrequency ?? null,
       country: dbUser?.country ?? null,
+      role: dbUser?.role ?? 'USER',
     };
 
     return NextResponse.json({ user }, { status: 200, headers: { 'x-request-id': ctx.requestId } });

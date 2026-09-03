@@ -22,6 +22,11 @@ export interface User {
   budgetFrequency: string | null;
   /** ISO 3166-1 alpha-2, set during onboarding — drives payment-provider routing. */
   country: string | null;
+  /** App-wide role — 'USER' | 'ADMIN' | 'SUPERADMIN' (see requireAdmin /
+   * requireSuperadmin in lib/server/middleware). Drives client-side UI only
+   * (e.g. showing an Admin shortcut) — never a substitute for the server's
+   * own requireAdmin() checks on the actual /api/admin/* routes. */
+  role: string;
 }
 
 interface AuthContextValue {

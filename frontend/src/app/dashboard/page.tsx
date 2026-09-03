@@ -165,7 +165,25 @@ export default function DashboardPage() {
         {/* Desktop top bar */}
         <div className="hidden items-center justify-between border-b border-border bg-card px-8 py-6 lg:flex">
           <h2 className="font-headings text-xl font-bold text-foreground">Tableau de bord</h2>
-          <NotificationBell />
+          <div className="flex items-center gap-3">
+            {/* ADMIN + SUPERADMIN only (see requireAdmin precedence in
+                lib/server/middleware) — a quick way in to /admin without
+                typing the URL. Client-side check only, for UI convenience;
+                /admin's own pages still gate on the server via
+                requireAdmin(), so a non-admin can never reach anything by
+                guessing this button into existence. */}
+            {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
+              <Link
+                href="/admin"
+                onPointerDown={ripple}
+                className="relative flex items-center gap-1.5 overflow-hidden rounded-lg border border-border px-3 py-2 font-body text-xs font-bold text-foreground hover:bg-muted"
+              >
+                <Icon i="shield" size={14} />
+                Admin
+              </Link>
+            )}
+            <NotificationBell />
+          </div>
         </div>
 
         <div className="flex-1 px-4 pb-32 pt-6 lg:overflow-y-auto lg:px-8 lg:py-8 lg:pb-8">
