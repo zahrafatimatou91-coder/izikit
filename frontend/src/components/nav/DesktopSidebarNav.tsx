@@ -84,22 +84,28 @@ export function DesktopSidebarNav({
           ))}
         </nav>
 
-        <div className="flex items-center gap-3 border-t border-border pt-6">
-          <UserAvatar
-            name={userName}
-            avatarUrl={avatarUrl}
-            className="h-10 w-10 flex-shrink-0 rounded-lg"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
+        <div className="border-t border-border pt-6">
+          <div className="flex items-center gap-3">
+            <UserAvatar
+              name={userName}
+              avatarUrl={avatarUrl}
+              className="h-10 w-10 flex-shrink-0 rounded-lg"
+            />
+            {/* Name gets the whole row to itself — it used to share space
+                with the plan pill AND the upsell button on one line, which
+                squeezed a 5-letter name down to "Z…" in a 256px-wide
+                sidebar. Plan pill now sits on its own line below the name
+                (per explicit instruction), upsell button below that,
+                full-width. */}
+            <div className="min-w-0 flex-1">
               <p className="truncate font-body text-sm font-medium text-foreground">{userName}</p>
               {plan && (
-                <span className="flex-shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-body text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                <span className="mt-1 inline-block rounded-full bg-muted px-1.5 py-0.5 font-body text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                   {plan === 'PRO' ? 'Pro' : 'Free'}
                 </span>
               )}
+              <p className="truncate font-body text-xs text-muted-foreground">{userEmail}</p>
             </div>
-            <p className="truncate font-body text-xs text-muted-foreground">{userEmail}</p>
           </div>
           {/* Upsell only — a Pro member already has it, so showing this
               would just be a redundant nag (see SubscriptionBanner's own
@@ -107,20 +113,15 @@ export function DesktopSidebarNav({
               banner's full message: this is a compact entry point, not a
               second copy of the pitch.
               Label is "Passer Pro" (a call to action), never "Premium" —
-              this app only ever has two real plans, FREE and PRO; a third
-              tier-sounding word sitting right next to the "FREE" status
-              pill reads as a contradiction ("free AND premium at once?")
-              instead of the action it actually is. */}
+              this app only ever has two real plans, FREE and PRO. */}
           {plan === 'FREE' && (
             <button
               type="button"
               onClick={() => router.push('/subscription')}
               onPointerDown={ripple}
-              aria-label="Passer à Pro"
-              title="Passer à Pro"
-              className="relative flex flex-shrink-0 items-center gap-1 overflow-hidden rounded-full bg-secondary px-2 py-1 font-body text-[10px] font-bold text-secondary-foreground"
+              className="relative mt-3 flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-lg bg-secondary px-3 py-2 font-body text-xs font-bold text-secondary-foreground"
             >
-              <Icon i="sparkles" size={11} />
+              <Icon i="sparkles" size={13} />
               Passer Pro
             </button>
           )}
