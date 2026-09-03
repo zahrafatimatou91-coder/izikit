@@ -142,6 +142,89 @@
   transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * Confetti burst — payment-success page (ConfettiBurst.tsx). Falls from just
+ * above the viewport to just below it. 5 variants bake in different
+ * horizontal drift + total rotation so a whole burst doesn't fall in a
+ * dead-straight line, without needing per-instance CSS custom properties
+ * (kept out of React's typed inline-style object — see lib/animation.ts's
+ * computeConfettiPieces, which assigns each piece one variant at random).
+ */
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  border-radius: 2px;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+@keyframes confetti-fall-0 {
+  from {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(-60px, 110vh, 0) rotate(320deg);
+    opacity: 0.85;
+  }
+}
+@keyframes confetti-fall-1 {
+  from {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(-25px, 110vh, 0) rotate(480deg);
+    opacity: 0.85;
+  }
+}
+@keyframes confetti-fall-2 {
+  from {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(0, 110vh, 0) rotate(620deg);
+    opacity: 0.85;
+  }
+}
+@keyframes confetti-fall-3 {
+  from {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(25px, 110vh, 0) rotate(500deg);
+    opacity: 0.85;
+  }
+}
+@keyframes confetti-fall-4 {
+  from {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(60px, 110vh, 0) rotate(700deg);
+    opacity: 0.85;
+  }
+}
+
+.animate-confetti-fall-0 {
+  animation-name: confetti-fall-0;
+}
+.animate-confetti-fall-1 {
+  animation-name: confetti-fall-1;
+}
+.animate-confetti-fall-2 {
+  animation-name: confetti-fall-2;
+}
+.animate-confetti-fall-3 {
+  animation-name: confetti-fall-3;
+}
+.animate-confetti-fall-4 {
+  animation-name: confetti-fall-4;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-ripple {
     animation: none;
@@ -150,5 +233,9 @@
 
   .transition-bar {
     transition: none;
+  }
+
+  .confetti-piece {
+    display: none;
   }
 }

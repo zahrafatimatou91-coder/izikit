@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { computeRippleGeometry, easeOutCubic, tweenValue } from './animation';
+import {
+  computeConfettiPieces,
+  computeRippleGeometry,
+  CONFETTI_VARIANT_COUNT,
+  easeOutCubic,
+  tweenValue,
+} from './animation';
 
 describe('easeOutCubic', () => {
   it('starts at 0 and ends at 1', () => {
@@ -51,5 +57,63 @@ describe('computeRippleGeometry', () => {
   it('scales with the larger of width/height for non-square elements', () => {
     const wide = computeRippleGeometry({ width: 300, height: 20, left: 0, top: 0 }, 10, 10);
     expect(wide.size).toBe(600);
+  });
+});
+
+describe('computeConfettiPieces', () => {
+  const colors = ['#f5c842', '#1e6b45', '#e8612a'];
+
+  it('returns exactly `count` pieces', () => {
+    const pieces = computeConfettiPieces(70, colors, () => 0.5);
+    expect(pieces).toHaveLength(70);
+  });
+
+  it('returns an empty array for count 0', () => {
+    expect(computeConfettiPieces(0, colors, () => 0.5)).toEqual([]);
+  });
+
+  it('keeps every piece within its valid ranges', () => {
+    // Sweep a spread of "random" values, including the edges 0 and just
+    // under 1, to catch off-by-one bugs in the index math.
+    const seq = [0, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 0.999];
+    let i = 0;
+    const rand = () => seq[i++ % seq.length]!;
+    const pieces = computeConfettiPieces(50, colors, rand);
+    for (const piece of pieces) {
+      expect(piece.left).toBeGreaterThanOrEqual(0);
+      expect(piece.left).toBeLessThan(100);
+      expect(colors).toContain(piece.color);
+      expect(piece.variant).toBeGreaterThanOrEqual(0);
+      expect(piece.variant).toBeLessThan(CONFETTI_VARIANT_COUNT);
+      expect(piece.delayMs).toBeGreaterThanOrEqual(0);
+      expect(piece.delayMs).toBeLessThan(500);
+      expect(piece.durationMs).toBeGreaterThanOrEqual(2200);
+      expect(piece.durationMs).toBeLessThan(3800);
+      expect(piece.size).toBeGreaterThanOrEqual(6);
+      expect(piece.size).toBeLessThan(12);
+    }
+  });
+
+  it('never picks past the last color even when rand approaches 1', () => {
+    const pieces = computeConfettiPieces(5, colors, () => 0.999999);
+    for (const piece of pieces) {
+      expect(piece.color).toBe(colors[colors.length - 1]);
+    }
+  });
+
+  it('is deterministic for a fixed rand source', () => {
+    const rand1 = (() => {
+      let i = 0;
+      const seq = [0.1, 0.2, 0.3, 0.4, 0.5];
+      return () => seq[i++ % seq.length]!;
+    })();
+    const rand2 = (() => {
+      let i = 0;
+      const seq = [0.1, 0.2, 0.3, 0.4, 0.5];
+      return () => seq[i++ % seq.length]!;
+    })();
+    expect(computeConfettiPieces(10, colors, rand1)).toEqual(
+      computeConfettiPieces(10, colors, rand2),
+    );
   });
 });

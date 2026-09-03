@@ -17,6 +17,7 @@ import { useUser } from '@/contexts/AuthContext';
 import { FormPageSkeleton } from '@/components/skeletons/FormPageSkeleton';
 import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/ui/Icon';
+import { ConfettiBurst } from '@/components/ui/ConfettiBurst';
 import { formatPrice } from '@/lib/utils';
 import { useRipple } from '@/hooks/useRipple';
 
@@ -101,6 +102,10 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-6 bg-background px-4 text-center">
+      {/* Fixed-position overlay — safe to mount anywhere in the tree. Only
+          mounts once the payment is actually confirmed (not on the pending/
+          polling states above), and removes itself a few seconds later. */}
+      {confirmed && <ConfettiBurst />}
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary">
         <Icon i={confirmed ? 'check' : 'clock'} size={32} className="text-white" />
       </div>

@@ -16,6 +16,49 @@ export function tweenValue(from: number, to: number, t: number): number {
   return from + (to - from) * easeOutCubic(t);
 }
 
+export interface ConfettiPiece {
+  /** Horizontal start position, 0-100 (vw %). */
+  left: number;
+  color: string;
+  /** Selects which `.animate-confetti-fall-N` keyframe (globals.css) this
+   * piece uses — each variant bakes in a different drift/rotation so pieces
+   * don't all fall in a dead-straight line, without needing per-instance
+   * CSS custom properties (kept out of React's typed inline-style object). */
+  variant: number;
+  delayMs: number;
+  durationMs: number;
+  /** Width in px; rendered height is size * 0.4 (a confetti-strip look). */
+  size: number;
+}
+
+/** Number of `.animate-confetti-fall-N` keyframe variants defined in
+ * globals.css — keep in sync if more are added there. */
+export const CONFETTI_VARIANT_COUNT = 5;
+
+/**
+ * One-shot confetti burst for the payment-success page. Pure/seedable (the
+ * `rand` param defaults to Math.random but tests pass a fixed sequence) so
+ * the distribution logic is unit-testable without touching the DOM — the
+ * component (ConfettiBurst.tsx) just renders whatever this returns.
+ */
+export function computeConfettiPieces(
+  count: number,
+  colors: readonly string[],
+  rand: () => number = Math.random,
+): ConfettiPiece[] {
+  return Array.from({ length: count }, () => {
+    const colorIdx = Math.min(colors.length - 1, Math.floor(rand() * colors.length));
+    return {
+      left: rand() * 100,
+      color: colors[colorIdx] ?? colors[0] ?? '#f5c842',
+      variant: Math.floor(rand() * CONFETTI_VARIANT_COUNT),
+      delayMs: Math.floor(rand() * 500),
+      durationMs: 2200 + Math.floor(rand() * 1600),
+      size: 6 + Math.floor(rand() * 6),
+    };
+  });
+}
+
 export interface RippleGeometry {
   size: number;
   x: number;
