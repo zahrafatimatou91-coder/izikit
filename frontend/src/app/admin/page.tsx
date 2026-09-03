@@ -19,6 +19,7 @@ interface Overview {
     total: number;
     byPlan: { free: number; pro: number };
     activeTrials: number;
+    compedPro: number;
     newLast30d: number;
   };
   signups: { month: string; count: number }[];
@@ -29,6 +30,8 @@ interface Overview {
     name: string | null;
     email: string;
     plan: string;
+    isTrial: boolean;
+    isComp: boolean;
     createdAt: string;
   }[];
 }
@@ -111,11 +114,16 @@ export default function AdminOverviewPage() {
           hint={data ? `+${data.users.newLast30d} sur 30 j` : undefined}
         />
         <StatCard
-          label="Abonnés Pro"
+          label="Utilisateurs Pro"
           icon="crown"
           loading={!data}
           value={data ? data.users.byPlan.pro.toLocaleString('fr-FR') : ''}
-          hint={data ? `${data.users.activeTrials} en essai` : undefined}
+          hint={
+            data
+              ? `${data.users.activeTrials} en essai` +
+                (data.users.compedPro > 0 ? ` · ${data.users.compedPro} offerts` : '')
+              : undefined
+          }
         />
         <StatCard
           label="MRR estimé"
@@ -208,7 +216,7 @@ export default function AdminOverviewPage() {
                 <p className="truncate font-body text-xs text-muted-foreground">{u.email}</p>
               </div>
               <div className="flex flex-shrink-0 items-center gap-3">
-                <PlanBadge plan={u.plan} />
+                <PlanBadge plan={u.plan} isTrial={u.isTrial} isComp={u.isComp} />
                 <span className="hidden font-body text-xs text-muted-foreground sm:inline">
                   {new Date(u.createdAt).toLocaleDateString('fr-FR', {
                     day: 'numeric',

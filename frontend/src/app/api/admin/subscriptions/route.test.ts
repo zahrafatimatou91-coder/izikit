@@ -79,14 +79,29 @@ describe('GET /api/admin/subscriptions', () => {
     expect(where.lastOrderId).toBeNull();
   });
 
-  it('applies the ?expiring=1 filter as a currentPeriodEnd window', async () => {
+  it('applies the ?expiring=1 filter as a currentPeriodEnd window over PRO rows', async () => {
     prismaMock.subscription.findMany.mockResolvedValue([] as never);
     await GET(makeGet('?expiring=1'));
     const where = prismaMock.subscription.findMany.mock.calls[0]?.[0]?.where as {
+      plan?: string;
       currentPeriodEnd?: { gt?: Date; lte?: Date };
     };
+    expect(where.plan).toBe('PRO');
     expect(where.currentPeriodEnd?.gt).toBeInstanceOf(Date);
     expect(where.currentPeriodEnd?.lte).toBeInstanceOf(Date);
+  });
+
+  it('excludes admin comps from the ?paid=1 filter', async () => {
+    prismaMock.subscription.findMany.mockResolvedValue([] as never);
+    await GET(makeGet('?paid=1'));
+    const where = prismaMock.subscription.findMany.mock.calls[0]?.[0]?.where as {
+      plan?: string;
+      lastOrderId?: unknown;
+      NOT?: unknown;
+    };
+    expect(where.plan).toBe('PRO');
+    expect(where.lastOrderId).toEqual({ not: null });
+    expect(where.NOT).toEqual({ lastOrderId: { startsWith: 'comp:' } });
   });
 
   it('forwards a 429 from the rate limiter', async () => {

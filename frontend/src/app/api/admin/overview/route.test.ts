@@ -55,6 +55,7 @@ describe('GET /api/admin/overview', () => {
       total: 0,
       byPlan: { free: 0, pro: 0 },
       activeTrials: 0,
+      compedPro: 0,
       newLast30d: 0,
     });
     expect(body.signups).toHaveLength(6);
@@ -63,7 +64,7 @@ describe('GET /api/admin/overview', () => {
     expect(typeof body.system.redis).toBe('boolean');
   });
 
-  it('counts effective Pro / trials and computes MRR from the live price', async () => {
+  it('counts effective Pro / trials and computes MRR from the amount actually paid', async () => {
     prismaMock.user.count.mockResolvedValueOnce(10 as never); // total
     prismaMock.user.count.mockResolvedValueOnce(3 as never); // newLast30d
     prismaMock.subscription.findMany.mockResolvedValueOnce([
@@ -73,7 +74,7 @@ describe('GET /api/admin/overview', () => {
     prismaMock.user.findMany.mockResolvedValueOnce([] as never); // signup rows
     prismaMock.user.findMany.mockResolvedValueOnce([] as never); // recent users
     prismaMock.order.findMany.mockResolvedValueOnce([
-      { id: 'order_1', metadata: { purpose: 'subscription', period: 'monthly' } },
+      { id: 'order_1', amount: 1500, metadata: { purpose: 'subscription', period: 'monthly' } },
     ] as never);
 
     const res = await GET(makeGet());
@@ -84,5 +85,68 @@ describe('GET /api/admin/overview', () => {
     expect(body.revenue.paidSubs).toBe(1);
     expect(body.revenue.mrrFcfa).toBe(1500);
     expect(body.revenue.arpuFcfa).toBe(1500);
+  });
+
+  it('normalizes an annual sub to 1/12 of the amount actually paid', async () => {
+    prismaMock.user.count.mockResolvedValueOnce(5 as never);
+    prismaMock.user.count.mockResolvedValueOnce(0 as never);
+    prismaMock.subscription.findMany.mockResolvedValueOnce([
+      { userId: 'u1', lastOrderId: 'order_y', currentPeriodEnd: new Date(Date.now() + 1e9) },
+    ] as never);
+    prismaMock.user.findMany.mockResolvedValueOnce([] as never);
+    prismaMock.user.findMany.mockResolvedValueOnce([] as never);
+    prismaMock.order.findMany.mockResolvedValueOnce([
+      // paid 13 500 last year — a later admin price change must not move this
+      { id: 'order_y', amount: 13500, metadata: { purpose: 'subscription', period: 'annual' } },
+    ] as never);
+
+    const body = await (await GET(makeGet())).json();
+    expect(body.revenue.mrrFcfa).toBe(1125); // 13500 / 12
+    expect(body.revenue.paidSubs).toBe(1);
+  });
+
+  it('excludes admin-comped Pro from MRR, ARPU and the paid count', async () => {
+    prismaMock.user.count.mockResolvedValueOnce(4 as never);
+    prismaMock.user.count.mockResolvedValueOnce(0 as never);
+    prismaMock.subscription.findMany.mockResolvedValueOnce([
+      { userId: 'u1', lastOrderId: 'order_1', currentPeriodEnd: new Date(Date.now() + 1e9) },
+      { userId: 'u2', lastOrderId: 'comp:admin-1', currentPeriodEnd: new Date(Date.now() + 1e9) },
+    ] as never);
+    prismaMock.user.findMany.mockResolvedValueOnce([] as never);
+    prismaMock.user.findMany.mockResolvedValueOnce([] as never);
+    prismaMock.order.findMany.mockResolvedValueOnce([
+      { id: 'order_1', amount: 1500, metadata: { purpose: 'subscription', period: 'monthly' } },
+    ] as never);
+
+    const body = await (await GET(makeGet())).json();
+    expect(body.users.byPlan.pro).toBe(2); // both are effective Pro
+    expect(body.users.compedPro).toBe(1);
+    expect(body.revenue.paidSubs).toBe(1); // comp not counted
+    expect(body.revenue.mrrFcfa).toBe(1500); // comp adds nothing
+    expect(body.revenue.arpuFcfa).toBe(1500);
+  });
+
+  it('flags a trial in the recent-users list', async () => {
+    prismaMock.user.count.mockResolvedValueOnce(1 as never);
+    prismaMock.user.count.mockResolvedValueOnce(1 as never);
+    prismaMock.subscription.findMany.mockResolvedValueOnce([] as never);
+    prismaMock.user.findMany.mockResolvedValueOnce([] as never); // signups
+    prismaMock.user.findMany.mockResolvedValueOnce([
+      {
+        id: 'u1',
+        name: null,
+        email: 'trial@test.local',
+        createdAt: new Date(),
+        subscription: {
+          plan: 'PRO',
+          currentPeriodEnd: new Date(Date.now() + 1e9),
+          lastOrderId: null,
+        },
+      },
+    ] as never);
+    prismaMock.order.findMany.mockResolvedValueOnce([] as never);
+
+    const body = await (await GET(makeGet())).json();
+    expect(body.recentUsers[0]).toMatchObject({ plan: 'PRO', isTrial: true });
   });
 });

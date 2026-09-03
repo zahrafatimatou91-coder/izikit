@@ -49,7 +49,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       bictorys: Boolean(process.env.BICTORYS_API_KEY),
       moneroo: Boolean(process.env.MONEROO_API_KEY),
       googleOAuth: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-      cloudinary: Boolean(process.env.CLOUDINARY_URL || process.env.CLOUDINARY_API_KEY),
+      // The uploader (lib/server/upload/cloudinary-client.ts) needs all three —
+      // any one missing and /api/upload returns 503, so "Configuré" must mean
+      // all three are present, not just one.
+      cloudinary: Boolean(
+        process.env.CLOUDINARY_CLOUD_NAME &&
+        process.env.CLOUDINARY_API_KEY &&
+        process.env.CLOUDINARY_API_SECRET,
+      ),
       sentry: Boolean(process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN),
     };
     return NextResponse.json(

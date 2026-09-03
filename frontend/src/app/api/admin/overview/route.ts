@@ -7,9 +7,11 @@
 // Everything is computed live:
 //   users.byPlan / activeTrials  → effective PRO (plan + currentPeriodEnd),
 //                                   never the raw Subscription.plan column
+//   users.compedPro              → effective PRO granted by an admin (no money)
 //   signups                      → 6 monthly buckets from User.createdAt
-//   revenue.mrrFcfa              → Σ active PAID Pro, annual normalized /12,
-//                                   priced from the live AppSetting pricing
+//   revenue.mrrFcfa              → Σ active PAID Pro (comps excluded — not
+//                                   revenue), each priced from the amount the
+//                                   paying Order actually captured, annual /12
 //   system                      → env-presence booleans ONLY (never a value)
 export const runtime = 'nodejs';
 
@@ -19,7 +21,11 @@ import { requireAdmin } from '@/lib/server/middleware';
 import { prisma } from '@/lib/server/prisma';
 import { enforceAdminRateLimit } from '@/lib/server/middleware/rate-limit-by-userid';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
-import { getEffectivePlan, parseSubscriptionOrderMetadata } from '@/lib/server/subscriptions/tier';
+import {
+  getEffectivePlan,
+  isTrial,
+  parseSubscriptionOrderMetadata,
+} from '@/lib/server/subscriptions/tier';
 import { getSubscriptionPricing } from '@/lib/server/settings';
 
 const MONTH_KEYS = 6;
@@ -48,8 +54,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+        // Effective-Pro exactly as getEffectivePlan defines it: plan + a
+        // future currentPeriodEnd. Deliberately NOT filtered on `status` —
+        // the shared helper ignores it, and gating that off `status` here
+        // would make this KPI drift from the users / subscriptions lists the
+        // day a "cancel at period end" flow (status CANCELED, plan still PRO)
+        // is added.
         prisma.subscription.findMany({
-          where: { plan: 'PRO', status: 'ACTIVE', currentPeriodEnd: { gt: now } },
+          where: { plan: 'PRO', currentPeriodEnd: { gt: now } },
           select: { userId: true, lastOrderId: true, currentPeriodEnd: true },
         }),
         prisma.user.findMany({
@@ -64,39 +76,55 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             name: true,
             email: true,
             createdAt: true,
-            subscription: { select: { plan: true, currentPeriodEnd: true } },
+            subscription: {
+              select: { plan: true, currentPeriodEnd: true, lastOrderId: true },
+            },
           },
         }),
         getSubscriptionPricing(),
       ]);
 
+    const isComp = (id: string | null): boolean => typeof id === 'string' && id.startsWith('comp:');
+
     const proCount = effectiveProSubs.length;
     const activeTrials = effectiveProSubs.filter((s) => s.lastOrderId === null).length;
-    const paidSubs = effectiveProSubs.filter((s) => s.lastOrderId !== null);
+    const compedPro = effectiveProSubs.filter((s) => isComp(s.lastOrderId)).length;
+    // "Paid" = effective Pro with a real paying Order. Trials (lastOrderId
+    // null) and admin comps ("comp:<adminId>") are NOT revenue and must not
+    // land in MRR / ARPU / the paid count.
+    const paidSubs = effectiveProSubs.filter(
+      (s) => s.lastOrderId !== null && !isComp(s.lastOrderId),
+    );
 
-    // Period (monthly vs annual) comes from the paying Order's metadata. A
-    // "comp:<adminId>" sentinel lastOrderId won't match any Order and is
-    // treated as monthly for MRR purposes.
-    const realOrderIds = paidSubs
-      .map((s) => s.lastOrderId)
-      .filter((id): id is string => typeof id === 'string' && !id.startsWith('comp:'));
+    // Price each paid sub from what its Order actually captured — not the
+    // current AppSetting price, which may have been changed by an admin after
+    // these subs were bought. Fall back to the live monthly price only if the
+    // Order row can't be found (deleted / legacy).
+    const realOrderIds = paidSubs.map((s) => s.lastOrderId as string);
     const paidOrders = realOrderIds.length
       ? await prisma.order.findMany({
           where: { id: { in: realOrderIds } },
-          select: { id: true, metadata: true },
+          select: { id: true, amount: true, metadata: true },
         })
       : [];
-    const periodByOrder = new Map(
+    const orderById = new Map(
       paidOrders.map((o) => [
         o.id,
-        parseSubscriptionOrderMetadata(o.metadata)?.period ?? 'monthly',
+        {
+          amount: o.amount,
+          period: parseSubscriptionOrderMetadata(o.metadata)?.period ?? 'monthly',
+        },
       ]),
     );
 
     let mrrFcfa = 0;
     for (const s of paidSubs) {
-      const period = s.lastOrderId ? (periodByOrder.get(s.lastOrderId) ?? 'monthly') : 'monthly';
-      mrrFcfa += period === 'annual' ? Math.round(pricing.annual / 12) : pricing.monthly;
+      const o = orderById.get(s.lastOrderId as string);
+      if (!o) {
+        mrrFcfa += pricing.monthly;
+        continue;
+      }
+      mrrFcfa += o.period === 'annual' ? Math.round(o.amount / 12) : o.amount;
     }
     const arpuFcfa = paidSubs.length ? Math.round(mrrFcfa / paidSubs.length) : 0;
 
@@ -118,6 +146,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       email: u.email,
       createdAt: u.createdAt.toISOString(),
       plan: getEffectivePlan(u.subscription),
+      isTrial: u.subscription ? isTrial(u.subscription) : false,
+      isComp: isComp(u.subscription?.lastOrderId ?? null),
     }));
 
     return NextResponse.json(
@@ -126,6 +156,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           total: totalUsers,
           byPlan: { free: Math.max(0, totalUsers - proCount), pro: proCount },
           activeTrials,
+          compedPro,
           newLast30d,
         },
         signups,

@@ -7,8 +7,8 @@
 //   ?q          — user email contains (insensitive)
 //   ?status     — exact Subscription.status (ACTIVE | PAST_DUE | CANCELED)
 //   ?trial=1    — effective PRO with no paying order (lastOrderId null)
-//   ?paid=1     — effective PRO with a paying order
-//   ?expiring=1 — currentPeriodEnd within the next 7 days
+//   ?paid=1     — effective PRO with a real paying order (admin comps excluded)
+//   ?expiring=1 — effective PRO whose currentPeriodEnd is within the next 7 days
 //   ?cursor ?limit
 //
 // Each row also carries a computed `effectivePlan` / `isTrial` (live, never
@@ -61,9 +61,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       ...(status ? { status } : {}),
       ...(q ? { user: { email: { contains: q, mode: 'insensitive' } } } : {}),
       ...(trial ? { plan: 'PRO', lastOrderId: null, currentPeriodEnd: { gt: now } } : {}),
-      ...(paid ? { plan: 'PRO', lastOrderId: { not: null }, currentPeriodEnd: { gt: now } } : {}),
+      ...(paid
+        ? {
+            plan: 'PRO',
+            lastOrderId: { not: null },
+            // A "comp:<adminId>" pointer is an admin courtesy grant, not a
+            // payment — it must not show under "Payants".
+            NOT: { lastOrderId: { startsWith: 'comp:' } },
+            currentPeriodEnd: { gt: now },
+          }
+        : {}),
       ...(expiring
-        ? { currentPeriodEnd: { gt: now, lte: new Date(now.getTime() + EXPIRING_WINDOW_MS) } }
+        ? {
+            plan: 'PRO',
+            currentPeriodEnd: { gt: now, lte: new Date(now.getTime() + EXPIRING_WINDOW_MS) },
+          }
         : {}),
       ...cursorWhere(cursor),
     };
