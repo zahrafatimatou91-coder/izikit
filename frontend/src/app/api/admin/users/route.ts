@@ -24,6 +24,7 @@ import { prisma } from '@/lib/server/prisma';
 import { clampLimit, cursorWhere, buildPage, decodeCursor } from '@/lib/server/pagination/paginate';
 import { enforceAdminRateLimit } from '@/lib/server/middleware/rate-limit-by-userid';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { getEffectivePlan, isTrial } from '@/lib/server/subscriptions/tier';
 
 const USER_SELECT = {
   id: true,
@@ -34,6 +35,11 @@ const USER_SELECT = {
   status: true,
   emailVerifiedAt: true,
   createdAt: true,
+  // The users table renders a plan badge per row (D-shape gap: USER_SELECT
+  // had no plan). Natural join — this route is ours to extend.
+  subscription: {
+    select: { plan: true, status: true, currentPeriodEnd: true, lastOrderId: true },
+  },
 } as const satisfies Prisma.UserSelect;
 
 const Q_MAX = 200;
@@ -76,8 +82,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     const page = buildPage(rows, limit);
-    return NextResponse.json(page, {
-      headers: { 'x-request-id': ctx.requestId },
-    });
+    const items = page.items.map(({ subscription, ...u }) => ({
+      ...u,
+      effectivePlan: getEffectivePlan(subscription),
+      isTrial: subscription ? isTrial(subscription) : false,
+    }));
+    return NextResponse.json(
+      { items, nextCursor: page.nextCursor },
+      { headers: { 'x-request-id': ctx.requestId } },
+    );
   });
 }
