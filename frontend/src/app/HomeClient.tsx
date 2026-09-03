@@ -545,10 +545,17 @@ export default function HomeClient() {
               <p className="mb-6 font-headings text-sm font-bold uppercase tracking-widest text-secondary">
                 Chaque Franc
               </p>
-              <h1 className="mb-8 font-headings text-[64px] font-bold leading-[1.15] text-[#faf7f2]">
+              {/* Not an <h1> — the mobile hero above already carries the
+                  page's one <h1> (same text). Two <h1>s would both sit in
+                  the DOM at once (only CSS visibility toggles between
+                  them), which a static HTML/accessibility audit flags as
+                  duplicate headings even though a rendering browser only
+                  ever shows one at a time. Visually identical — same
+                  classes, same text. */}
+              <p className="mb-8 font-headings text-[64px] font-bold leading-[1.15] text-[#faf7f2]">
                 Sais où part <span className="text-secondary">chaque franc</span>, avant la fin du
                 mois.
-              </h1>
+              </p>
               <p className="mb-10 max-w-xl font-body text-xl leading-relaxed text-[#faf7f2]/80">
                 Tu ranges ton argent en enveloppes dès qu&apos;il rentre. L&apos;app te dit ce
                 qu&apos;il reste dans chacune, en temps réel.
