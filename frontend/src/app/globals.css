@@ -29,6 +29,10 @@
   --color-card: #ffffff;
   --color-card-foreground: #1a1208;
 
+  /* Informational blue — used for the "trial / info" badge tone in the admin
+   * back-office. Redefined in the dark blocks below for contrast. */
+  --color-info: #2f6f9e;
+
   /* Envelope swatch palette — envelopes are user-customizable (see
    * .planning/banani/00-roadmap.md), so this is an open set of pickable
    * colors rather than 5 fixed category slots. The first 5 match the
@@ -91,6 +95,7 @@
     --color-accent-foreground: #ffffff;
     --color-card: #1e1911;
     --color-card-foreground: #f3eee3;
+    --color-info: #7ab8dd;
   }
 }
 
@@ -109,6 +114,7 @@
   --color-accent-foreground: #ffffff;
   --color-card: #1e1911;
   --color-card-foreground: #f3eee3;
+  --color-info: #7ab8dd;
 }
 
 /*

@@ -17,13 +17,25 @@
 // unstable_cache / Redis layer is a documented follow-up if it shows up in
 // traces.
 import 'server-only';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { z } from 'zod';
-import type { PrismaClient } from '@prisma/client';
 import { prisma } from '@/lib/server/prisma';
 import { createLogger } from '@/lib/server/logger';
 import { SUBSCRIPTION_PRICE_FCFA, SUBSCRIPTION_TRIAL_DAYS } from '@/lib/server/subscriptions/tier';
 
 const log = createLogger();
+
+/** True only for "the AppSetting table/column isn't there" — i.e. the
+ * migration hasn't been applied on this database yet. Everything else (a
+ * connection blip, a mid-transaction abort) must propagate: swallowing it
+ * would mask a real fault and, inside a webhook's Serializable tx, wouldn't
+ * help anyway (the tx is already dead). */
+function isMissingSchema(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    (err.code === 'P2021' || err.code === 'P2022')
+  );
+}
 
 /** Narrow client shape — the same functions work with a plain `prisma` or a
  * Prisma transaction client (both carry `.appSetting` with identical
@@ -109,14 +121,10 @@ async function readRaw(
     if (!row) return null;
     return { value: row.value, updatedAt: row.updatedAt, updatedBy: row.updatedBy };
   } catch (err) {
-    // The AppSetting table might not exist yet (migration not applied) or the
-    // DB could be briefly unreachable. Every accessor has a safe compile-time
-    // default, so degrade to it rather than 500-ing a page — or, worse,
-    // failing a payment webhook's Serializable transaction.
-    log.warn('settings: read failed, falling back to default', {
-      key,
-      err: err instanceof Error ? err.message : String(err),
-    });
+    if (!isMissingSchema(err)) throw err;
+    // Migration not applied yet — degrade to the compile-time default rather
+    // than 500-ing every page that reads a setting.
+    log.warn('settings: AppSetting table missing, using default', { key });
     return null;
   }
 }
@@ -173,9 +181,8 @@ export async function getAllSettings(
   try {
     rows = await client.appSetting.findMany({ where: { key: { in: [...SETTING_KEYS] } } });
   } catch (err) {
-    log.warn('settings: getAllSettings read failed, returning defaults', {
-      err: err instanceof Error ? err.message : String(err),
-    });
+    if (!isMissingSchema(err)) throw err;
+    log.warn('settings: AppSetting table missing, returning defaults');
   }
   const byKey = new Map(rows.map((r) => [r.key, r]));
 

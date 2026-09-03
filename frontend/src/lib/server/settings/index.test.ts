@@ -1,5 +1,6 @@
 import { prismaMock } from '@/test-utils/prisma-mock';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Prisma } from '@prisma/client';
 import {
   getSubscriptionPricing,
   getSupportEmail,
@@ -62,6 +63,29 @@ describe('getSubscriptionPricing', () => {
       monthly: SUBSCRIPTION_PRICE_FCFA.monthly,
       annual: SUBSCRIPTION_PRICE_FCFA.annual,
     });
+  });
+
+  it('falls back to the constant when the AppSetting table is missing (P2021)', async () => {
+    prismaMock.appSetting.findUnique.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('no such table', {
+        code: 'P2021',
+        clientVersion: 'test',
+      }),
+    );
+    await expect(getSubscriptionPricing(prismaMock)).resolves.toEqual({
+      monthly: SUBSCRIPTION_PRICE_FCFA.monthly,
+      annual: SUBSCRIPTION_PRICE_FCFA.annual,
+    });
+  });
+
+  it('propagates a real DB error (not a missing-schema error)', async () => {
+    prismaMock.appSetting.findUnique.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('connection lost', {
+        code: 'P1001',
+        clientVersion: 'test',
+      }),
+    );
+    await expect(getSubscriptionPricing(prismaMock)).rejects.toThrow();
   });
 });
 

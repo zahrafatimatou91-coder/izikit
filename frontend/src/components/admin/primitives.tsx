@@ -15,7 +15,7 @@ const BADGE_TONES: Record<BadgeTone, string> = {
   primary: 'bg-primary/10 text-primary',
   gold: 'bg-secondary/20 text-secondary-foreground',
   accent: 'bg-accent/10 text-accent',
-  info: 'bg-[#5DA0D0]/15 text-[#3277a8]',
+  info: 'bg-info/15 text-info',
 };
 
 export function Badge({
