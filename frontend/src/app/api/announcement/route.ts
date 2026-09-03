@@ -8,11 +8,21 @@ import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAnnouncement } from '@/lib/server/settings';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
+import { createLogger } from '@/lib/server/logger';
+
+const log = createLogger();
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-    const announcement = await getAnnouncement();
+    // Public, non-critical chrome — a transient DB error (Neon waking up) must
+    // not 500 every page in the app. Degrade to "no banner".
+    let announcement: Awaited<ReturnType<typeof getAnnouncement>> = null;
+    try {
+      announcement = await getAnnouncement();
+    } catch (err) {
+      log.warn('announcement: settings read failed, serving none', { err: String(err) });
+    }
     return NextResponse.json(
       { announcement },
       {

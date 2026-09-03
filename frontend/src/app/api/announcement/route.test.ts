@@ -44,4 +44,16 @@ describe('GET /api/announcement', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ announcement: null });
   });
+
+  it('degrades to null when the database is unreachable (P1001)', async () => {
+    prismaMock.appSetting.findUnique.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Can’t reach database server', {
+        code: 'P1001',
+        clientVersion: 'test',
+      }),
+    );
+    const res = await GET(makeGet());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ announcement: null });
+  });
 });

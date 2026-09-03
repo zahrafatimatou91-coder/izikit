@@ -216,11 +216,21 @@ export function AdminPageHeader({ title, children }: { title: string; children?:
   );
 }
 
-export function InlineError({ message }: { message: string }) {
+export function InlineError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 font-body text-sm text-accent">
+    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 font-body text-sm text-accent">
       <Icon i="alert-triangle" size={16} />
-      {message}
+      <span className="min-w-0 flex-1">{message}</span>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="inline-flex items-center gap-1 rounded-md border border-accent/40 px-2 py-1 text-xs font-bold text-accent hover:bg-accent/10"
+        >
+          <Icon i="refresh-cw" size={13} />
+          Réessayer
+        </button>
+      )}
     </div>
   );
 }

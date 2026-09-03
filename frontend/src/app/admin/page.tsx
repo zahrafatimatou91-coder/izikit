@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
@@ -80,20 +80,19 @@ export default function AdminOverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await api<Overview>('/api/admin/overview');
-        if (!cancelled) setData(res);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Erreur de chargement.');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await api<Overview>('/api/admin/overview');
+      setData(res);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erreur de chargement.');
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const maxSignups = data ? Math.max(1, ...data.signups.map((s) => s.count)) : 1;
 
@@ -101,7 +100,7 @@ export default function AdminOverviewPage() {
     <div>
       <AdminPageHeader title="Vue d'ensemble" />
 
-      {error && <InlineError message={error} />}
+      {error && <InlineError message={error} onRetry={load} />}
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard

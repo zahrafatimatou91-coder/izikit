@@ -227,7 +227,7 @@ export default function AdminTransactionsPage() {
         </select>
       </div>
 
-      {active.error && <InlineError message={active.error} />}
+      {active.error && <InlineError message={active.error} onRetry={active.reload} />}
 
       {tab === 'payments' && (
         <p className="mb-3 font-body text-xs text-muted-foreground">

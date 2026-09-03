@@ -80,7 +80,7 @@ export default function AdminConfigPage() {
     <div>
       <AdminPageHeader title="Configuration" />
 
-      {error && <InlineError message={error} />}
+      {error && <InlineError message={error} onRetry={load} />}
 
       <div className="flex flex-col gap-6">
         {/* Général */}

@@ -147,7 +147,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     return (
       <div>
         <AdminPageHeader title="Utilisateur" />
-        <InlineError message={error} />
+        <InlineError message={error} onRetry={load} />
         <Link
           href="/admin/users"
           className="mt-4 inline-block font-body text-sm text-primary underline"

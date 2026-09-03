@@ -161,7 +161,7 @@ export default function AdminSubscriptionsPage() {
     <div>
       <AdminPageHeader title="Abonnements" />
 
-      {settingsError && <InlineError message={settingsError} />}
+      {settingsError && <InlineError message={settingsError} onRetry={loadSettings} />}
 
       {/* Plan cards */}
       <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -280,7 +280,7 @@ export default function AdminSubscriptionsPage() {
         </div>
       </div>
 
-      {list.error && <InlineError message={list.error} />}
+      {list.error && <InlineError message={list.error} onRetry={list.reload} />}
 
       <DataTable
         columns={columns}

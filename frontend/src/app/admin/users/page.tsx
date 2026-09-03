@@ -140,7 +140,7 @@ export default function AdminUsersPage() {
         </select>
       </div>
 
-      {list.error && <InlineError message={list.error} />}
+      {list.error && <InlineError message={list.error} onRetry={list.reload} />}
 
       <DataTable
         columns={columns}
