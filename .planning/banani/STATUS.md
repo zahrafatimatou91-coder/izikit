@@ -490,10 +490,10 @@ questions ("ok defauts").
   routes in the manifest). Not yet live-smoke-tested against a running dev
   server.
 - **AppSetting migration**: `20260902120000_add_app_setting` (pure additive
-  `CREATE TABLE`) must be applied with `pnpm --filter frontend exec prisma
-  migrate deploy` (non-interactive, no shadow DB — safe per the incident
-  memory). Until it runs, the settings reads degrade to constants and the
-  admin write/announcement features 500 on save.
+  `CREATE TABLE`) — **applied to Neon `neondb` on 2026-09-03** via
+  `prisma migrate deploy` (non-interactive, no shadow DB). `migrate status`
+  clean, table confirmed queryable (0 rows — all settings on defaults until an
+  admin sets one).
 
 ## Done (2026-08-27)
 - **Per-page loading skeletons** — `envelopes`, `history`, `notifications`,
