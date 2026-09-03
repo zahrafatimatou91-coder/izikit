@@ -465,3 +465,18 @@ model Subscription {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }
+
+// Admin-editable runtime configuration. Key/value store read by
+// lib/server/settings/* with a compile-time default per key, so a missing
+// or malformed row always degrades to the shipped constant rather than
+// breaking. Written only by SUPERADMIN via PATCH /api/admin/settings, and
+// every write also produces an AdminAction row. Known keys:
+//   "subscription.pricing" → { monthly: number, annual: number }  (FCFA, integer)
+//   "support.email"        → { email: string }
+//   "announcement"         → { message: string, tone: "info"|"warn", enabled: boolean }
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String? // AdminAction.actorId of the last writer
+}

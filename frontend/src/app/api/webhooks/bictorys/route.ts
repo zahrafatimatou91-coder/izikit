@@ -33,8 +33,8 @@ import { prisma } from '@/lib/server/prisma';
 import {
   parseSubscriptionOrderMetadata,
   SUBSCRIPTION_PERIOD_DAYS,
-  SUBSCRIPTION_PRICE_FCFA,
 } from '@/lib/server/subscriptions/tier';
+import { getSubscriptionPricing } from '@/lib/server/settings';
 import { reactivateArchivedForProUpgrade } from '@/lib/server/subscriptions/archive';
 
 export const POST = createWebhookHandler({
@@ -66,35 +66,44 @@ export const POST = createWebhookHandler({
     // inside the same Serializable tx as the Order status flip so a crash
     // between the two is impossible (both commit together or neither does).
     const subMeta = parseSubscriptionOrderMetadata(order.metadata);
-    const expectedPrice = subMeta ? SUBSCRIPTION_PRICE_FCFA[subMeta.period] : null;
-    if (subMeta && order.userId && order.amount === expectedPrice) {
-      const existingSub = await tx.subscription.findUnique({ where: { userId: order.userId } });
-      const now = new Date();
-      const base =
-        existingSub?.currentPeriodEnd && existingSub.currentPeriodEnd.getTime() > now.getTime()
-          ? existingSub.currentPeriodEnd
-          : now;
-      const periodMs = SUBSCRIPTION_PERIOD_DAYS[subMeta.period] * 24 * 60 * 60 * 1000;
-      const currentPeriodEnd = new Date(base.getTime() + periodMs);
+    if (subMeta && order.userId) {
+      // Dynamic pricing — the admin-set price (AppSetting "subscription.pricing")
+      // wins over the SUBSCRIPTION_PRICE_FCFA constant, read here inside the
+      // Serializable tx (one indexed PK lookup, negligible contention).
+      // Exact-equality check unchanged: if the admin changes the price
+      // between checkout-start and this webhook, the paid amount won't match
+      // and Pro isn't granted (the user retries). A `>=` check would re-open
+      // the low-amount exploit this check exists to close.
+      const pricing = await getSubscriptionPricing(tx);
+      if (order.amount === pricing[subMeta.period]) {
+        const existingSub = await tx.subscription.findUnique({ where: { userId: order.userId } });
+        const now = new Date();
+        const base =
+          existingSub?.currentPeriodEnd && existingSub.currentPeriodEnd.getTime() > now.getTime()
+            ? existingSub.currentPeriodEnd
+            : now;
+        const periodMs = SUBSCRIPTION_PERIOD_DAYS[subMeta.period] * 24 * 60 * 60 * 1000;
+        const currentPeriodEnd = new Date(base.getTime() + periodMs);
 
-      await tx.subscription.upsert({
-        where: { userId: order.userId },
-        create: {
-          userId: order.userId,
-          plan: 'PRO',
-          status: 'ACTIVE',
-          currentPeriodEnd,
-          lastOrderId: order.id,
-        },
-        update: {
-          plan: 'PRO',
-          status: 'ACTIVE',
-          currentPeriodEnd,
-          lastOrderId: order.id,
-        },
-      });
+        await tx.subscription.upsert({
+          where: { userId: order.userId },
+          create: {
+            userId: order.userId,
+            plan: 'PRO',
+            status: 'ACTIVE',
+            currentPeriodEnd,
+            lastOrderId: order.id,
+          },
+          update: {
+            plan: 'PRO',
+            status: 'ACTIVE',
+            currentPeriodEnd,
+            lastOrderId: order.id,
+          },
+        });
 
-      await reactivateArchivedForProUpgrade(tx, order.userId);
+        await reactivateArchivedForProUpgrade(tx, order.userId);
+      }
     }
 
     // Outbox emits stay inside the factory's Serializable tx so the rows

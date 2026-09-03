@@ -9,6 +9,7 @@ const orderUpdate = vi.fn();
 const outboxCreate = vi.fn();
 const subscriptionFindUnique = vi.fn();
 const subscriptionUpsert = vi.fn();
+const appSettingFindUnique = vi.fn();
 const envelopeUpdateMany = vi.fn();
 const savingsGoalUpdateMany = vi.fn();
 
@@ -18,6 +19,7 @@ const $transaction = vi.fn(async (fn: (tx: unknown) => Promise<unknown>, _opts?:
     order: { findFirst: orderFindFirst, update: orderUpdate },
     outboxEvent: { create: outboxCreate },
     subscription: { findUnique: subscriptionFindUnique, upsert: subscriptionUpsert },
+    appSetting: { findUnique: appSettingFindUnique },
     envelope: { updateMany: envelopeUpdateMany },
     savingsGoal: { updateMany: savingsGoalUpdateMany },
   }),
@@ -40,6 +42,11 @@ beforeEach(() => {
   outboxCreate.mockReset();
   subscriptionFindUnique.mockReset();
   subscriptionUpsert.mockReset();
+  appSettingFindUnique.mockReset();
+  // Default: no AppSetting row → getSubscriptionPricing falls back to the
+  // SUBSCRIPTION_PRICE_FCFA constant (monthly 1500), which the subscription
+  // fixtures below pay exactly.
+  appSettingFindUnique.mockResolvedValue(null);
   envelopeUpdateMany.mockReset();
   savingsGoalUpdateMany.mockReset();
 });
