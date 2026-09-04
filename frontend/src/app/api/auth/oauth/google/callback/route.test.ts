@@ -223,6 +223,9 @@ describe('GET /api/auth/oauth/google/callback', () => {
     // D-01: do NOT overwrite name/avatarUrl on existing users.
     expect(prismaMock.user.update).not.toHaveBeenCalled();
     expect(prismaMock.user.create).not.toHaveBeenCalled();
+    // Linking an existing account must never grant/reset a trial — the
+    // account keeps whatever subscription state it already had.
+    expect(prismaMock.subscription.create).not.toHaveBeenCalled();
 
     // 3-cookie issuance.
     expect(mockSetAuthCookies).toHaveBeenCalledWith('access-jwt', 'refresh-jwt');
@@ -265,6 +268,25 @@ describe('GET /api/auth/oauth/google/callback', () => {
     expect(userArg?.data?.emailVerifiedAt).toBeInstanceOf(Date);
 
     expect(prismaMock.oAuthAccount.create).toHaveBeenCalledTimes(1);
+
+    // Reverse-trial: a brand-new Google account gets the same 7-day Pro
+    // trial as an email/password signup (see signup/route.test.ts's
+    // equivalent assertion) — this was the bug: Google-created accounts
+    // used to skip this grant entirely and start on Free.
+    expect(prismaMock.subscription.create).toHaveBeenCalledTimes(1);
+    const subArg = prismaMock.subscription.create.mock.calls[0]?.[0];
+    expect(subArg?.data).toEqual(
+      expect.objectContaining({
+        userId: 'u-new',
+        plan: 'PRO',
+        status: 'ACTIVE',
+        lastOrderId: null,
+      }),
+    );
+    const periodEnd = (subArg?.data?.currentPeriodEnd as Date).getTime();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    expect(periodEnd).toBeGreaterThan(Date.now() + sevenDaysMs - 60_000);
+    expect(periodEnd).toBeLessThan(Date.now() + sevenDaysMs + 60_000);
 
     // 3 cookies + welcome notif via createNotification (NOTIF-05 wrapper).
     expect(mockSetAuthCookies).toHaveBeenCalledWith('access-jwt', 'refresh-jwt');

@@ -12,7 +12,11 @@
 //   7. Find-or-create:
 //      a. OAuthAccount.findUnique({ provider_providerAccountId }) — returning user
 //      b. else User.findUnique({ email }) — D-01 silent linking; leave User.name/avatarUrl untouched
-//      c. else $transaction → User + OAuthAccount; isNewUser = true
+//      c. else $transaction → User + OAuthAccount + trial Subscription;
+//         isNewUser = true — same reverse-trial grant as signup/route.ts
+//         (spec: docs/superpowers/specs/2026-08-29-monetization-subscription-design.md
+//         "Essai Pro gratuit de 7 jours" — every new account, whatever the
+//         signup path, starts Pro for 7 days)
 //   8. setAuthCookies(access, refresh) + setCsrfCookie() — same as verify-email
 //   9. If isNewUser: createNotification(prisma, welcomeNotification(userId, email)) — NOTIF-05 invariant
 //   10. Consume app-oauth-next cookie (re-validate same-origin); fall back to APP_URL
@@ -34,6 +38,7 @@ import {
 import { prisma } from '@/lib/server/prisma';
 import { createNotification } from '@/lib/server/notifications';
 import { welcomeNotification } from '@/lib/server/notifications/templates';
+import { SUBSCRIPTION_TRIAL_DAYS } from '@/lib/server/subscriptions/tier';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { log } from '@/lib/server/observability/log';
 
@@ -142,7 +147,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         });
         userId = existingByEmail.id;
       } else {
-        // D-02 create path — User + OAuthAccount in a single $transaction
+        // D-02 create path — User + OAuthAccount + trial Subscription in a
+        // single $transaction. Reverse-trial: every new account starts Pro
+        // for 7 days, no card/payment required (same grant as
+        // signup/route.ts) — granted exactly once, here, never retriggered
+        // by any other flow.
         const created = await prisma.$transaction(async (tx) => {
           const newUser = await tx.user.create({
             data: {
@@ -161,6 +170,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
               providerAccountId: claims.sub,
             },
           });
+          await tx.subscription.create({
+            data: {
+              userId: newUser.id,
+              plan: 'PRO',
+              status: 'ACTIVE',
+              currentPeriodEnd: new Date(
+                Date.now() + SUBSCRIPTION_TRIAL_DAYS * 24 * 60 * 60 * 1000,
+              ),
+              lastOrderId: null,
+            },
+          });
+          log.info('subscription trial_started', { userId: newUser.id, via: 'google_oauth' });
           return newUser;
         });
         userId = created.id;
