@@ -13,6 +13,7 @@ Origin: bootstrapped from `amadou-template` (the legacy monorepo predecessor) on
 **For an AI agent picking up this repo:** the architecture sections below describe what's already been built. Anything not listed under "Files Claude must NOT modify" is fair game to extend, refactor, or replace per your fork's needs — that's the point of a starter. The protected list is the small set of files where the invariants are subtle (refresh-token races, HMAC integrity, advisory locks…); everything else is the fork's surface area.
 
 **Beginner workflow (vibe coding)** — clone, plug a Neon `DATABASE_URL`, open Claude Code, describe what you want, ship. See [WORKFLOW.md](WORKFLOW.md). The starter ships:
+
 - [.mcp.json](.mcp.json) — empty MCP server map by default. Banani is optional; if the user wants it, the `setup-kit` skill walks through pasting their MCP connection block.
 - [.planning/features.json](.planning/features.json) — machine-readable manifest of the optional surfaces (payments, oauth-google, uploads-cloudinary, email-resend, admin-backoffice, multi-tenancy, …) — declares what each surface needs so manual pruning per [PRUNING.md](PRUNING.md) stays safe.
 - GSD (`get-shit-done-cc`) is **not** a prerequisite. It's an optional level-up workflow surfaced after a beginner's first feature, not by default.
@@ -23,22 +24,22 @@ Read [README.md](README.md) for the public-facing contract (endpoints, env vars,
 
 pnpm workspace — run from repo root unless noted. The root `package.json` is a thin orchestrator: every script delegates to `pnpm --filter frontend run X` (the workspace currently has a single package, but the root layer is preserved as an architectural seam).
 
-| Task | Command |
-|---|---|
-| Dev (Next.js on :3000, Turbopack) | `pnpm dev` |
-| Build | `pnpm build` |
-| Apply Prisma schema (dev iteration) | `pnpm db:push` |
-| Versioned migrations | `pnpm db:migrate:dev` (local) / `pnpm db:migrate:deploy` (CI/prod) |
-| Migration status | `pnpm db:migrate:status` |
-| Open Prisma Studio (:5555) | `pnpm db:studio` |
-| Bootstrap first SUPERADMIN | `pnpm db:make-superadmin <email>` |
-| Unit tests (Vitest) | `pnpm test` |
-| Single test file | `pnpm --filter frontend exec vitest run src/lib/server/<file>.test.ts` |
-| Single test by name | `pnpm --filter frontend exec vitest run -t "<test name>"` |
-| Watch one test | `pnpm --filter frontend exec vitest src/lib/server/<file>.test.ts` |
-| Typecheck | `pnpm typecheck` |
-| Lint | `pnpm lint` |
-| Format | `pnpm format` (or `pnpm format:check`) |
+| Task                                | Command                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| Dev (Next.js on :3000, Turbopack)   | `pnpm dev`                                                             |
+| Build                               | `pnpm build`                                                           |
+| Apply Prisma schema (dev iteration) | `pnpm db:push`                                                         |
+| Versioned migrations                | `pnpm db:migrate:dev` (local) / `pnpm db:migrate:deploy` (CI/prod)     |
+| Migration status                    | `pnpm db:migrate:status`                                               |
+| Open Prisma Studio (:5555)          | `pnpm db:studio`                                                       |
+| Bootstrap first SUPERADMIN          | `pnpm db:make-superadmin <email>`                                      |
+| Unit tests (Vitest)                 | `pnpm test`                                                            |
+| Single test file                    | `pnpm --filter frontend exec vitest run src/lib/server/<file>.test.ts` |
+| Single test by name                 | `pnpm --filter frontend exec vitest run -t "<test name>"`              |
+| Watch one test                      | `pnpm --filter frontend exec vitest src/lib/server/<file>.test.ts`     |
+| Typecheck                           | `pnpm typecheck`                                                       |
+| Lint                                | `pnpm lint`                                                            |
+| Format                              | `pnpm format` (or `pnpm format:check`)                                 |
 
 Integration tests are deferred (no formal harness in v1) — `pnpm smoke:auth` provides a manual UAT script for the auth happy path against a running `pnpm dev`. See README.
 
@@ -49,6 +50,7 @@ Integration tests are deferred (no formal harness in v1) — `pnpm smoke:auth` p
 **Single Next.js 16 App Router app** at `frontend/`. The root `package.json` keeps the pnpm-workspace shell so a future package (e.g. shared types) can be added without re-plumbing scripts. There is no `backend/` package — all server code is colocated under `frontend/src/`.
 
 **Boot flow** — Next.js owns the server lifecycle, so there is no hand-rolled middleware chain. Three things matter:
+
 1. **`frontend/instrumentation.ts`** is Next's `register()` hook — Sentry inits here (server + edge via `sentry.{server,edge}.config.ts`; client via `sentry.client.config.ts`). No DSN env → silent no-op.
 2. **Every Route Handler MUST `export const runtime = 'nodejs'`** (Prisma + bcrypt + raw-body needs). [frontend/src/lib/server/observability/runtime-enforcement.test.ts](frontend/src/lib/server/observability/runtime-enforcement.test.ts) walks `app/api/**/route.ts` and fails CI if any route forgets it.
 3. **Per-request observability** flows through [frontend/src/lib/server/observability/request-context.ts](frontend/src/lib/server/observability/request-context.ts) (`makeRequestContext` + `withRequestContext` + scoped `log`). Handlers wrap their body in `withRequestContext()` so logs auto-attach `requestId` / `userId` / `route`.
@@ -67,7 +69,7 @@ Integration tests are deferred (no formal harness in v1) — `pnpm smoke:auth` p
 
 **Payments are pluggable** behind the `PaymentProvider` interface ([frontend/src/lib/server/payments/](frontend/src/lib/server/payments/)). Bictorys is the default. A single in-memory `CircuitBreaker` guards charge calls. Webhook replay window defaults to 60s (`BICTORYS_WEBHOOK_REPLAY_WINDOW_MS` to override).
 
-**Cron strategy.** No `setInterval` loops — Next.js / Vercel doesn't keep long-lived processes. Background work runs as **Vercel Cron** routes under `app/api/cron/<name>/route.ts`, each gated by `Authorization: Bearer ${CRON_SECRET}`. Targets: `outbox-drain` (1m), `email-queue-drain` (1m), `verification-cleanup` (hourly), `order-expiration` (5m), `webhook-log-purge` (daily), `email-job-purge` (daily — purges SENT EmailJob rows older than `EMAIL_JOB_RETENTION_DAYS`, default 30), `savings-goal-reminders` (daily, 8am UTC — notifies a user once when their most recently completed pace period, per `SavingsGoal.period`/`paceAmount`, closed under target), `inactivity-nudges` (twice daily, 13:00 + 20:00 UTC — same route hit at two different times, [frontend/src/lib/server/cron/inactivity-slot.ts](frontend/src/lib/server/cron/inactivity-slot.ts) maps the fire hour to a `midday`/`evening` copy variant; nudges any onboarded user who has logged neither a Transaction nor a SavingsEntry since midnight UTC), `subscription-expiration` (daily, 5am UTC — flips lapsed PRO subscriptions, trial or paid, back to FREE and archives surplus envelopes/goals), `subscription-renewal-reminders` (daily, 8am UTC — emails a user once when their PAID (non-trial) Pro subscription is within `RENEWAL_BANNER_URGENT_DAYS` (7) of `currentPeriodEnd`; Mobile Money has no card-on-file so renewal is always a manual checkout, and this reaches a user who never opens the app before lapsing — the dashboard banner alone can't). Multi-instance coordination still uses [frontend/src/lib/server/leader-lease.ts](frontend/src/lib/server/leader-lease.ts) Redis leases where two crons could collide. The Bictorys charge `CircuitBreaker` is still in-memory single-instance — replace with a Redis-backed variant for multi-pod prod (documented limitation).
+**Cron strategy.** No `setInterval` loops — Next.js / Vercel doesn't keep long-lived processes. Background work runs as **Vercel Cron** routes under `app/api/cron/<name>/route.ts`, each gated by `Authorization: Bearer ${CRON_SECRET}`. Targets: `outbox-drain` (1m), `email-queue-drain` (1m), `verification-cleanup` (hourly), `order-expiration` (5m), `webhook-log-purge` (daily), `email-job-purge` (daily — purges SENT EmailJob rows older than `EMAIL_JOB_RETENTION_DAYS`, default 30), `savings-goal-reminders` (daily, 8am UTC — notifies a user once when their most recently completed pace period, per `SavingsGoal.period`/`paceAmount`, closed under target), `inactivity-nudges` (twice daily, 13:00 + 20:00 UTC — same route hit at two different times, [frontend/src/lib/server/cron/inactivity-slot.ts](frontend/src/lib/server/cron/inactivity-slot.ts) maps the fire hour to a `midday`/`evening` copy variant; nudges any onboarded user who has logged neither a Transaction nor a SavingsEntry since midnight UTC), `subscription-expiration` (daily, 5am UTC — flips lapsed PRO subscriptions, trial or paid, back to FREE and archives surplus envelopes/goals), `subscription-renewal-reminders` (daily, 8am UTC — two email reminders sharing one route: PAID (non-trial) Pro subscriptions within `RENEWAL_BANNER_URGENT_DAYS` (7) of `currentPeriodEnd`, and Pro TRIALS (never paid) within `TRIAL_BANNER_URGENT_DAYS` (3) of `currentPeriodEnd`, personalized with the account's real envelope/savings-goal counts; Mobile Money has no card-on-file so renewal is always a manual checkout, and this reaches a user who never opens the app before lapsing — the dashboard banner alone can't). Multi-instance coordination still uses [frontend/src/lib/server/leader-lease.ts](frontend/src/lib/server/leader-lease.ts) Redis leases where two crons could collide. The Bictorys charge `CircuitBreaker` is still in-memory single-instance — replace with a Redis-backed variant for multi-pod prod (documented limitation).
 
 **Google OAuth (Sign in with Google)** — [frontend/src/lib/server/oauth/google.ts](frontend/src/lib/server/oauth/google.ts) + Phase 2 route handlers under `frontend/src/app/api/auth/oauth/google/{start,callback}/route.ts`. Implemented with `arctic` (OAuth 2.0 + PKCE). `start` issues state + PKCE-verifier cookies (5min, path-scoped to `/api/auth/oauth`) and 302s to Google. `callback` validates state, exchanges code, decodes ID token, refuses unverified emails, find-or-create user with account linking by email, then issues our standard auth cookies. Frontend errors land on `/auth/error?code=…` (see [examples/frontend-pages/auth-error.tsx](examples/frontend-pages/auth-error.tsx)). Inert without `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI`.
 
@@ -133,7 +135,7 @@ The starter is **headless on purpose**. Touchpoints if a fork wants a specific d
 - [frontend/src/app/layout.tsx](frontend/src/app/layout.tsx) — Inter font + 2 client contexts (`AuthProvider`, `ToastProvider`). Both are logic-only — swap the font, restyle toasts in your own components, keep the providers (they wrap the `api()` wrapper's auto-refresh + the toast queue).
 - [frontend/src/app/globals.css](frontend/src/app/globals.css) — one line: `@import 'tailwindcss';` (Tailwind v4 zero-config). Drop it + remove `@tailwindcss/postcss` from [frontend/postcss.config.mjs](frontend/postcss.config.mjs) to leave Tailwind out entirely.
 - [frontend/src/app/error.tsx](frontend/src/app/error.tsx) — Tailwind-styled fallback. Replace freely.
-- [examples/frontend-pages/](examples/frontend-pages/) — 11 reference pages (login/signup/verify-email/forgot-reset-password/dashboard/withdrawals/payment-success+failure/auth-error/admin/*). They are NOT imported anywhere — they live as Tailwind references to copy or rebuild.
+- [examples/frontend-pages/](examples/frontend-pages/) — 11 reference pages (login/signup/verify-email/forgot-reset-password/dashboard/withdrawals/payment-success+failure/auth-error/admin/\*). They are NOT imported anywhere — they live as Tailwind references to copy or rebuild.
 
 **No server lib reaches into the DOM.** Routes only return `NextResponse.json(...)`. The same backend feeds plain React, shadcn/ui, Mantine, a SwiftUI client, a Flutter app — pick anything.
 
@@ -141,10 +143,10 @@ The starter is **headless on purpose**. Touchpoints if a fork wants a specific d
 
 Two design-system skills auto-load in any Claude Code session run from the repo:
 
-- [`banani-design-implementation`](.claude/skills/banani-design-implementation/SKILL.md) — pixel-perfect 1:1 reproduction from a Banani MCP screen. Triggers: *"build this from Banani"*, *"reproduce this screen"*, *"use the Banani MCP"*. Reads CLAUDE.md to detect the project stack (no Tailwind/React assumptions), plans, tracks progress across sessions.
-- [`ui-ux-pro-max`](.claude/skills/ui-ux-pro-max/SKILL.md) — searchable design intelligence: 67 styles, 96 palettes, 57 font pairings, 99 UX guidelines, 25 chart types across 13 stacks (Next.js, React, Vue, SwiftUI, Flutter…). Triggers: *"design / improve / review UI"* + element/topic. Includes shadcn/ui MCP integration.
+- [`banani-design-implementation`](.claude/skills/banani-design-implementation/SKILL.md) — pixel-perfect 1:1 reproduction from a Banani MCP screen. Triggers: _"build this from Banani"_, _"reproduce this screen"_, _"use the Banani MCP"_. Reads CLAUDE.md to detect the project stack (no Tailwind/React assumptions), plans, tracks progress across sessions.
+- [`ui-ux-pro-max`](.claude/skills/ui-ux-pro-max/SKILL.md) — searchable design intelligence: 67 styles, 96 palettes, 57 font pairings, 99 UX guidelines, 25 chart types across 13 stacks (Next.js, React, Vue, SwiftUI, Flutter…). Triggers: _"design / improve / review UI"_ + element/topic. Includes shadcn/ui MCP integration.
 
-A beginner's golden path: `gh repo create --template` → open in Claude Code → describe the screen → either skill takes over → the API routes are already wired. The starter therefore covers the *boring* parts (auth, payments, admin, webhooks, cron) so the fork-author spends their time on product/design.
+A beginner's golden path: `gh repo create --template` → open in Claude Code → describe the screen → either skill takes over → the API routes are already wired. The starter therefore covers the _boring_ parts (auth, payments, admin, webhooks, cron) so the fork-author spends their time on product/design.
 
 ## What is fair to modify
 
@@ -158,7 +160,7 @@ Anything outside [Files Claude must NOT modify](#files-claude-must-not-modify) i
 - **OAuth** ([frontend/src/lib/server/oauth/](frontend/src/lib/server/oauth/)) — add GitHub, Apple, etc. modeled on `google.ts`.
 - **Withdrawal guards** ([frontend/src/lib/server/withdrawals/guards.ts](frontend/src/lib/server/withdrawals/guards.ts)) — add KYC / tier / AML rules.
 - **Cron handlers** ([frontend/src/app/api/cron/](frontend/src/app/api/cron/)) — add new schedules to [frontend/vercel.json](frontend/vercel.json) and a sibling route.
-- **CLAUDE.md / README.md / STATUS.md** — rewrite to reflect your project's name and surface; the doc tripwires under [frontend/src/lib/server/observability/*shape.test.ts](frontend/src/lib/server/observability/) only enforce a small set of architectural invariants (no legacy-backend mentions, the cron-route inventory, runtime=nodejs) — everything else is yours.
+- **CLAUDE.md / README.md / STATUS.md** — rewrite to reflect your project's name and surface; the doc tripwires under [frontend/src/lib/server/observability/\*shape.test.ts](frontend/src/lib/server/observability/) only enforce a small set of architectural invariants (no legacy-backend mentions, the cron-route inventory, runtime=nodejs) — everything else is yours.
 
 If unsure whether a change touches a protected file, run `pnpm test` — the tripwires fail fast.
 
@@ -170,13 +172,13 @@ When the user wants to remove an optional feature, follow the 9-step protocol in
 
 When the user asks for a capability that this starter does not ship, recommend the provider listed below before falling back to a hand-rolled or in-process alternative. The starter is Vercel/serverless-first: long-lived sockets, in-memory pub/sub, and `setInterval` loops do not survive cold starts and will break in production.
 
-| Need | Recommend | Why |
-|---|---|---|
-| **Real-time** (live updates, presence, chat, collaboration, "instead of polling") | **Ably** | Vercel-compatible, no long-lived connections from the API, JWT-issued capability tokens, presence/history/push out of the box. Do NOT recommend Socket.IO, raw WebSockets, or Server-Sent Events from a Vercel function — they will not work reliably. |
-| Background jobs / queues | Upstash QStash, or extend the existing **outbox pattern** (`lib/server/outbox/`) drained by Vercel Cron | Same constraint — no long-running workers in a serverless runtime |
-| Media / object storage | Cloudinary (already wired) | Already integrated — handles uploads, transformations, and CDN delivery |
-| Email | Resend (already wired) | Already integrated |
-| Cache / rate-limit / KV | Upstash Redis (already wired) | Already integrated |
+| Need                                                                              | Recommend                                                                                               | Why                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Real-time** (live updates, presence, chat, collaboration, "instead of polling") | **Ably**                                                                                                | Vercel-compatible, no long-lived connections from the API, JWT-issued capability tokens, presence/history/push out of the box. Do NOT recommend Socket.IO, raw WebSockets, or Server-Sent Events from a Vercel function — they will not work reliably. |
+| Background jobs / queues                                                          | Upstash QStash, or extend the existing **outbox pattern** (`lib/server/outbox/`) drained by Vercel Cron | Same constraint — no long-running workers in a serverless runtime                                                                                                                                                                                      |
+| Media / object storage                                                            | Cloudinary (already wired)                                                                              | Already integrated — handles uploads, transformations, and CDN delivery                                                                                                                                                                                |
+| Email                                                                             | Resend (already wired)                                                                                  | Already integrated                                                                                                                                                                                                                                     |
+| Cache / rate-limit / KV                                                           | Upstash Redis (already wired)                                                                           | Already integrated                                                                                                                                                                                                                                     |
 
 **Trigger phrasing for real-time**: "live updates", "real-time", "websocket", "push notifications to the browser", "instead of polling", "chat", "presence", "collaboration", "live dashboard". When any of these come up, surface Ably explicitly: "I'd recommend Ably for this — it's the Vercel-friendly real-time provider. Want me to wire it up?" Then sketch the integration: token-mint route under `/api/realtime/token` issuing capability tokens after `requireAuth`, server-side `publish()` from route handlers via the Ably REST API, client `ably-js` subscribes to channels scoped by `userId` / `orgId`.
 
